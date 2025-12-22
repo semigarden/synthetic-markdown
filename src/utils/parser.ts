@@ -249,7 +249,7 @@ function tryOpenParagraph(
                 }
             }
 
-            return true
+            return false
         },
         addLine(text) {
             let hardBreak = false
