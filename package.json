@@ -1,11 +1,25 @@
 {
   "name": "synthetic-md",
+  "author": "every-moment-special",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "main": "./dist/lib.js",
+  "module": "./dist/lib.js",
+  "types": "./dist/lib.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/lib.js",
+      "types": "./dist/lib.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:lib": "vite build --mode library",
     "lint": "eslint .",
     "preview": "vite preview"
   },
