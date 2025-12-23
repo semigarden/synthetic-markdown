@@ -1,6 +1,6 @@
-import type { Inline } from '@/types/Inline'
+import type { Inline } from './inline'
 
-export interface ContainerBlock<T extends string = string> {
+interface ContainerBlock<T extends string = string> {
   type: T
   children: Block[]
 }
@@ -17,7 +17,10 @@ type Block =
   | HTMLBlock
   | LineBreak
 
-interface Document extends ContainerBlock<'document'> {}
+interface Document extends ContainerBlock<'document'> {
+  type: 'document'
+  children: Block[]
+}
 
 interface Paragraph {
   type: 'paragraph'
@@ -90,6 +93,7 @@ interface LineBreak {
 }
 
 export type {
+  ContainerBlock,
   Block,
   Document,
   Paragraph,

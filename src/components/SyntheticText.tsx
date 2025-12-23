@@ -1,85 +1,78 @@
-import React, { useRef, useEffect } from 'react'
-import styles from '../styles/components/SyntheticText.module.scss'
-import { parseBlock, renderBlock } from '../utils/parser'
+import React, { useRef, useEffect } from "react"
+import { useMarkdownEditor } from "../hooks/useMarkdownEditor"
+import styles from "../styles/SyntheticText.module.scss"
+import type { SyntheticTextProps } from "../types"
 
-const SyntheticText: React.FC<{ 
-  className?: string,
-  text: string, 
-  onChange?: (e: React.ChangeEvent<HTMLDivElement>) => void, 
-  value?: string,
-  onBlur?: () => void,
-  props?: React.HTMLAttributes<HTMLDivElement>
-}> = ({ className, text, onChange, value, onBlur, props }) => {
-  const divRef = useRef<HTMLDivElement>(null)
-  const isEditingRef = useRef(false)
-  const lastTextRef = useRef<string | null>(null)
-  const markdownText = value !== undefined ? value : text
+const SyntheticText: React.FC<SyntheticTextProps> = ({
+    className,
+    text,
+    onChange,
+    value,
+    onBlur,
+    props,
+}) => {
+    const divRef = useRef<HTMLDivElement>(null)
+    const isEditingRef = useRef(false)
+    const markdownText = value !== undefined ? value : text
+    const { html, render } = useMarkdownEditor(markdownText)
 
-  useEffect(() => {
-    if (divRef.current && !isEditingRef.current) {
-      const document = parseBlock(markdownText || '')
-      const html = renderBlock(document)
-  
-      divRef.current.innerHTML = html
+    useEffect(() => {
+        if (divRef.current && !isEditingRef.current) {
+            divRef.current.innerHTML = html
+        }
+    }, [html])
+
+    const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
+        if (divRef.current) {
+            const plainText =
+                divRef.current.innerText || divRef.current.textContent || ""
+
+            const syntheticEvent = {
+                ...e,
+                target: {
+                    ...e.currentTarget,
+                    value: plainText,
+                },
+                currentTarget: {
+                    ...e.currentTarget,
+                    value: plainText,
+                },
+            } as React.ChangeEvent<HTMLDivElement>
+
+            onChange?.(syntheticEvent)
+        }
     }
-  }, [markdownText])
 
-  const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
-    if (divRef.current) {
-      const plainText = divRef.current.innerText || divRef.current.textContent || ''
-      lastTextRef.current = plainText
+    const handleFocus = () => {
+        if (divRef.current) {
+            divRef.current.textContent = markdownText
+        }
 
-      const syntheticEvent = {
-        ...e,
-        target: {
-          ...e.currentTarget,
-          value: plainText,
-        },
-        currentTarget: {
-          ...e.currentTarget,
-          value: plainText,
-        },
-      } as React.ChangeEvent<HTMLDivElement>
-      
-      onChange?.(syntheticEvent)
+        isEditingRef.current = true
     }
-  }
 
-  const handleFocus = () => {
-    if (divRef.current) {
-      divRef.current.textContent = markdownText
+    const handleBlur = () => {
+        if (divRef.current) {
+            divRef.current.innerHTML = render(markdownText)
+        }
+
+        isEditingRef.current = false
+        onBlur?.()
     }
-  
-    isEditingRef.current = true
-  }
 
-  const innerTextRef = useRef<string>('')
+    const combinedClassName = `${styles.syntheticText} ${className ?? ""}`.trim()
 
-  const handleBlur = () => {
-    if (divRef.current) {
-      const document = parseBlock(markdownText || '')
-      const html = renderBlock(document)
-  
-      innerTextRef.current = markdownText
-      divRef.current.innerHTML = html
-    }
-  
-    isEditingRef.current = false
-    onBlur?.()
-  }
-
-  return (
-    <div 
-      ref={divRef}
-      className={`${styles.syntheticText} ${className}`} 
-      contentEditable="true" 
-      onFocus={handleFocus}
-      onInput={handleInput}
-      onBlur={handleBlur}
-      {...props}
-    />
-  )
+    return (
+        <div
+            ref={divRef}
+            className={combinedClassName}
+            contentEditable="true"
+            onFocus={handleFocus}
+            onInput={handleInput}
+            onBlur={handleBlur}
+            {...props}
+        />
+    )
 }
 
 export { SyntheticText }
-export default SyntheticText

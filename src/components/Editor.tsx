@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react'
-import styles from '@/styles/components/Editor.module.scss'
-import { parseBlock, renderBlock } from '@/utils/parser'
-import useStore from '@/hooks/useStore'
+import React, { useEffect, useRef, useState } from "react"
+import styles from "../styles/Editor.module.scss"
+import useStore from "../hooks/useStore"
+import { renderMarkdown } from "../utils/renderMarkdown"
 
 const Editor: React.FC = () => {
   const { loadText, saveText } = useStore()
@@ -23,15 +23,13 @@ const Editor: React.FC = () => {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [loadText])
 
   useEffect(() => {
     if (hasLoadedRef.current) {
       saveText(text).catch((error) => console.error(error))
     }
-  }, [text])
-
-  const document = parseBlock(text)
+  }, [text, saveText])
 
   return (
     <div className={styles.editor}>
@@ -44,7 +42,7 @@ const Editor: React.FC = () => {
       />
       <div
         className={styles.preview}
-        dangerouslySetInnerHTML={{ __html: renderBlock(document) }}
+        dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }}
       />
     </div>
   )
