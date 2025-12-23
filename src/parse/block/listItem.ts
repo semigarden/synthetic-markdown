@@ -147,17 +147,15 @@ function tryOpenListItem(
 
             for (const child of node.children) {
                 if (child.type === "paragraph") {
-                    const para = child as Paragraph & { rawText?: string; _paraStartIndex?: number }
-                    if (para.rawText !== undefined) {
-                        const paraStartIndex = para._paraStartIndex || startIndex
-                        para.children = parseInline(
-                            para.rawText.trim(),
-                            linkRefs,
-                            paraStartIndex,
-                        )
-                        delete para.rawText
-                        delete para._paraStartIndex
-                    }
+                    const para = child as Paragraph & { _paraStartIndex?: number }
+                    const paraStartIndex = para._paraStartIndex || startIndex
+                    para.children = parseInline(
+                        para.rawText.trim(),
+                        linkRefs,
+                        paraStartIndex,
+                    )
+
+                    delete para._paraStartIndex
                 }
             }
             node.rawText = rawText
