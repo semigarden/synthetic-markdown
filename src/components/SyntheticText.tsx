@@ -8,7 +8,7 @@ const SyntheticText: React.FC<{
   onChange?: (e: React.ChangeEvent<HTMLDivElement>) => void, 
   value?: string,
   onBlur?: () => void,
-  props?: React.HTMLAttributes<HTMLDivElement> 
+  props?: React.HTMLAttributes<HTMLDivElement>
 }> = ({ className, text, onChange, value, onBlur, props }) => {
   const divRef = useRef<HTMLDivElement>(null)
   const isEditingRef = useRef(false)
@@ -17,7 +17,10 @@ const SyntheticText: React.FC<{
 
   useEffect(() => {
     if (divRef.current && !isEditingRef.current) {
-      divRef.current.textContent = markdownText
+      const document = parseBlock(markdownText || '')
+      const html = renderBlock(document).replace(/\n/g, '<br />')
+  
+      divRef.current.innerHTML = html
     }
   }, [markdownText])
 
@@ -54,9 +57,8 @@ const SyntheticText: React.FC<{
 
   const handleBlur = () => {
     if (divRef.current) {
-      
       const document = parseBlock(markdownText || '')
-      const html = renderBlock(document).replace(/\n/g, '<br />')
+      const html = renderBlock(document)
   
       innerTextRef.current = markdownText
       divRef.current.innerHTML = html
