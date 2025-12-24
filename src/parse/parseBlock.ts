@@ -108,6 +108,7 @@ function parseBlock(text: string): Block {
         for (let i = 0; i < openBlocks.length; i++) {
             const block = openBlocks[i]
             const checkLine = new LineState(rawLine)
+
             if (!block.canContinue(checkLine)) {
                 if (block.type === "codeBlock") {
                     const remaining = checkLine.remaining().trim()
@@ -149,7 +150,9 @@ function parseBlock(text: string): Block {
                 }
             }
 
+            // console.log("line", JSON.stringify(line, null, 2))
             const newBlock = tryOpenBlock(line, parent, lineStartPos)
+            // console.log("newBlock", JSON.stringify(newBlock, null, 2))
             if (!newBlock) break
             openBlocks.push(newBlock)
         }
@@ -164,7 +167,7 @@ function parseBlock(text: string): Block {
 
     // after refactor improve loop safeguard
     let loopLimit = 0
-    while (openBlocks.length > 1 && loopLimit > 0) {
+    while (openBlocks.length) {
         if (++loopLimit > 100) {
             console.error("2. Potential infinite loop detected", JSON.stringify(openBlocks, null, 2))
             break

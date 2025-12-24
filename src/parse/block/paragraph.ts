@@ -14,7 +14,6 @@ function tryOpenParagraph(
     if (isLeafBlockType(parent.type)) return null
     if (line.isBlank()) return null
 
-    const originalLine = line.text
     const node: Paragraph = {
         id: uuid(),
         type: "paragraph",
@@ -25,7 +24,7 @@ function tryOpenParagraph(
     }
 
     const lines: Array<{ text: string; hardBreak: boolean; originalLine: string; lineStartIndex: number }> = []
-    let rawText = originalLine
+    let rawText = ""
     let currentLineIndex = startIndex
 
     return {
@@ -74,7 +73,7 @@ function tryOpenParagraph(
                 }
             }
 
-            return false
+            return true
         },
         addLine(text, originalLine) {
             let hardBreak = false

@@ -31,8 +31,17 @@ const SyntheticText: React.FC<SyntheticTextProps> = ({
     markdownRef.current = markdownText
 
     const ast = parseBlock(markdownText)
+    // const ast: Block = {
+    //     type: "document",
+    //     id: uuid(),
+    //     children: [],
+    //     startIndex: 0,
+    //     endIndex: 0,
+    // }
 
     // console.log("ast", JSON.stringify(ast, null, 2))
+
+
 
     const prevVNodeRef = useRef<VNode[]>([])
     const visionRef = useRef<Perspective>({ cursor: null, vision: "synthetic" })
@@ -291,7 +300,7 @@ const SyntheticText: React.FC<SyntheticTextProps> = ({
 
     const updateDOM = useCallback((parent: HTMLElement, prev: VNode[], next: VNode[]) => {
         const maxLen = Math.max(prev.length, next.length)
-        
+
         for (let i = 0; i < maxLen; i++) {
             const newNode = next[i]
             const oldNode = prev[i]
