@@ -40,7 +40,7 @@ function App() {
 
   return (
     // <Editor />
-    <Synthetic text={text} onChange={onChange} value={text} />
+    <Synthetic value={text} onChange={onChange} />
   )
 }
 
