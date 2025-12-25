@@ -2,55 +2,55 @@ import React, { useRef, useLayoutEffect, useCallback, useState, useEffect } from
 import styles from "../styles/Synth.module.scss"
 
 type TextBuffer = {
-    text: string;
-    cursor: number
-  };
-  
-  interface Block {
-    type: "paragraph" | "heading" | "block-quote" | "list-item" | "line-break";
-    text: string;
-    start: number;
-    end: number;
-  }
-  
-  type Token =
-    | { type: "text"; content: string }
-    | { type: "bold-delim"; content: string }
-    | { type: "italic-delim"; content: string }
-    | { type: "code-delim"; content: string };
-  
-  function tokenizeBlock(text: string): Token[] {
-    const tokens: Token[] = [];
-    let i = 0;
-    while (i < text.length) {
-      if (text.startsWith("**", i)) {
-        tokens.push({ type: "bold-delim", content: "**" });
-        i += 2;
-      } else if (text.startsWith("*", i) && (i === 0 || text[i - 1] !== "*")) {
-        tokens.push({ type: "italic-delim", content: "*" });
-        i += 1;
-      } else if (text.startsWith("`", i)) {
-        tokens.push({ type: "code-delim", content: "`" });
-        i += 1;
-      } else {
-        let next = text.length;
-        for (const delim of ["**", "*", "`"]) {
-          const pos = text.indexOf(delim, i);
-          if (pos !== -1 && pos < next) next = pos;
-        }
-        tokens.push({ type: "text", content: text.slice(i, next) });
-        i = next;
+  text: string;
+  cursor: number;
+};
+
+interface Block {
+  type: "paragraph" | "heading" | "block-quote" | "list-item" | "line-break";
+  text: string;
+  start: number;
+  end: number;
+}
+
+type Token =
+  | { type: "text"; content: string }
+  | { type: "bold-delim"; content: string }
+  | { type: "italic-delim"; content: string }
+  | { type: "code-delim"; content: string };
+
+function tokenizeBlock(text: string): Token[] {
+  const tokens: Token[] = [];
+  let i = 0;
+  while (i < text.length) {
+    if (text.startsWith("**", i)) {
+      tokens.push({ type: "bold-delim", content: "**" });
+      i += 2;
+    } else if (text.startsWith("*", i) && (i === 0 || text[i - 1] !== "*")) {
+      tokens.push({ type: "italic-delim", content: "*" });
+      i += 1;
+    } else if (text.startsWith("`", i)) {
+      tokens.push({ type: "code-delim", content: "`" });
+      i += 1;
+    } else {
+      let next = text.length;
+      for (const delim of ["**", "*", "`"]) {
+        const pos = text.indexOf(delim, i);
+        if (pos !== -1 && pos < next) next = pos;
       }
+      tokens.push({ type: "text", content: text.slice(i, next) });
+      i = next;
     }
-    return tokens;
   }
+  return tokens;
+}
 
 const Synth: React.FC<{
-    className?: string
-    value?: string
-    onChange?: (e: React.ChangeEvent<HTMLDivElement>) => void
-  }> = ({ className = "", value = "", onChange }) => {
-    const containerRef = useRef<HTMLDivElement>(null);
+  className?: string;
+  value?: string;
+  onChange?: (e: React.ChangeEvent<HTMLDivElement>) => void;
+}> = ({ className = "", value = "", onChange }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const caretRef = useRef<HTMLDivElement>(null);
 
   const [buffer, setBuffer] = useState<TextBuffer>({
@@ -76,45 +76,54 @@ const Synth: React.FC<{
 
   const updateCaretPosition = useCallback(() => {
     if (!caretRef.current || !containerRef.current || activeBlockIndex === -1 || !activeBlock) {
-        if (caretRef.current) {
-            caretRef.current.style.display = "none";
-        }
-        return;
+      if (caretRef.current) caretRef.current.style.display = "none";
+      return;
+    }
+
+    const blockEl = containerRef.current.querySelector(
+      `[data-block-index="${activeBlockIndex}"]`
+    ) as HTMLElement;
+    if (!blockEl) return;
+
+    const localOffset = buffer.cursor - activeBlock.start;
+
+    const range = document.createRange();
+    let remaining = localOffset;
+    let found = false;
+
+    const walker = document.createTreeWalker(blockEl, NodeFilter.SHOW_TEXT, null);
+    let textNode: Node | null = null;
+    let offsetInNode = 0;
+
+    while ((textNode = walker.nextNode())) {
+      const len = textNode.textContent?.length || 0;
+      if (remaining <= len) {
+        offsetInNode = remaining;
+        found = true;
+        break;
       }
-    
-      const blockEl = containerRef.current.querySelector(
-        `[data-block-index="${activeBlockIndex}"]`
-      ) as HTMLElement;
-      if (!blockEl) return;
-    
-      const localOffset = buffer.cursor - activeBlock.start;
-      const textBeforeCursor = activeBlock.text.slice(0, localOffset);
-    
-      const measurer = document.createElement("span");
-      measurer.style.visibility = "hidden";
-      measurer.style.position = "absolute";
-      measurer.style.top = "0";
-      measurer.style.left = "0";
-      measurer.style.whiteSpace = "pre-wrap";
-      measurer.style.wordBreak = "break-word";
-      measurer.style.font = window.getComputedStyle(blockEl).font;
-      measurer.style.lineHeight = window.getComputedStyle(blockEl).lineHeight;
-      measurer.style.letterSpacing = window.getComputedStyle(blockEl).letterSpacing;
-      measurer.textContent = textBeforeCursor || "\u200B";
-    
-      const contentWrapper = blockEl.querySelector("span") || blockEl;
-      contentWrapper.appendChild(measurer);
-    
-      const measurerRect = measurer.getBoundingClientRect();
-      const blockRect = blockEl.getBoundingClientRect();
-    
-      measurer.remove();
-    
-      caretRef.current.style.display = "block";
-      caretRef.current.style.left = `${measurerRect.right - blockRect.left}px`;
-      caretRef.current.style.top = `${measurerRect.top - blockRect.top}px`;
-      caretRef.current.style.height = `${measurerRect.height || 20}px`;
-  }, [buffer.cursor, activeBlockIndex, activeBlock?.text, activeBlock?.start]);
+      remaining -= len;
+    }
+
+    if (!found && blockEl.lastChild) {
+      range.setStartAfter(blockEl.lastChild);
+      range.setEndAfter(blockEl.lastChild);
+    } else if (textNode) {
+      range.setStart(textNode, offsetInNode);
+      range.setEnd(textNode, offsetInNode);
+    } else {
+      range.selectNodeContents(blockEl);
+      range.collapse(true);
+    }
+
+    const rect = range.getClientRects()[0] || range.getBoundingClientRect();
+    const blockRect = blockEl.getBoundingClientRect();
+
+    caretRef.current.style.display = "block";
+    caretRef.current.style.left = `${rect.left - blockRect.left + (rect.width > 0 ? 0 : 1)}px`; // +1px if zero-width
+    caretRef.current.style.top = `${rect.top - blockRect.top}px`;
+    caretRef.current.style.height = `${rect.height || 20}px`;
+  }, [buffer.cursor, activeBlockIndex, activeBlock?.start]);
 
   useLayoutEffect(() => {
     updateCaretPosition();
@@ -243,10 +252,8 @@ const Synth: React.FC<{
             key={block.start}
             data-block-index={i}
             style={{
-              padding: "4px 0",
               whiteSpace: "pre-wrap",
               wordBreak: "break-word",
-              minHeight: "1.2em",
               position: "relative",
             }}
           >
@@ -273,11 +280,11 @@ function parseBlocks(text: string): Block[] {
   const lines = text.split("\n");
   const blocks: Block[] = [];
   let offset = 0;
-  
+
   if (lines.length === 0 || (lines.length === 1 && lines[0] === "")) {
     return [{ type: "paragraph", text: "", start: 0, end: 0 }];
   }
-  
+
   for (const line of lines) {
     const lineStart = offset;
     const lineEnd = offset + line.length;
@@ -313,9 +320,9 @@ function renderBlock(block: Block): React.ReactNode {
         </div>
       );
     case "line-break":
-      return <p style={{ margin: "8px 0", minHeight: "1.2em" }}>{content || "\u200B"}</p>;
+      return <p>{content || "\u200B"}</p>;
     default:
-      return <p style={{ margin: "8px 0", minHeight: "1.2em" }}>{content || "\u200B"}</p>;
+      return <p>{content || "\u200B"}</p>;
   }
 }
 
