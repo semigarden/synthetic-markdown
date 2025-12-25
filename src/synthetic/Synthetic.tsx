@@ -1,4 +1,4 @@
-import React, { useRef, useLayoutEffect, useCallback, useState } from "react"
+import React, { useRef, useLayoutEffect, useCallback, useState, useEffect } from "react"
 import styles from "../styles/SyntheticText.module.scss"
 
 type TextBuffer = {
@@ -25,6 +25,8 @@ const Synthetic: React.FC<{
     
     const activeRef = useRef<HTMLDivElement | null>(null)
     const lastActiveStartRef = useRef<number | null>(null)
+    const lastActiveIndexRef = useRef<number | null>(null)
+    const lastCommittedTextRef = useRef<string | null>(null)
   
     const bufferRef = useRef<TextBuffer>({
       text: value,
@@ -45,6 +47,13 @@ const Synthetic: React.FC<{
     )
   
     const activeBlock = blocks[activeIndex]
+  
+    useEffect(() => {
+      if (lastActiveIndexRef.current !== activeIndex) {
+        lastActiveIndexRef.current = activeIndex
+        forceRender(x => x + 1)
+      }
+    }, [activeIndex])
 
     useLayoutEffect(() => {
         if (!activeRef.current || !activeBlock) return
@@ -52,155 +61,65 @@ const Synthetic: React.FC<{
         const el = activeRef.current
       
         if (lastActiveStartRef.current !== activeBlock.start) {
-          el.innerText = activeBlock.text
+          el.textContent = activeBlock.text
+          lastCommittedTextRef.current = activeBlock.text
           lastActiveStartRef.current = activeBlock.start
           
-
           const range = document.createRange()
           range.selectNodeContents(el)
           range.collapse(true)
-          
           const sel = window.getSelection()
           sel?.removeAllRanges()
           sel?.addRange(range)
         }
-      }, [activeBlock])
+        
+        const localStart = bufferRef.current.selection.start - activeBlock.start
+        const localEnd = bufferRef.current.selection.end - activeBlock.start
+        
+        if (localStart >= 0 && localStart <= activeBlock.text.length) {
+          restoreSelection(el, localStart, localEnd)
+        }
+      }, [activeBlock?.start, bufferRef.current.text])
   
     const onBlockInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
       if (!activeRef.current || !activeBlock) return
   
-      const newText = activeRef.current.innerText
+      const newText = activeRef.current.textContent ?? ""
+      const oldText = lastCommittedTextRef.current ?? activeBlock.text
+  
+      const sel = window.getSelection()
+      const range = sel?.rangeCount ? sel.getRangeAt(0) : null
+  
+      let cursor = 0
+      if (range && activeRef.current.contains(range.startContainer)) {
+        const preRange = range.cloneRange()
+        preRange.setStart(activeRef.current, 0)
+        preRange.setEnd(range.startContainer, range.startOffset)
+        const localOffset = preRange.toString().length
+        cursor = activeBlock.start + localOffset
+      } else {
+        const delta = newText.length - oldText.length
+        cursor = bufferRef.current.selection.start + delta
+      }
   
       const before = bufferRef.current.text.slice(0, activeBlock.start)
       const after = bufferRef.current.text.slice(activeBlock.end)
-  
       bufferRef.current.text = before + newText + after
-  
-      const cursor = activeBlock.start + newText.length
       bufferRef.current.selection = { start: cursor, end: cursor }
+      lastCommittedTextRef.current = newText
   
-        onChange?.({
-            ...e,
-            target: { ...e.currentTarget, value: bufferRef.current.text },
-            currentTarget: { ...e.currentTarget, value: bufferRef.current.text },
-        } as React.ChangeEvent<HTMLDivElement>)
+      onChange?.({
+        ...e,
+        target: { ...e.currentTarget, value: bufferRef.current.text },
+        currentTarget: { ...e.currentTarget, value: bufferRef.current.text },
+      } as React.ChangeEvent<HTMLDivElement>)
+  
+      forceRender(x => x + 1)
     }, [activeBlock, onChange])
 
-    const getSelectionRange = useCallback((root: HTMLElement): { start: number; end: number } | null => {
-        const sel = window.getSelection()
-        if (!sel || sel.rangeCount === 0) return null
-        
-        const range = sel.getRangeAt(0)
-        
-        if (!root.contains(range.commonAncestorContainer)) {
-            return null
-        }
-        
-        const getAbsoluteOffset = (container: Node, offset: number): number => {
-            let node: Node | null = container
-            let blockEl: HTMLElement | null = null
-            
-            while (node && node !== root) {
-                if (node.nodeType === Node.ELEMENT_NODE) {
-                    const el = node as HTMLElement
-                    if (el.dataset?.start !== undefined) {
-                        blockEl = el
-                        break
-                    }
-                }
-                node = node.parentNode
-            }
-            
-            if (!blockEl) return 0
-            
-            const blockStart = Number(blockEl.dataset.start) || 0
-            
-            const measureRange = document.createRange()
-            
-            try {
-                const walker = document.createTreeWalker(
-                    blockEl,
-                    NodeFilter.SHOW_TEXT,
-                    null
-                )
-                
-                const firstText = walker.nextNode()
-                
-                if (!firstText) {
-                    return blockStart
-                }
-                
-                measureRange.setStart(firstText, 0)
-                
-                if (container.nodeType === Node.TEXT_NODE) {
-                    measureRange.setEnd(container, offset)
-                } else {
-                    const el = container as HTMLElement
-                    if (offset === 0) {
-                        measureRange.setEnd(container, 0)
-                    } else if (offset <= el.childNodes.length) {
-                        if (offset < el.childNodes.length) {
-                            measureRange.setEndBefore(el.childNodes[offset])
-                        } else {
-                            measureRange.setEnd(container, offset)
-                        }
-                    } else {
-                        measureRange.setEnd(container, el.childNodes.length)
-                    }
-                }
-                
-                const textBefore = measureRange.toString().length
-                
-                return blockStart + textBefore
-            } catch (e) {
-                return blockStart
-            }
-        }
-        
-        const start = getAbsoluteOffset(range.startContainer, range.startOffset)
-        const end = getAbsoluteOffset(range.endContainer, range.endOffset)
-        
-        return { start, end }
-    }, [])
-
-    const containerRef = useRef<HTMLDivElement | null>(null)
-    const selectionTimeoutRef = useRef<number | null>(null)
-
-    const onSelect = useCallback(() => {
-        if (!containerRef.current) return
-        
-        if (selectionTimeoutRef.current !== null) {
-            clearTimeout(selectionTimeoutRef.current)
-        }
-        
-        selectionTimeoutRef.current = window.setTimeout(() => {
-            if (!containerRef.current) return
-            
-            const selection = getSelectionRange(containerRef.current)
-
-            if (selection !== null) {
-                const current = bufferRef.current.selection
-                if (current.start !== selection.start || current.end !== selection.end) {
-                    bufferRef.current.selection = selection
-                    forceRender(x => x + 1)
-                }
-            }
-        }, 10)
-    }, [getSelectionRange])
-
-    useLayoutEffect(() => {
-        document.addEventListener("selectionchange", onSelect)
-        return () => {
-            document.removeEventListener("selectionchange", onSelect)
-            if (selectionTimeoutRef.current !== null) {
-                clearTimeout(selectionTimeoutRef.current)
-            }
-        }
-    }, [onSelect])
   
     return (
       <div 
-        ref={containerRef}
         className={`${styles.syntheticText} ${className}`} 
         style={{ fontFamily: "monospace" }}
       >
