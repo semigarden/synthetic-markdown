@@ -34,7 +34,7 @@ function App() {
   }, [text, saveText])
 
   const onChange = useCallback((e: React.ChangeEvent<HTMLDivElement>) => {
-    setText(e.currentTarget.innerText)
+    setText((e.target as unknown as { value: string }).value)
   }, [])
 
   return (

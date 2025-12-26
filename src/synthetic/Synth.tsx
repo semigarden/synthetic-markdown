@@ -233,7 +233,7 @@ export function parseBlocks(text: string): Block[] {
     return blocks;
   }
 
-  export function parseInlines(text: string): Inline[] {
+export function parseInlines(text: string): Inline[] {
     const inlines: Inline[] = [];
     let i = 0;
   
