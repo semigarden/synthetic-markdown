@@ -108,4 +108,5 @@ const SyntheticText = forwardRef<SyntheticTextRef, SyntheticTextProps>(({
 
 SyntheticText.displayName = 'SyntheticText';
 
+export { SyntheticText };
 export default SyntheticText

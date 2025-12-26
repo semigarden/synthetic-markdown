@@ -37,7 +37,7 @@ export function createSynthEngine() {
     let inlines = new Map<string, InlineContext[]>();
 
     function sync(nextText: string) {
-        if (nextText === sourceText) return;
+        if (sourceText.length > 0 && nextText === sourceText) return;
     
         const prevBlocks = blocks;
         const lines = nextText.split("\n");
@@ -64,6 +64,18 @@ export function createSynthEngine() {
             offset = end;
         }
 
+        if (sourceText.length === 0 && (nextBlocks.length === 0 || nextBlocks[nextBlocks.length - 1].text !== "")) {
+            const emptyBlock: BlockContext = {
+                id: uuid(),
+                type: "empty",
+                text: "",
+                start: nextText.length,
+                end: nextText.length,
+            };
+            nextBlocks.push(emptyBlock);
+            
+        }
+
         const newBlockIds = new Set(nextBlocks.map(b => b.id));
         for (const oldId of inlines.keys()) {
             if (!newBlockIds.has(oldId)) {
@@ -73,6 +85,11 @@ export function createSynthEngine() {
 
         blocks = nextBlocks;
         sourceText = nextText;
+
+        const lastBlock = blocks[blocks.length - 1];
+        if (!inlines.has(lastBlock.id)) {
+            parseInlines(lastBlock);
+        }
     }
 
     function detectType(line: string): BlockType {
@@ -87,6 +104,21 @@ export function createSynthEngine() {
         const next: InlineContext[] = [];
         let i = 0;
         const text = block.text;
+
+        if (text === "") {
+            const emptyInline: InlineContext = {
+                id: uuid(),
+                type: "text",
+                blockId: block.id,
+                synthetic: "",
+                pure: "",
+                start: 0,
+                end: 0,
+            };
+            next.push(emptyInline);
+            inlines.set(block.id, next);
+            return next;
+        }
 
         while (i < text.length) {
             let matched = false;
