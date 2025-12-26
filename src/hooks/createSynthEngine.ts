@@ -120,87 +120,121 @@ export function createSynthEngine() {
             return next;
         }
 
+        let loopIndex = 0;
         while (i < text.length) {
+            if (++loopIndex > 100) {
+                console.error("Potential infinite loop detected", JSON.stringify(text, null, 2))
+                break;
+            }
+
             let matched = false;
 
-            // Code: `code`
+            // `code`
             if (text[i] === "`") {
                 const end = text.indexOf("`", i + 1);
                 if (end !== -1) {
-                const pure = text.slice(i + 1, end);
-                const synthetic = text.slice(i, end + 1);
-                next.push({
-                    id: uuid(),
-                    type: "code",
-                    blockId: block.id,
-                    synthetic,
-                    pure,
-                    start: i,
-                    end: end + 1,
-                });
-                i = end + 1;
-                matched = true;
-                }
-            }
-
-            // Strong: **strong**
-            if (!matched && text.slice(i, i + 2) === "**") {
-                const end = text.indexOf("**", i + 2);
-                if (end !== -1) {
-                const pure = text.slice(i + 2, end);
-                const synthetic = text.slice(i, end + 2);
-                next.push({
-                    id: uuid(),
-                    type: "strong",
-                    blockId: block.id,
-                    synthetic,
-                    pure,
-                    start: i,
-                    end: end + 2,
-                });
-                i = end + 2;
-                matched = true;
-                }
-            }
-
-            // Em: *em*
-            if (!matched && text[i] === "*" && (i + 1 >= text.length || text[i + 1] !== "*")) {
-                const end = text.indexOf("*", i + 1);
-                if (end !== -1) {
-                const inner = text.slice(i + 1, end);
-                if (!inner.includes("*")) {
-                    const pure = inner;
-                    const synthetic = text.slice(i, end + 1);
                     next.push({
-                    id: uuid(),
-                    type: "em",
-                    blockId: block.id,
-                    synthetic,
-                    pure,
-                    start: i,
-                    end: end + 1,
+                        id: uuid(),
+                        type: "code",
+                        blockId: block.id,
+                        synthetic: text.slice(i, end + 1),
+                        pure: text.slice(i + 1, end),
+                        start: i,
+                        end: end + 1,
                     });
                     i = end + 1;
                     matched = true;
                 }
-                }
             }
-
+        
+            // strong **
+            if (!matched && text.slice(i, i + 2) === "**") {
+                const end = text.indexOf("**", i + 2);
+                if (end !== -1) {
+                    next.push({
+                        id: uuid(),
+                        type: "strong",
+                        blockId: block.id,
+                        synthetic: text.slice(i, end + 2),
+                        pure: text.slice(i + 2, end),
+                        start: i,
+                        end: end + 2,
+                    });
+                    i = end + 2;
+                } else {
+                    next.push({
+                        id: uuid(),
+                        type: "text",
+                        blockId: block.id,
+                        synthetic: "**",
+                        pure: "**",
+                        start: i,
+                        end: i + 2,
+                    });
+                    i += 2;
+                }
+                matched = true;
+            }
+        
+            // em *
+            if (!matched && text[i] === "*" && (i + 1 >= text.length || text[i + 1] !== "*")) {
+                const end = text.indexOf("*", i + 1);
+                if (end !== -1) {
+                    const inner = text.slice(i + 1, end);
+                    if (!inner.includes("*")) {
+                        next.push({
+                            id: uuid(),
+                            type: "em",
+                            blockId: block.id,
+                            synthetic: text.slice(i, end + 1),
+                            pure: inner,
+                            start: i,
+                            end: end + 1,
+                        });
+                        i = end + 1;
+                    } else {
+                        next.push({
+                            id: uuid(),
+                            type: "text",
+                            blockId: block.id,
+                            synthetic: "*",
+                            pure: "*",
+                            start: i,
+                            end: i + 1,
+                        });
+                        i += 1;
+                    }
+                } else {
+                    next.push({
+                        id: uuid(),
+                        type: "text",
+                        blockId: block.id,
+                        synthetic: "*",
+                        pure: "*",
+                        start: i,
+                        end: i + 1,
+                    });
+                    i += 1;
+                }
+                matched = true;
+            }
+            
+            // plain text
             if (!matched) {
                 let nextDelim = text.length;
-                for (const delim of ["**", "*", "`"]) {
-                const pos = text.indexOf(delim, i);
-                if (pos !== -1 && pos < nextDelim) nextDelim = pos;
+                for (const d of ["**", "*", "`"]) {
+                    const p = text.indexOf(d, i);
+                    if (p !== -1 && p < nextDelim) nextDelim = p;
                 }
-                const pure = text.slice(i, nextDelim);
+                const content = text.slice(i, nextDelim);
                 next.push({
-                id: uuid(),
-                type: "text",
-                blockId: block.id,
-                synthetic: pure,
-                pure,
-                start: i,
-                end: nextDelim,
+                    id: uuid(),
+                    type: "text",
+                    blockId: block.id,
+                    synthetic: content,
+                    pure: content,
+                    start: i,
+                    end: nextDelim,
                 });
                 i = nextDelim;
             }

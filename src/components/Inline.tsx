@@ -13,14 +13,15 @@ const Inline: React.FC<{
   const ref = useRef<HTMLSpanElement>(null);
   const [focused, setFocused] = useState(false);
 
-  // render synthetic text when NOT focused
+  console.log("Inline", JSON.stringify(inline, null, 2))
+
   useLayoutEffect(() => {
     if (!ref.current || focused) return;
 
-    if (ref.current.textContent !== inline.synthetic) {
-      ref.current.textContent = inline.synthetic;
+    if (ref.current.textContent !== inline.pure) {
+      ref.current.textContent = inline.pure;
     }
-  }, [inline.synthetic, focused]);
+  }, [inline.pure, focused]);
 
   const getCaretOffset = (): number => {
     const sel = window.getSelection();
@@ -38,12 +39,12 @@ const Inline: React.FC<{
     if (!ref.current) return;
 
     const offset = getCaretOffset();
-    ref.current.textContent = inline.pure;
+    ref.current.textContent = inline.synthetic;
 
     requestAnimationFrame(() => {
       placeCaret(ref.current!, offset);
     });
-  }, [inline.pure]);
+  }, [inline.synthetic]);
 
   const onBlur = useCallback(() => {
     setFocused(false);
