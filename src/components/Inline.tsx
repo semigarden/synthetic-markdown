@@ -17,7 +17,15 @@ const Inline: React.FC<{
   const onFocus = useCallback(() => {
     setFocused(true);
     if (!ref.current) return;
+
+    const sel = window.getSelection();
+    const offset = sel?.anchorOffset ?? 0;
+
     ref.current.textContent = inline.pure;
+
+    requestAnimationFrame(() => {
+      placeCaret(ref.current as HTMLElement, offset);
+    });
   }, [inline.pure]);
   
   const onBlur = useCallback(() => {
@@ -32,6 +40,18 @@ const Inline: React.FC<{
     console.log("onInput", ref.current.textContent)
     // onEdit?.(inline, ref.current.textContent ?? "");
   }, []);
+
+  function placeCaret(el: HTMLElement, offset: number) {
+    const range = document.createRange();
+    const sel = window.getSelection();
+    const node = el.firstChild ?? el;
+  
+    range.setStart(node, Math.min(offset, node.textContent?.length ?? 0));
+    range.collapse(true);
+  
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+  }
 
   return (
     <span
