@@ -1,28 +1,31 @@
-import SyntheticText from './components/SyntheticText'
-import { useState, useCallback, useEffect } from 'react'
+import SyntheticText, { type SyntheticTextRef } from './components/SyntheticText'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import useStore from './hooks/useStore'
 
 function App() {
   const { loadText, saveText } = useStore();
-  const [text, setText] = useState("");
+  const editorRef = useRef<SyntheticTextRef>(null);
+  const [initialValue, setInitialValue] = useState<string | null>(null);
 
   useEffect(() => {
-    loadText().then(setText);
+    loadText().then(setInitialValue);
   }, []);
 
-  const onChange = useCallback((e: React.ChangeEvent<HTMLDivElement>) => {
-    const value = (e.target as any).value;
-    setText(value);
-    saveText(value).catch(console.error);
+  const onChange = useCallback((text: string) => {
+    saveText(text).catch(console.error);
   }, []);
+
+  if (initialValue === null) {
+    return null;
+  }
 
   return (
     <SyntheticText
-      value={text}
+      ref={editorRef}
+      initialValue={initialValue}
       onChange={onChange}
     />
   );
 }
-
 
 export default App
