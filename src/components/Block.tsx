@@ -8,11 +8,13 @@ const Block: React.FC<{
     synth: any;
     block: BlockContext;
     onBlockEdit?: (block: BlockContext, text: string) => void;
+    onMergePrev?: (inline: InlineContext) => void;
 }> = ({
     className = "",
     synth,
     block,
     onBlockEdit = (_block: BlockContext, _text: string) => {},
+    onMergePrev = (_inline: InlineContext) => {},
 }) => {
     const inlines = synth.parseInline(block)
 
@@ -20,7 +22,6 @@ const Block: React.FC<{
         const newText = block.text.slice(0, inline.start) + text + block.text.slice(inline.end)
 
         onBlockEdit(block, newText)
-        console.log("onInlineEdit", JSON.stringify(block, null, 2), text)
     }
 
 
@@ -32,7 +33,6 @@ const Block: React.FC<{
                 minHeight: '1em',
             }}
             onClick={(e) => {
-                console.log("onClick", JSON.stringify(block, null, 2))
                 e.stopPropagation();
                 if (inlines.length === 0) return;
                 const firstInlineEl = document.getElementById(inlines[0].id);
@@ -40,7 +40,7 @@ const Block: React.FC<{
             }}
         >
             {inlines.map((inline: InlineContext) => (
-                <Inline key={inline.id} inline={inline} onEdit={onInlineEdit} />
+                <Inline key={inline.id} inline={inline} onEdit={onInlineEdit} onMergePrev={onMergePrev} />
             ))}
         </div>
     )

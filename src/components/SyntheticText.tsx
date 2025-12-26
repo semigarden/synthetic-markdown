@@ -71,7 +71,6 @@ const SyntheticText: React.FC<{
 
     const onClick = (e: React.MouseEvent) => {
         // If click happened inside an inline, do nothing
-        console.log("onClick synthetic text", e.target)
         const target = e.target as HTMLElement;
         if (target.closest(`.${styles.inline}`)) return;
     
@@ -91,7 +90,37 @@ const SyntheticText: React.FC<{
         requestAnimationFrame(() => {
           placeCaretAtEnd(el);
         });
-      };
+    };
+
+    const onMergePrev = (inline: InlineContext) => {
+        const index = blocks.findIndex(b => b.id === inline.blockId);
+        if (index <= 0) return;
+    
+        const prev = blocks[index - 1];
+        const curr = blocks[index];
+    
+        const mergedText = prev.text + curr.text;
+    
+        const newValue =
+          value.slice(0, prev.start) +
+          mergedText +
+          value.slice(curr.end);
+    
+        const event = {
+            target: {
+                value: newValue,
+            },
+        } as unknown as React.ChangeEvent<HTMLDivElement>
+        onChange?.(event)
+    
+        // restore caret
+        requestAnimationFrame(() => {
+          const el = document.getElementById(`inline-${prev.id}`);
+          if (!el) return;
+          placeCaretAtEnd(el);
+          el.focus();
+        });
+    };
 
 
     return (
@@ -106,6 +135,7 @@ const SyntheticText: React.FC<{
                     synth={synth}
                     block={block}
                     onBlockEdit={onBlockEdit}
+                    onMergePrev={onMergePrev}
                 />
             ))}
         </div>

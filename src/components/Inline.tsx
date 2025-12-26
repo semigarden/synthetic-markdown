@@ -5,7 +5,8 @@ import styles from '../styles/Synth.module.scss';
 const Inline: React.FC<{
   inline: InlineContext;
   onEdit?: (inline: InlineContext, text: string) => void;
-}> = ({ inline, onEdit }) => {
+  onMergePrev?: (inline: InlineContext) => void;
+}> = ({ inline, onEdit, onMergePrev }) => {
   const ref = useRef<HTMLSpanElement>(null);
   const [focused, setFocused] = useState(false);
 
@@ -15,7 +16,6 @@ const Inline: React.FC<{
   }, [inline.synthetic, focused]);
 
   const onFocus = useCallback(() => {
-    console.log("onFocus", inline.id)
     setFocused(true);
     if (!ref.current) return;
 
@@ -30,7 +30,6 @@ const Inline: React.FC<{
   }, [inline.pure]);
   
   const onBlur = useCallback(() => {
-    console.log("onBlur", inline.id)
     setFocused(false);
     if (!ref.current) return;
     if (ref.current.textContent === inline.synthetic) return;
@@ -41,9 +40,34 @@ const Inline: React.FC<{
 
   const onInput = useCallback(() => {
     if (!ref.current) return;
-    console.log("onInput", ref.current.textContent)
     // onEdit?.(inline, ref.current.textContent ?? "");
   }, []);
+
+  const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLSpanElement>) => {
+    if (!ref.current) return;
+  
+    if (e.key === "Backspace") {
+      const sel = window.getSelection();
+      if (!sel || !sel.isCollapsed) return;
+
+      const { anchorNode, anchorOffset } = sel;
+
+      if (!ref.current.contains(anchorNode)) return;
+
+      const textNode =
+        anchorNode?.nodeType === Node.TEXT_NODE
+          ? anchorNode
+          : anchorNode?.firstChild;
+
+      if (!textNode) return;
+
+      if (anchorOffset !== 0) return;
+
+      e.preventDefault();
+      onMergePrev?.(inline);
+      console.log("onKeyDown", ref.current.textContent)
+    }
+  }, [inline, onEdit, onMergePrev]);
 
   function placeCaret(el: HTMLElement, offset: number) {
     const range = document.createRange();
@@ -68,6 +92,7 @@ const Inline: React.FC<{
       onFocus={onFocus}
       onBlur={onBlur}
       onInput={onInput}
+      onKeyDown={onKeyDown}
       data-type={inline.type}
       style={{
         outline: focused ? "1px solid #4af" : "none",
