@@ -34,7 +34,7 @@ const Block: React.FC<{
             onClick={() => {
                 if (inlines.length === 0) return;
                 const firstInlineEl = document.getElementById(inlines[0].id);
-                if (firstInlineEl) (firstInlineEl as HTMLElement).focus();
+                if (firstInlineEl && firstInlineEl.innerText === "") (firstInlineEl as HTMLElement).focus();
             }}
         >
             {inlines.map((inline: InlineContext) => (
