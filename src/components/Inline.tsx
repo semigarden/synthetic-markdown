@@ -15,6 +15,7 @@ const Inline: React.FC<{
   }, [inline.synthetic, focused]);
 
   const onFocus = useCallback(() => {
+    console.log("onFocus", inline.id)
     setFocused(true);
     if (!ref.current) return;
 
@@ -29,8 +30,11 @@ const Inline: React.FC<{
   }, [inline.pure]);
   
   const onBlur = useCallback(() => {
+    console.log("onBlur", inline.id)
     setFocused(false);
     if (!ref.current) return;
+    if (ref.current.textContent === inline.synthetic) return;
+
     onEdit?.(inline, ref.current.textContent ?? ""); // commit edits
     ref.current.textContent = inline.synthetic; // render synthetic after committing
   }, [inline.synthetic, inline, onEdit]);

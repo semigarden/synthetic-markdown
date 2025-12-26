@@ -20,9 +20,9 @@ const Block: React.FC<{
         const newText = block.text.slice(0, inline.start) + text + block.text.slice(inline.end)
 
         onBlockEdit(block, newText)
+        console.log("onInlineEdit", JSON.stringify(block, null, 2), text)
     }
 
-    console.log("inlines", JSON.stringify(inlines, null, 2))
 
     return (
         <div className={`${styles.block} ${className}`}
@@ -32,10 +32,10 @@ const Block: React.FC<{
                 minHeight: '1em',
             }}
             onClick={(e) => {
+                console.log("onClick", JSON.stringify(block, null, 2))
                 e.stopPropagation();
                 if (inlines.length === 0) return;
                 const firstInlineEl = document.getElementById(inlines[0].id);
-                console.log("onClick", JSON.stringify(block, null, 2), firstInlineEl?.innerText)
                 if (firstInlineEl) (firstInlineEl as HTMLElement).focus();
             }}
         >
