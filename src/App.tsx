@@ -1,44 +1,28 @@
-import Editor from '@/components/Editor'
 import SyntheticText from './components/SyntheticText'
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import useStore from './hooks/useStore'
 
 function App() {
-  const { loadText, saveText } = useStore()
-  const [text, setText] = useState('')
-  const hasLoadedRef = useRef(false)
+  const { loadText, saveText } = useStore();
+  const [text, setText] = useState("");
 
   useEffect(() => {
-    let cancelled = false
-
-    loadText()
-      .then((value) => {
-        if (!cancelled) {
-          setText(value)
-          hasLoadedRef.current = true
-        }
-      })
-      .catch((error) => console.error(error))
-
-    return () => {
-      cancelled = true
-    }
-  }, [loadText])
-
-  useEffect(() => {
-    if (hasLoadedRef.current) {
-      saveText(text).catch((error) => console.error(error))
-    }
-  }, [text, saveText])
+    loadText().then(setText);
+  }, []);
 
   const onChange = useCallback((e: React.ChangeEvent<HTMLDivElement>) => {
-    setText((e.target as unknown as { value: string }).value)
-  }, [])
+    const value = (e.target as any).value;
+    setText(value);
+    saveText(value).catch(console.error);
+  }, []);
 
   return (
-    // <Editor />
-    <SyntheticText value={text} onChange={onChange} />
-  )
+    <SyntheticText
+      value={text}
+      onChange={onChange}
+    />
+  );
 }
+
 
 export default App

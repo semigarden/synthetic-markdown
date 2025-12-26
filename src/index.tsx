@@ -4,9 +4,9 @@ import App from './App'
 import './styles/index.scss'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
+  // <React.StrictMode>
     <App />
-  </React.StrictMode>
+  // </React.StrictMode>
 )
 
 // export { SyntheticText } from "./components/SyntheticText"

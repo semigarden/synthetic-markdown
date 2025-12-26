@@ -1,5 +1,5 @@
-import { useRef } from "react";
-import { uuid } from "../utils";
+import { useEffect, useRef, useState } from "react";
+import { uuid, inlineId } from "../utils";
 import useStore from "./useStore";
 
 export type BlockType = "paragraph" | "heading" | "block-quote" | "list-item" | "empty";
@@ -10,6 +10,7 @@ export interface BlockContext {
     text: string
     start: number
     end: number
+    inlines: InlineContext[]
 }
 
 export type InlineType = "text" | "strong" | "em" | "code" | "link" | "image" | "autolink" | "html" | "softbreak" | "hardbreak"
@@ -24,9 +25,76 @@ export interface InlineContext {
     end: number,
 }
 
+export type CaretState = {
+  blockId: string;
+  inlineId: string;
+  offset: number; // caret offset inside inline
+  affinity?: "start" | "end";
+};
+
 
 function useSynth() {
     const { saveText } = useStore()
+
+    const caretState = useRef<CaretState | null>(null);
+
+    function saveCaret(inline: InlineContext, el: HTMLElement | null) {
+      if (!el) return;
+    
+      const sel = window.getSelection();
+      if (!sel || !sel.rangeCount) return;
+    
+      const range = sel.getRangeAt(0);
+    
+      let offset = 0;
+    
+      if (range.startContainer.nodeType === Node.TEXT_NODE) {
+        offset = range.startOffset;
+      } else {
+        offset = el.textContent?.length ?? 0;
+      }
+
+      console.log("saveCaret", inline.id, offset)
+    
+      caretState.current = {
+        blockId: inline.blockId,
+        inlineId: inline.id,
+        offset,
+      };
+    }
+
+    function restoreCaret() {
+      const caret = caretState.current;
+      if (!caret) return;
+    
+      const el = document.getElementById(caret.inlineId);
+      console.log("restoreCaret", caret.inlineId, el)
+      if (!el) return;
+      
+      const sel = window.getSelection();
+      if (!sel) return;
+
+   
+    
+      el.focus();
+    
+      const node = el.firstChild ?? el;
+      const offset = Math.min(
+        caret.offset,
+        node.textContent?.length ?? 0
+      );
+    
+      const range = document.createRange();
+      range.setStart(node, offset);
+      range.collapse(true);
+    
+      sel.removeAllRanges();
+      sel.addRange(range);
+
+      console.log("restoreCaret", caret.inlineId, offset)
+    
+      caretState.current = null;
+    }    
 
     function detectType(line: string): BlockType {
         let type: BlockType = "paragraph";
@@ -48,6 +116,13 @@ function useSynth() {
 
     const allBlocks = useRef<BlockContext[]>([])
     const pureText = useRef<string>("")
+
+    const [blocks, setBlocks] = useState<BlockContext[]>([])
+
+    function init(text: string) {
+      setBlocks(parseBlocks(text));
+      pureText.current = text;
+    }
   
     function parseBlocks(text: string): BlockContext[] {
       const prev = allBlocks.current;
@@ -82,6 +157,7 @@ function useSynth() {
     
         nextBlocks.push({
           id: prevBlock?.id ?? uuid(),
+          inlines: [],
           type,
           text: line,
           start,
@@ -305,15 +381,45 @@ function useSynth() {
         return pre.toString().length
     }
 
+    function applyInlineEdit(
+      inline: InlineContext,
+      newInlineText: string
+    ): string | null {
+      const block = allBlocks.current.find(b => b.id === inline.blockId);
+      if (!block) return null;
+    
+      // 1️⃣ update block text
+      const newBlockText =
+        block.text.slice(0, inline.start) +
+        newInlineText +
+        block.text.slice(inline.end);
+    
+      // 2️⃣ update source text
+      const newText =
+        pureText.current.slice(0, block.start) +
+        newBlockText +
+        pureText.current.slice(block.end);
+    
+      // 3️⃣ re-init blocks (ID-stable)
+      init(newText);
+    
+      return newText;
+    }
+
     return {
         parseBlocks,
         parseInlines,
         parseInline,
         detectType,
+        applyInlineEdit,
         save,
         setPureText,
         rangeFromMouse,
         rangeToOffset,
+        saveCaret,
+        restoreCaret,
+        init,
+        blocks,
         inlineCache,
     } as const
 }
