@@ -66,8 +66,6 @@ const Inline: React.FC<{
       const blockEl = ref.current?.closest('[data-block-id]');
       if (!blockEl) return;
 
-      console.log("blockEl", blockEl)
-
       onSplitBlock?.(inline.blockId, inline.start, caretOffset);
     }
   
@@ -75,23 +73,31 @@ const Inline: React.FC<{
       const sel = window.getSelection();
       if (!sel || !sel.isCollapsed) return;
 
-      const { anchorNode, anchorOffset } = sel;
+      const caretOffset = getCaretOffsetInInline(ref.current);
 
-      if (!ref.current.contains(anchorNode)) return;
+      const isEmptyInline = inline.pure.length === 0;
+      const isAtStart = caretOffset === 0;
 
-      const textNode =
-        anchorNode?.nodeType === Node.TEXT_NODE
-          ? anchorNode
-          : anchorNode?.firstChild;
-
-      if (!textNode) return;
-
-      if (anchorOffset !== 0) return;
+      if (!isAtStart && !isEmptyInline) return;
 
       e.preventDefault();
       onMergePrev?.(inline);
     }
   }, [inline, onEdit, onMergePrev]);
+
+  function getCaretOffsetInInline(ref: HTMLElement): number {
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return 0;
+  
+    const range = sel.getRangeAt(0);
+  
+    if (range.startContainer.nodeType === Node.TEXT_NODE) {
+      return range.startOffset;
+    }
+  
+    // empty inline or span itself
+    return 0;
+  }
 
   function placeCaret(el: HTMLElement, offset: number) {
     const range = document.createRange();
