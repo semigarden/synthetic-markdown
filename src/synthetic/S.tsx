@@ -1,8 +1,7 @@
-import React from 'react'
+import React, { useRef, useState } from 'react'
 import styles from '../styles/Synth.module.scss'
 import Block from './Block'
 import useSynth, { type BlockContext } from './useSynth'
-
 
 
 const SyntheticText: React.FC<{
@@ -15,7 +14,7 @@ const SyntheticText: React.FC<{
     onChange = () => {},
 }) => {
     const { parseBlocks } = useSynth()
-
+    const syntheticRef = useRef<HTMLDivElement>(null)
     const blocks = parseBlocks(value)
 
     // console.log("blocks", value, JSON.stringify(blocks, null, 2))
@@ -31,14 +30,13 @@ const SyntheticText: React.FC<{
         onChange?.(event)
     }
 
+
     return (
-        <div className={`${styles.syntheticText} ${className}`}
+        <div ref={syntheticRef} className={`${styles.syntheticText} ${className}`}
         >
             {blocks.map((block) => (
                 <Block key={block.id} block={block} onBlockEdit={onBlockEdit} />
             ))}
-
-            <div className={styles.caret} />
         </div>
     )
 }

@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import styles from '../styles/Synth.module.scss'
-import type { InlineContext } from './useSynth'
+import useSynth, { type InlineContext } from './useSynth'
+import Caret, { type Caret as CaretType } from './Caret';
+
 
 const Inline: React.FC<{
     className?: string;
@@ -22,8 +24,7 @@ const Inline: React.FC<{
     }, [focus, inline.pure]);
 
     const [selection, setSelection] = useState<{ start: number; end: number } | null>(null);
-
-    // console.log("inline", JSON.stringify(inline, null, 2))
+    const [caret, setCaret] = useState<CaretType | null>(null)
 
     useEffect(() => {
         if (!focus || !inlineRef.current || selection === null) return;
@@ -41,20 +42,36 @@ const Inline: React.FC<{
         } catch (e) {
         }
     }, [text, focus, selection]);
+
+    useEffect(() => {
+        if (focus && !caret) {
+            const textLength = text.length;
+            setCaret({ offset: textLength });
+            setSelection({ start: textLength, end: textLength });
+        }
+    }, [focus, caret, text.length]);
+
+    useEffect(() => {
+        if (focus && selection !== null) {
+            setCaret({ offset: selection.start });
+        }
+    }, [focus, selection]);
     
-    const saveSelection = () => {
+    const saveSelection = useCallback(() => {
         const sel = window.getSelection();
-        if (!sel || sel.rangeCount === 0) return;
+        if (!sel || sel.rangeCount === 0) return null;
     
         const range = sel.getRangeAt(0);
         const textNode = inlineRef.current?.firstChild || inlineRef.current;
-        if (!textNode || !range.commonAncestorContainer.contains(textNode)) return;
+        if (!textNode || !range.commonAncestorContainer.contains(textNode)) return null;
     
-        setSelection({
+        const selection = {
             start: range.startOffset,
             end: range.endOffset,
-        });
-    };
+        };
+        setSelection(selection);
+        return selection;
+    }, []);
 
     const onFocus = useCallback((e: React.FocusEvent<HTMLSpanElement>) => {
         e.preventDefault()
@@ -62,7 +79,7 @@ const Inline: React.FC<{
 
         setFocus(true)
         setText(prev => prev || inline.pure);
-    }, [inline.synthetic])
+    }, [inline.pure])
 
     const onBlur = useCallback((e: React.FocusEvent<HTMLSpanElement>) => {
         e.preventDefault()
@@ -70,11 +87,15 @@ const Inline: React.FC<{
 
         setFocus(false)
         setSelection(null)
+        setCaret(null)
         onEdit(inline, text)
     }, [text, inline, onEdit])
 
-    const onKeyDown = useCallback(
+    const onKeyDown = useCallback(    
         (e: React.KeyboardEvent<HTMLSpanElement>) => {
+          console.log("aaaonKeyDown", e.key)
+            if (!focus) return;
+          
           if (e.key === 'Escape') {
             inlineRef.current?.blur();
             return;
@@ -83,12 +104,11 @@ const Inline: React.FC<{
           if (e.key === 'Enter') {
             e.preventDefault();
 
-            saveSelection();
+            const currentSelection = saveSelection() || selection;
+            if (!currentSelection) return;
 
-            if (!selection) return;
-
-            const insertPos = selection.start;
-            const deleteEnd = selection.start !== selection.end ? selection.end : selection.start;
+            const insertPos = currentSelection.start;
+            const deleteEnd = currentSelection.start !== currentSelection.end ? currentSelection.end : currentSelection.start;
 
             const newText =
                 text.slice(0, insertPos) + '\n' + text.slice(deleteEnd);
@@ -98,6 +118,7 @@ const Inline: React.FC<{
 
             const newCursorPos = insertPos + 1;
             setSelection({ start: newCursorPos, end: newCursorPos });
+            setCaret({ offset: newCursorPos });
             
             return;
           }
@@ -110,25 +131,32 @@ const Inline: React.FC<{
             return;
           }
     
-          saveSelection();
+          const currentSelection = saveSelection() || selection;
     
           if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
             e.preventDefault();
     
-            const sel = window.getSelection();
-            if (!sel || sel.rangeCount === 0) return;
-            const range = sel.getRangeAt(0);
-            const start = range.startOffset;
-            const end = range.endOffset;
+            // const sel = window.getSelection();
+            // if (!sel || sel.rangeCount === 0) return;
+            // const range = sel.getRangeAt(0);
+            // const start = range.startOffset;
+            // const end = range.endOffset;
     
-            const newText = selection
-              ? text.slice(0, selection.start) + e.key + text.slice(selection.end)
-              : text.slice(0, start) + e.key + text.slice(end);
+            // Use currentSelection if available, otherwise use DOM selection
+            // const insertStart = currentSelection?.start ?? start;
+            // const insertEnd = currentSelection?.end ?? end;
+    
+            const insertStart = selection?.start ?? caret?.offset ?? 0;
+            const insertEnd = selection?.end ?? insertStart;
+
+            const newText = text.slice(0, insertStart) + e.key + text.slice(insertEnd);
     
             setText(newText);
             // onEdit(inline, newText)
     
-            setSelection({ start: (selection?.start || start) + 1, end: (selection?.start || start) + 1 });
+            const newCursorPos = insertStart + 1;
+            setSelection({ start: newCursorPos, end: newCursorPos });
+            setCaret({ offset: newCursorPos });
             return;
           }
     
@@ -136,48 +164,74 @@ const Inline: React.FC<{
           if (e.key === 'Backspace' || e.key === 'Delete') {
             e.preventDefault();
     
-            if (!selection) return;
+            const currentSelection = saveSelection() || selection;
+            if (!currentSelection) return;
     
             let newText: string;
             let newCursorPos: number;
     
-            if (selection.start === selection.end) {
+            if (currentSelection.start === currentSelection.end) {
               if (e.key === 'Backspace') {
-                if (selection.start === 0) return;
-                newText = text.slice(0, selection.start - 1) + text.slice(selection.start);
-                newCursorPos = selection.start - 1;
+                if (currentSelection.start === 0) return;
+                newText = text.slice(0, currentSelection.start - 1) + text.slice(currentSelection.start);
+                newCursorPos = currentSelection.start - 1;
               } else {
-                if (selection.start === text.length) return;
-                newText = text.slice(0, selection.start) + text.slice(selection.start + 1);
-                newCursorPos = selection.start;
+                if (currentSelection.start === text.length) return;
+                newText = text.slice(0, currentSelection.start) + text.slice(currentSelection.start + 1);
+                newCursorPos = currentSelection.start;
               }
             } else {
-              newText = text.slice(0, selection.start) + text.slice(selection.end);
-              newCursorPos = selection.start;
+              newText = text.slice(0, currentSelection.start) + text.slice(currentSelection.end);
+              newCursorPos = currentSelection.start;
             }
     
             setText(newText);
             // onEdit(inline, newText)
             setSelection({ start: newCursorPos, end: newCursorPos });
+            setCaret({ offset: newCursorPos });
           }
         },
-        [text, selection, inline]
+        [text, selection, inline, focus, saveSelection]
     );
+
+
+
     // console.log("text", JSON.stringify(inline, null, 2), text)
 
+    const { rangeFromMouse, rangeToOffset } = useSynth()
+      
+    const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+        e.stopPropagation()
+
+        setFocus(true)
+        setText(prev => prev || inline.pure);
+      
+        const range = rangeFromMouse(e.nativeEvent)
+        if (!range || !inlineRef.current) return
+      
+        const offset = rangeToOffset(inlineRef.current, range)
+      
+        setCaret({ offset })
+    }
+
     return (
-        <span ref={inlineRef} className={`${styles.inline} ${className}`}
+        <span ref={inlineRef} className={`${styles.inline} ${className} ${focus && styles.focus}`}
             tabIndex={0}
             data-start={inline.start}
             data-end={inline.end}
             onFocus={onFocus}
             onBlur={onBlur}
-            onKeyDown={focus ? onKeyDown : undefined}
+            onKeyDown={onKeyDown}
             onMouseUp={focus ? saveSelection : undefined}
             onKeyUp={focus ? saveSelection : undefined}
             onKeyPress={(e) => e.key === 'Enter' && e.preventDefault()}
+            onMouseDown={onMouseDown}
         >
-            {focus ? text : getInline(inline)}
+            {focus ? (
+                <Caret caret={caret} text={text} onKeyDown={onKeyDown} />
+            ) : (
+                getInline(inline)
+            )}
         </span>
     )
 }

@@ -188,13 +188,34 @@ function useSynth() {
         pureText.current = text;
     })
 
-    console.log("pureText", pureText.current)
+    function rangeFromMouse(e: MouseEvent): Range | null {
+        if (document.caretRangeFromPoint) {
+          return document.caretRangeFromPoint(e.clientX, e.clientY)
+        }
+      
+        const pos = document.caretPositionFromPoint?.(e.clientX, e.clientY)
+        if (!pos) return null
+      
+        const r = document.createRange()
+        r.setStart(pos.offsetNode, pos.offset)
+        r.collapse(true)
+        return r
+    }
+
+    function rangeToOffset(container: HTMLElement, range: Range): number {
+        const pre = document.createRange()
+        pre.selectNodeContents(container)
+        pre.setEnd(range.startContainer, range.startOffset)
+        return pre.toString().length
+    }
 
     return {
         parseBlocks,
         parseInlines,
         save,
         setPureText,
+        rangeFromMouse,
+        rangeToOffset,
     }
 }
 
