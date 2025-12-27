@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useCallback } from 'react'
 import styles from '../styles/Synth.module.scss'
 import Inline from './Inline'
 import type { Block as BlockType, Inline as InlineType } from '../hooks/createSynthEngine'
@@ -22,10 +22,33 @@ const Block: React.FC<BlockProps> = ({ block, inlines, onInlineInput }) => {
         ))
     )
 
+    const handleBlockClick = useCallback((e: React.MouseEvent) => {
+        const target = e.target as HTMLElement
+        if (target.hasAttribute('data-inline-id')) return
+
+        if (inlines.length > 0) {
+            const lastInline = inlines[inlines.length - 1]
+            const el = document.getElementById(lastInline.id)
+            if (el) {
+                el.focus()
+
+                const range = document.createRange()
+                const sel = window.getSelection()
+                const node = el.firstChild ?? el
+                const offset = node.textContent?.length ?? 0
+                range.setStart(node, offset)
+                range.collapse(true)
+                sel?.removeAllRanges()
+                sel?.addRange(range)
+            }
+        }
+    }, [inlines])
+
     const commonProps = {
         'data-block-id': block.id,
         'data-block-type': block.type,
         className: styles.block,
+        onClick: handleBlockClick,
     }
 
     switch (block.type) {
