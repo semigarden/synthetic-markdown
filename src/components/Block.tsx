@@ -32,14 +32,17 @@ const Block: React.FC<BlockProps> = ({ block, inlines, onInlineInput }) => {
             if (el) {
                 el.focus()
 
-                const range = document.createRange()
-                const sel = window.getSelection()
-                const node = el.firstChild ?? el
-                const offset = node.textContent?.length ?? 0
-                range.setStart(node, offset)
-                range.collapse(true)
-                sel?.removeAllRanges()
-                sel?.addRange(range)
+                requestAnimationFrame(() => {
+                    const textNode = el.firstChild
+                    if (textNode && textNode.textContent) {
+                        const range = document.createRange()
+                        const sel = window.getSelection()
+                        range.setStart(textNode, textNode.textContent.length)
+                        range.collapse(true)
+                        sel?.removeAllRanges()
+                        sel?.addRange(range)
+                    }
+                })
             }
         }
     }, [inlines])
