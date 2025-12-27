@@ -43,6 +43,7 @@ interface CodeBlock extends BlockType<'codeBlock'> {
 
 interface List extends BlockType<'list'> {
     ordered: boolean
+    children: ListItem[]
 }
 
 interface ListItem extends BlockType<'listItem'> {
@@ -52,9 +53,11 @@ interface ThematicBreak extends BlockType<'thematicBreak'> {
 }
 
 interface Table extends BlockType<'table'> {
+    children: TableRow[]
 }
 
 interface TableRow extends BlockType<'tableRow'> {
+    children: TableCell[]
 }
 
 interface TableCell extends BlockType<'tableCell'> {
@@ -141,6 +144,13 @@ interface SoftBreak extends InlineType<'softBreak'> {
 interface HardBreak extends InlineType<'hardBreak'> {
 }
 
+interface DetectedBlock {
+    type: Block["type"];
+    // extra fields depending on type
+    level?: number;
+    ordered?: boolean;
+}
+
 export function createSynthEngine() {
     let sourceText = "";
     let blocks: Block[] = [];
@@ -158,61 +168,160 @@ export function createSynthEngine() {
             const line = lines[i];
             const start = offset;
             const end = i === lines.length - 1 ? nextText.length : offset + line.length + 1;
-            const type = detectType(line);
+            const detectedBlock = detectType(line);
 
-            const prevBlock = prevBlocks.find(b => b.start === start && b.type === type);
+            const prevBlock = prevBlocks.find(b => b.start === start && b.type === detectedBlock.type);
             const blockId = prevBlock?.id ?? uuid();
 
-            switch (type) {
-                case "paragraph":
-                    nextBlocks.push({
-                        id: blockId,
-                        type: "paragraph",
-                        text: line,
-                        start,
-                        end,
-                    });
-                    break;
+            let block: Block;
+
+            switch (detectedBlock.type) {
                 case "heading":
-                    nextBlocks.push({
+                    block = {
                         id: blockId,
                         type: "heading",
-                        level: 0,
+                        level: detectedBlock.level!,
                         text: line,
                         start,
                         end,
-                    });
+                    };
+                    nextBlocks.push(block);
                     break;
+
                 case "blockQuote":
-                    nextBlocks.push({
+                    block = {
                         id: blockId,
                         type: "blockQuote",
-                        text: line,
+                        text: line.replace(/^>\s?/, ""),
                         start,
                         end,
-                    });
+                    };
+                    nextBlocks.push(block);
                     break;
+
                 case "listItem":
-                    nextBlocks.push({
+                    const listItem: ListItem = {
                         id: blockId,
                         type: "listItem",
+                        text: line.replace(/^(\s*([-*+]|(\d+\.))\s+)/, ""),
+                        start,
+                        end,
+                    };
+
+                    // find existing list at same indent
+                    const lastBlock = nextBlocks[nextBlocks.length - 1];
+                    if (lastBlock && lastBlock.type === "list" && (lastBlock as List).ordered === detectedBlock.ordered) {
+                        (lastBlock as List).children.push(listItem);
+                    } else {
+                        const newList: List = {
+                            id: blockId,
+                            type: "list",
+                            text: "", // list itself has no text
+                            start,
+                            end,
+                            ordered: detectedBlock.ordered ?? false,
+                            children: [listItem],
+                        };
+                        nextBlocks.push(newList);
+                    }
+                    break;
+
+                case "taskListItem":
+                    block = {
+                        id: blockId,
+                        type: "taskListItem",
+                        text: line.replace(/^(\s*([-*+])\s+\[[ xX]\]\s+)/, ""),
+                        start,
+                        end,
+                    };
+                    nextBlocks.push(block);
+                    break;
+
+                case "thematicBreak":
+                    block = {
+                        id: blockId,
+                        type: "thematicBreak",
                         text: line,
                         start,
                         end,
-                    });
+                    };
+                    nextBlocks.push(block);
                     break;
+
+                case "codeBlock":
+                    block = {
+                        id: blockId,
+                        type: "codeBlock",
+                        text: line,
+                        start,
+                        end,
+                    };
+                    nextBlocks.push(block);
+                    break;
+
+                case "table":
+                    const table: Table = {
+                        id: blockId,
+                        type: "table",
+                        text: "", // table container has no direct text
+                        start,
+                        end,
+                        children: [],
+                    };
+                    const row: TableRow = {
+                        id: blockId,
+                        type: "tableRow",
+                        text: line,
+                        start,
+                        end,
+                        children: line.split("|").map((cellText, idx) => ({
+                            id: blockId,
+                            type: "tableCell",
+                            text: cellText.trim(),
+                            start,
+                            end,
+                        })),
+                    };
+                    table.children.push(row);
+                    nextBlocks.push(table);
+                    break;
+
+                case "footnote":
+                    block = {
+                        id: blockId,
+                        type: "footnote",
+                        text: line,
+                        start,
+                        end,
+                    };
+                    nextBlocks.push(block);
+                    break;
+
+                case "htmlBlock":
+                    block = {
+                        id: blockId,
+                        type: "htmlBlock",
+                        text: line,
+                        start,
+                        end,
+                    };
+                    nextBlocks.push(block);
+                    break;
+
+                case "paragraph":
                 default:
-                    nextBlocks.push({
+                    block = {
                         id: blockId,
                         type: "paragraph",
                         text: line,
                         start,
                         end,
-                    });
+                    };
+                    nextBlocks.push(block);
                     break;
             }
 
-            offset = end;
+            offset = end + 1;
         }
 
         if (sourceText.length === 0 && (nextBlocks.length === 0 || nextBlocks[nextBlocks.length - 1].text !== "")) {
@@ -237,18 +346,76 @@ export function createSynthEngine() {
         blocks = nextBlocks;
         sourceText = nextText;
 
+        console.log("blocks", JSON.stringify(blocks, null, 2));
+
         const lastBlock = blocks[blocks.length - 1];
         if (!inlines.has(lastBlock.id)) {
             parseInlines(lastBlock);
         }
     }
 
-    function detectType(line: string): Block["type"] {
-        if (line.trim() === "") return "paragraph";
-        if (line.startsWith("# ")) return "heading";
-        if (line.startsWith("> ")) return "blockQuote";
-        if (/^\s*[-*+]\s/.test(line)) return "listItem";
-        return "paragraph";
+    function detectType(line: string): DetectedBlock {
+        const trimmed = line.trim();
+
+        // Empty line -> paragraph
+        if (trimmed === "") return { type: "paragraph" };
+
+        // Heading: # H1, ## H2, etc.
+        const headingMatch = trimmed.match(/^(#{1,6})\s+/);
+        if (headingMatch) {
+            return { type: "heading", level: headingMatch[1].length };
+        }
+
+        // Blockquote: > quote
+        if (trimmed.startsWith("> ")) {
+            return { type: "blockQuote" };
+        }
+
+        // Thematic break: --- or *** or ___
+        if (/^(-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
+            return { type: "thematicBreak" };
+        }
+
+        // Fenced code block: ``` or ~~~
+        if (/^(```|~~~)/.test(trimmed)) {
+            return { type: "codeBlock" };
+        }
+
+        // List item: unordered (-, *, +)
+        const unorderedListMatch = /^\s*([-*+])\s+/.exec(line);
+        if (unorderedListMatch) {
+            return { type: "listItem", ordered: false };
+        }
+
+        // List item: ordered (1. 2. etc.)
+        const orderedListMatch = /^\s*(\d+)\.\s+/.exec(line);
+        if (orderedListMatch) {
+            return { type: "listItem", ordered: true };
+        }
+
+        // Task list item: - [ ] or - [x]
+        const taskListMatch = /^\s*[-*+]\s+\[( |x|X)\]\s+/.exec(line);
+        if (taskListMatch) {
+            return { type: "taskListItem", ordered: false };
+        }
+
+        // Table row: line contains at least one |
+        if (trimmed.includes("|")) {
+            return { type: "table" };
+        }
+
+        // Footnote: [^1]: text
+        if (/^\[\^.+\]:/.test(trimmed)) {
+            return { type: "footnote" };
+        }
+
+        // HTML block: starts with <tag>
+        if (/^<\w+/.test(trimmed)) {
+            return { type: "htmlBlock" };
+        }
+
+        // Default fallback -> paragraph
+        return { type: "paragraph" };
     }
 
     function parseInlines(block: Block): Inline[] {

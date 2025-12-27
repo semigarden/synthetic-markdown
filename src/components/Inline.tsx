@@ -13,7 +13,7 @@ const Inline: React.FC<{
   const ref = useRef<HTMLSpanElement>(null);
   const [focused, setFocused] = useState(false);
 
-  console.log("Inline", JSON.stringify(inline, null, 2))
+  // console.log("Inline", JSON.stringify(inline, null, 2))
 
   useLayoutEffect(() => {
     if (!ref.current || focused) return;
