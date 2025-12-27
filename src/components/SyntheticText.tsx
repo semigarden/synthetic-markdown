@@ -31,6 +31,41 @@ const SyntheticText = forwardRef<SyntheticTextRef, SyntheticTextProps>(({
         onChange?.(nextMarkdown);
     }, [synth, onChange]);
 
+    const handleInlineSplit = useCallback((inline: InlineType, caretOffset: number) => {
+        const { newSourceText, newBlockId } = synth.engine.splitBlockAtInline(inline, caretOffset);
+
+        if (newBlockId) {
+            requestAnimationFrame(() => {
+                const newBlockInlines = synth.engine.blocks.find(b => b.id === newBlockId);
+                if (newBlockInlines) {
+                    const inlines = synth.engine.getInlines(newBlockInlines);
+                    if (inlines.length > 0) {
+                        const firstInline = inlines[0];
+                        synth.saveCaret(firstInline.id, 0);
+                        
+                        const el = document.getElementById(firstInline.id);
+                        if (el) {
+                            el.focus();
+                            requestAnimationFrame(() => {
+                                const range = document.createRange();
+                                const sel = window.getSelection();
+                                const node = el.firstChild ?? el;
+                                range.setStart(node, 0);
+                                range.collapse(true);
+                                sel?.removeAllRanges();
+                                sel?.addRange(range);
+                            });
+                        }
+                    }
+                }
+            });
+        }
+
+        synth.forceRender();
+
+        onChange?.(newSourceText);
+    }, [synth, onChange]);
+
     return (
         <div className={`${styles.syntheticText} ${className}`}>
             {synth.engine.blocks.map(block => (
@@ -39,6 +74,7 @@ const SyntheticText = forwardRef<SyntheticTextRef, SyntheticTextProps>(({
                     block={block}
                     inlines={synth.engine.getInlines(block)}
                     onInlineInput={handleInlineInput}
+                    onInlineSplit={handleInlineSplit}
                 />
             ))}
         </div>

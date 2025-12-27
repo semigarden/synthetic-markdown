@@ -1630,6 +1630,35 @@ export function createSynthEngine() {
         return linkReferences;
     }
 
+    function splitBlockAtInline(inline: Inline, caretOffset: number): { newSourceText: string; newBlockId: string } {
+        const block = blocks.find(b => b.id === inline.blockId);
+        if (!block) {
+            throw new Error(`Block not found for split: ${inline.blockId}`);
+        }
+
+        const globalInlineStart = block.start + inline.start;
+        const insertPosition = globalInlineStart + caretOffset;
+
+        const newSourceText = 
+            sourceText.slice(0, insertPosition) + 
+            "\n" + 
+            sourceText.slice(insertPosition);
+
+        sync(newSourceText);
+
+        const newBlockStart = insertPosition + 1;
+        let newBlock = blocks.find(b => b.start >= newBlockStart);
+
+        if (!newBlock && blocks.length > 0) {
+            newBlock = blocks[blocks.length - 1];
+        }
+
+        return { 
+            newSourceText, 
+            newBlockId: newBlock?.id ?? "" 
+        };
+    }
+
     return {
         get blocks() {
             return blocks;
@@ -1642,6 +1671,7 @@ export function createSynthEngine() {
         getInlines,
         applyInlineEdit,
         getLinkReferences,
+        splitBlockAtInline,
     };
 }
 

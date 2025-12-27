@@ -9,7 +9,11 @@ const Inline: React.FC<{
     text: string;
     caretOffset: number;
   }) => void;
-}> = ({ inline, onInput }) => {
+  onSplit?: (payload: {
+    inlineId: string;
+    caretOffset: number;
+  }) => void;
+}> = ({ inline, onInput, onSplit }) => {
   const ref = useRef<HTMLSpanElement>(null);
   const [focused, setFocused] = useState(false);
 
@@ -57,6 +61,19 @@ const Inline: React.FC<{
       caretOffset: getCaretOffset(),
     });
   }, [inline.id, onInput]);
+
+  const onKeyDownHandler = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      
+      if (onSplit) {
+        onSplit({
+          inlineId: inline.id,
+          caretOffset: getCaretOffset(),
+        });
+      }
+    }
+  }, [inline.id, onSplit]);
 
   if (inline.type === 'hardBreak') {
     return <br data-inline-id={inline.id} data-type={inline.type} />;
@@ -111,6 +128,7 @@ const Inline: React.FC<{
       onFocus={onFocus}
       onBlur={onBlur}
       onInput={onInputHandler}
+      onKeyDown={onKeyDownHandler}
       onClick={handleClick}
       data-inline-id={inline.id}
       data-type={inline.type}

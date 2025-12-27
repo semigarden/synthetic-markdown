@@ -7,9 +7,10 @@ interface BlockProps {
     block: BlockType
     inlines: InlineType[]
     onInlineInput: (inline: InlineType, text: string, caretOffset: number) => void
+    onInlineSplit?: (inline: InlineType, caretOffset: number) => void
 }
 
-const Block: React.FC<BlockProps> = ({ block, inlines, onInlineInput }) => {
+const Block: React.FC<BlockProps> = ({ block, inlines, onInlineInput, onInlineSplit }) => {
     const renderInlines = () => (
         inlines.map(inline => (
             <Inline
@@ -18,6 +19,9 @@ const Block: React.FC<BlockProps> = ({ block, inlines, onInlineInput }) => {
                 onInput={({ text, caretOffset }) => {
                     onInlineInput(inline, text, caretOffset)
                 }}
+                onSplit={onInlineSplit ? ({ caretOffset }) => {
+                    onInlineSplit(inline, caretOffset)
+                } : undefined}
             />
         ))
     )
@@ -108,6 +112,7 @@ const Block: React.FC<BlockProps> = ({ block, inlines, onInlineInput }) => {
                             block={item} 
                             inlines={[]} 
                             onInlineInput={onInlineInput}
+                            onInlineSplit={onInlineSplit}
                         />
                     ))}
                 </ListTag>
