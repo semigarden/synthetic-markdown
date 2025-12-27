@@ -159,7 +159,11 @@ const Block: React.FC<BlockProps> = ({ block, inlines, onInlineInput }) => {
         }
 
         case 'blankLine':
-            return <div {...commonProps} className={`${styles.block} ${styles.blankLine}`}>&nbsp;</div>
+            return (
+                <div {...commonProps} className={`${styles.block} ${styles.blankLine}`}>
+                    {renderInlines()}
+                </div>
+            )
 
         case 'paragraph':
         default:
