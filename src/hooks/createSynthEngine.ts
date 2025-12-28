@@ -5,8 +5,10 @@ interface BlockType<T extends string = string> {
     id: string
     type: T
     text: string
-    start: number
-    end: number
+    position: {
+        start: number
+        end: number
+    }
 }
 
 export type Block =
@@ -37,7 +39,6 @@ interface BlankLine extends BlockType<'blankLine'> {
 }
 
 interface Heading extends BlockType<'heading'> {
-    start: number
     level: number
 }
 
@@ -247,7 +248,7 @@ export function createSynthEngine() {
                     const existingBlock = nextBlocks.find(b => b.id === state.codeBlockId) as CodeBlock;
                     if (existingBlock) {
                         existingBlock.text += "\n" + line;
-                        existingBlock.end = end;
+                        existingBlock.position.end = end;
                     }
                     state.inFencedCodeBlock = false;
                     state.codeBlockFence = "";
@@ -257,7 +258,7 @@ export function createSynthEngine() {
                     const existingBlock = nextBlocks.find(b => b.id === state.codeBlockId) as CodeBlock;
                     if (existingBlock) {
                         existingBlock.text += "\n" + line;
-                        existingBlock.end = end;
+                        existingBlock.position.end = end;
                     }
                 }
                 offset = end + 1;
@@ -265,7 +266,7 @@ export function createSynthEngine() {
             }
 
             const detectedBlock = detectType(line);
-            const prevBlock = prevBlocks.find(b => b.start === start && b.type === detectedBlock.type);
+            const prevBlock = prevBlocks.find(b => b.position.start === start && b.type === detectedBlock.type);
             const blockId = prevBlock?.id ?? uuid();
 
             let block: Block;
@@ -277,8 +278,10 @@ export function createSynthEngine() {
                         type: "heading",
                         level: detectedBlock.level!,
                         text: line,
-                        start,
-                        end,
+                        position: {
+                            start,
+                            end,
+                        },
                     };
                     nextBlocks.push(block);
                     break;
@@ -290,8 +293,10 @@ export function createSynthEngine() {
                         id: blockId,
                         type: "blockQuote",
                         text: quoteContent,
-                        start,
-                        end,
+                        position: {
+                            start,
+                            end,
+                        },
                         children: [],
                     };
                     nextBlocks.push(block);
@@ -308,16 +313,20 @@ export function createSynthEngine() {
                         id: uuid(),
                         type: "paragraph",
                         text: listItemText,
-                        start: start + markerLength,
-                        end,
+                        position: {
+                            start: start + markerLength,
+                            end,
+                        },
                     };
 
                     const listItem: ListItem = {
                         id: uuid(),
                         type: "listItem",
                         text: listItemText,
-                        start,
-                        end,
+                        position: {
+                            start,
+                            end,
+                        },
                         children: [paragraph],
                     };
 
@@ -325,14 +334,16 @@ export function createSynthEngine() {
                     const lastBlock = nextBlocks[nextBlocks.length - 1];
                     if (lastBlock && lastBlock.type === "list" && (lastBlock as List).ordered === detectedBlock.ordered) {
                         (lastBlock as List).children.push(listItem);
-                        (lastBlock as List).end = end;
+                        (lastBlock as List).position.end = end;
                     } else {
                         const newList: List = {
                             id: blockId,
                             type: "list",
                             text: "",
-                            start,
-                            end,
+                            position: {
+                                start,
+                                end,
+                            },
                             ordered: detectedBlock.ordered ?? false,
                             listStart: detectedBlock.listStart,
                             tight: true,
@@ -350,8 +361,10 @@ export function createSynthEngine() {
                         id: uuid(),
                         type: "paragraph",
                         text: taskMatch ? taskMatch[3] : line,
-                        start,
-                        end,
+                        position: {
+                            start,
+                            end,
+                        },
                     };
 
                     block = {
@@ -359,8 +372,10 @@ export function createSynthEngine() {
                         type: "taskListItem",
                         text: taskMatch ? taskMatch[3] : line,
                         checked: taskMatch ? taskMatch[2].toLowerCase() === 'x' : false,
-                        start,
-                        end,
+                        position: {
+                            start,
+                            end,
+                        },
                         children: [paragraph],
                     };
                     nextBlocks.push(block);
@@ -372,8 +387,10 @@ export function createSynthEngine() {
                         id: blockId,
                         type: "thematicBreak",
                         text: line,
-                        start,
-                        end,
+                        position: {
+                            start,
+                            end,
+                        },
                     };
                     nextBlocks.push(block);
                     break;
@@ -391,8 +408,10 @@ export function createSynthEngine() {
                             language: fenceMatch[3].trim() || undefined,
                             isFenced: true,
                             fence: fenceMatch[2],
-                            start,
-                            end,
+                            position: {
+                                start,
+                                end,
+                            },
                         };
                         nextBlocks.push(block);
                     } else {
@@ -402,8 +421,10 @@ export function createSynthEngine() {
                             type: "codeBlock",
                             text: line.replace(/^ {4}/, ""),
                             isFenced: false,
-                            start,
-                            end,
+                            position: {
+                                start,
+                                end,
+                            },
                         };
                         nextBlocks.push(block);
                     }
@@ -415,8 +436,10 @@ export function createSynthEngine() {
                         id: blockId,
                         type: "table",
                         text: "",
-                        start,
-                        end,
+                        position: {
+                            start,
+                            end,
+                        },
                         children: [],
                     };
                     const cells = parseTableRow(line);
@@ -424,8 +447,10 @@ export function createSynthEngine() {
                         id: uuid(),
                         type: "tableRow",
                         text: line,
-                        start,
-                        end,
+                        position: {
+                            start,
+                            end,
+                        },
                         children: cells
                     };
                     table.children.push(row);
@@ -440,8 +465,10 @@ export function createSynthEngine() {
                         type: "footnote",
                         text: footnoteMatch ? footnoteMatch[2] : line,
                         label: footnoteMatch ? footnoteMatch[1] : "",
-                        start,
-                        end,
+                        position: {
+                            start,
+                            end,
+                        },
                     };
                     nextBlocks.push(block);
                     break;
@@ -452,8 +479,10 @@ export function createSynthEngine() {
                         id: blockId,
                         type: "htmlBlock",
                         text: line,
-                        start,
-                        end,
+                        position: {
+                            start,
+                            end,
+                        },
                     };
                     nextBlocks.push(block);
                     break;
@@ -463,8 +492,10 @@ export function createSynthEngine() {
                         id: blockId,
                         type: "blankLine",
                         text: "",
-                        start,
-                        end,
+                        position: {
+                            start,
+                            end,
+                        },
                     };
                     nextBlocks.push(block);
                     break;
@@ -475,14 +506,16 @@ export function createSynthEngine() {
                     const lastBlock = nextBlocks[nextBlocks.length - 1];
                     if (lastBlock && lastBlock.type === "paragraph" && line.trim() !== "") {
                         lastBlock.text += "\n" + line;
-                        lastBlock.end = end;
+                        lastBlock.position.end = end;
                     } else {
                         block = {
                             id: blockId,
                             type: "paragraph",
                             text: line,
-                            start,
-                            end,
+                            position: {
+                                start,
+                                end,
+                            },
                         };
                         nextBlocks.push(block);
                     }
@@ -499,8 +532,10 @@ export function createSynthEngine() {
                 id: uuid(),
                 type: "paragraph",
                 text: "",
-                start: 0,
-                end: 0,
+                position: {
+                    start: 0,
+                    end: 0,
+                },
             };
             nextBlocks.push(emptyBlock);
         }
@@ -598,16 +633,20 @@ export function createSynthEngine() {
                 id: uuid(),
                 type: "paragraph",
                 text: cellText,
-                start: 0,
-                end: cellText.length,
+                position: {
+                    start: 0,
+                    end: cellText.length,
+                },
             };
 
             cells.push({
                 id: uuid(),
                 type: "tableCell",
                 text: cellText,
-                start: 0,
-                end: cellText.length,
+                position: {
+                    start: 0,
+                    end: cellText.length,
+                },
                 children: [paragraph],
             });
         }
@@ -1751,8 +1790,8 @@ export function createSynthEngine() {
         const newLength = nextSymbolic.length;
         const delta = newLength - oldLength;
 
-        const globalStart = block.start + inline.position.start;
-        const globalEnd = block.start + inline.position.end;
+        const globalStart = block.position.start + inline.position.start;
+        const globalEnd = block.position.start + inline.position.end;
 
         const newSourceText =
             sourceText.slice(0, globalStart) +
@@ -1773,7 +1812,7 @@ export function createSynthEngine() {
             blockInlines[i].position.end += delta;
         }
 
-        block.end += delta;
+        block.position.end += delta;
 
         sourceText = newSourceText;
 
@@ -1808,7 +1847,7 @@ export function createSynthEngine() {
             throw new Error(`Block not found for split: ${inline.blockId}`);
         }
 
-        const globalInlineStart = block.start + inline.position.start;
+        const globalInlineStart = block.position.start + inline.position.start;
         const insertPosition = globalInlineStart + caretOffset;
 
         const newSourceText = 
@@ -1819,7 +1858,7 @@ export function createSynthEngine() {
         sync(newSourceText);
 
         const newBlockStart = insertPosition + 1;
-        let newBlock = blocks.find(b => b.start >= newBlockStart);
+        let newBlock = blocks.find(b => b.position.start >= newBlockStart);
 
         if (!newBlock && blocks.length > 0) {
             newBlock = blocks[blocks.length - 1];
@@ -1831,42 +1870,137 @@ export function createSynthEngine() {
         };
     }
 
-    function mergeWithPreviousBlock(inline: Inline): { newSourceText: string; mergedBlockId: string; caretOffset: number } | null {
+    function mergeWithPreviousBlock(inline: Inline) {
         const block = findBlockById(blocks, inline.blockId);
-        if (!block) {
-            return null;
-        }
-
+        if (!block) return null;
+    
         const blockIndex = blocks.findIndex(b => b.id === block.id);
-        if (blockIndex <= 0) {
-            return null;
-        }
-
+        if (blockIndex <= 0) return null;
+    
         const prevBlock = blocks[blockIndex - 1];
+    
+        const caretOffset = prevBlock.position.end - prevBlock.position.start;
+    
+        const newSourceText =
+            sourceText.slice(0, prevBlock.position.end) +
+            sourceText.slice(block.position.start, block.position.end) +
+            sourceText.slice(block.position.end);
+    
+        sourceText = newSourceText;
+    
+        prevBlock.text += block.text;
+        prevBlock.position.end = block.position.end;
+    
+        const blockInlines = inlines.get(block.id) ?? [];
+        const prevInlines = inlines.get(prevBlock.id) ?? [];
         
-        const deleteStart = prevBlock.end;
-        const deleteEnd = block.start;
-
-        if (deleteStart >= deleteEnd) {
-            return null;
-        }
-
-        const caretOffset = prevBlock.text.length;
-
-        const newSourceText = 
-            sourceText.slice(0, deleteStart) + 
-            sourceText.slice(deleteEnd);
-
+        blockInlines.forEach(i => {
+            i.position.start += prevBlock.position.end - block.position.start - i.position.end + i.position.start;
+            i.position.end += prevBlock.position.end - block.position.start - i.position.end + i.position.start;
+            prevInlines.push(i);
+        });
+    
+        inlines.set(prevBlock.id, prevInlines);
+        inlines.delete(block.id);
+    
+        blocks.splice(blockIndex, 1);
+    
         sync(newSourceText);
-
-        const mergedBlock = blocks.find(b => b.start === prevBlock.start);
-
-        return { 
-            newSourceText, 
-            mergedBlockId: mergedBlock?.id ?? prevBlock.id,
+    
+        return {
+            newSourceText,
+            mergedBlockId: prevBlock.id,
             caretOffset
         };
     }
+
+    function handleBackspace(inline: Inline, position: number) {
+        const block = findBlockById(blocks, inline.blockId);
+
+        if (!block) return;
+    
+        const blockInlines = inlines.get(block.id);
+        if (!blockInlines) return;
+    
+        const inlineIndex = blockInlines.findIndex(i => i.id === inline.id);
+    
+        // 1️⃣ At start of first inline → merge with previous block
+        if (position === 0 && inlineIndex === 0) {
+            const prevBlock = blocks[blocks.findIndex(b => b.id === block.id) - 1];
+
+            console.log("Backspace", 
+                "position", position,
+                "inline", JSON.stringify(inline, null, 2),
+                "block", JSON.stringify(block, null, 2),
+                "prevBlock", JSON.stringify(prevBlock, null, 2)
+            );
+
+            if (prevBlock) {
+                mergeWithPreviousBlock(inline);
+                placeCaret(prevBlock.id, prevBlock.position.end);
+            }
+            return;
+        }
+    
+        // // 2️⃣ At start of an inline that is NOT first → merge with previous inline
+        // if (caretOffset === 0 && inlineIndex > 0) {
+        //     const prevInline = blockInlines[inlineIndex - 1];
+        //     const newCaretOffset = prevInline.text.symbolic.length;
+    
+        //     // Merge texts
+        //     const mergedText = prevInline.text.symbolic + inline.text.symbolic;
+        //     applyInlineEdit(prevInline, mergedText);
+    
+        //     // Remove current inline
+        //     blockInlines.splice(inlineIndex, 1);
+    
+        //     // Update positions of following inlines
+        //     for (let i = inlineIndex; i < blockInlines.length; i++) {
+        //         blockInlines[i].position.start -= inline.text.symbolic.length;
+        //         blockInlines[i].position.end -= inline.text.symbolic.length;
+        //     }
+    
+        //     placeCaret(prevInline.id, newCaretOffset);
+        //     return;
+        // }
+    
+        // // 3️⃣ Default behavior inside inline
+        // if (caretOffset > 0) {
+        //     const text = inline.text.symbolic;
+        //     const newText =
+        //         text.slice(0, caretOffset - 1) +
+        //         text.slice(caretOffset);
+    
+        //     applyInlineEdit(inline, newText);
+        //     placeCaret(inline.id, caretOffset - 1);
+        // }
+    }
+
+    function getLastTextNode(node: Node): Node | null {
+        if (node.nodeType === Node.TEXT_NODE) return node;
+        for (let i = node.childNodes.length - 1; i >= 0; i--) {
+            const child = getLastTextNode(node.childNodes[i]);
+            if (child) return child;
+        }
+        return null;
+    }
+
+    function placeCaret(inlineId: string, offset: number) {
+        const el = document.getElementById(inlineId);
+        if (!el) return;
+
+        const range = document.createRange();
+        const sel = window.getSelection();
+        const node = getLastTextNode(el) ?? el;
+        
+        const offsetInNode = Math.min(offset, node.textContent?.length ?? 0);
+
+        range.setStart(node, offsetInNode);
+        range.collapse(true);
+      
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+      }
 
     function mergeWithNextBlock(inline: Inline): { newSourceText: string; currentBlockId: string; caretOffset: number } | null {
         const block = blocks.find(b => b.id === inline.blockId);
@@ -1881,14 +2015,14 @@ export function createSynthEngine() {
 
         const nextBlock = blocks[blockIndex + 1];
         
-        const deleteStart = block.end;
-        const deleteEnd = nextBlock.start;
+        const deleteStart = block.position.end;
+        const deleteEnd = nextBlock.position.start;
 
         if (deleteStart >= deleteEnd) {
             return null;
         }
 
-        const caretOffset = block.text.length;
+        const caretOffset = block.position.end - block.position.start;
 
         const newSourceText = 
             sourceText.slice(0, deleteStart) + 
@@ -1896,7 +2030,7 @@ export function createSynthEngine() {
 
         sync(newSourceText);
 
-        const mergedBlock = blocks.find(b => b.start === block.start);
+        const mergedBlock = blocks.find(b => b.position.start === block.position.start);
 
         return { 
             newSourceText, 
@@ -1909,6 +2043,9 @@ export function createSynthEngine() {
         get blocks() {
             return blocks;
         },
+        get inlines() {
+            return inlines;
+        },
         get sourceText() {
             return sourceText;
         },
@@ -1920,6 +2057,9 @@ export function createSynthEngine() {
         splitBlockAtInline,
         mergeWithPreviousBlock,
         mergeWithNextBlock,
+        handleBackspace,
+        placeCaret,
+        findBlockById,
     };
 }
 

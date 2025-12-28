@@ -1,23 +1,26 @@
 import React, { useCallback, useLayoutEffect, useRef, useState } from "react";
 import type { Inline as InlineType } from '../hooks/createSynthEngine';
 import styles from '../styles/Synth.module.scss';
+import type { useSynthController } from '../hooks/useSynthController';
 
 const Inline: React.FC<{
+  synth: ReturnType<typeof useSynthController>;
   inline: InlineType;
+  onChange?: (text: string) => void;
   onInput: (payload: {
     inlineId: string;
     text: string;
-    caretOffset: number;
+    position: number;
   }) => void;
   onSplit?: (payload: {
     inlineId: string;
-    caretOffset: number;
+    position: number;
   }) => void;
   onMergeWithPrevious?: (payload: { inlineId: string }) => void;
   onMergeWithNext?: (payload: { inlineId: string }) => void;
   isFirstInline?: boolean;
   isLastInline?: boolean;
-}> = ({ inline, onInput, onSplit, onMergeWithPrevious, onMergeWithNext, isFirstInline, isLastInline }) => {
+}> = ({ synth, inline, onChange, onInput, onSplit, onMergeWithPrevious, onMergeWithNext, isFirstInline, isLastInline }) => {
   const ref = useRef<HTMLSpanElement>(null);
   const [focused, setFocused] = useState(false);
 
@@ -62,12 +65,12 @@ const Inline: React.FC<{
     onInput({
       inlineId: inline.id,
       text: ref.current.textContent ?? "",
-      caretOffset: getCaretOffset(),
+      position: getCaretOffset(),
     });
   }, [inline.id, onInput]);
 
   const onKeyDownHandler = useCallback((e: React.KeyboardEvent) => {
-    const caretOffset = getCaretOffset();
+    const position = getCaretOffset();
     const textLength = ref.current?.textContent?.length ?? 0;
 
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -76,19 +79,75 @@ const Inline: React.FC<{
       if (onSplit) {
         onSplit({
           inlineId: inline.id,
-          caretOffset,
+          position,
         });
       }
       return;
     }
 
-    if (e.key === 'Backspace' && caretOffset === 0 && isFirstInline && onMergeWithPrevious) {
+    if (e.key === 'Backspace') {
       e.preventDefault();
-      onMergeWithPrevious({ inlineId: inline.id });
+
+      const block = synth.engine.findBlockById(synth.engine.blocks, inline.blockId);
+
+      if (!block) return;
+  
+      const blockInlines = synth.engine.inlines.get(block.id);
+      if (!blockInlines) return;
+  
+      const inlineIndex = blockInlines.findIndex(i => i.id === inline.id);
+  
+      if (position === 0 && inlineIndex === 0) {
+          const prevBlock = synth.engine.blocks[synth.engine.blocks.findIndex(b => b.id === block.id) - 1];
+
+          if (prevBlock) {
+              const result = synth.engine.mergeWithPreviousBlock(inline);
+              synth.engine.placeCaret(prevBlock.id, prevBlock.position.end);
+
+              if (result) {
+                synth.forceRender();
+                onChange?.(result.newSourceText);
+              }
+          }
+          return;
+      }
+  
+      if (position === 0 && inlineIndex > 0) {
+        const prevInline = blockInlines[inlineIndex - 1];
+
+        prevInline.text.symbolic = prevInline.text.symbolic.slice(0, -1);
+    
+        const mergedText = prevInline.text.symbolic + inline.text.symbolic;
+
+        synth.forceRender();
+        onChange?.(mergedText);
+        synth.engine.placeCaret(prevInline.id, prevInline.text.symbolic.length);
+        return;
+      }
+
+      if (position > 0) {
+        let textToEdit = inline.text.symbolic;
+
+        const newSymbolic = textToEdit.slice(0, position - 1) + textToEdit.slice(position);
+
+        synth.engine.applyInlineEdit(inline, newSymbolic);
+
+        synth.forceRender();
+        onChange?.(inline.text.semantic);
+        synth.engine.placeCaret(inline.id, position - 1);
+        return;
+      }
+  
       return;
     }
+  
+    // if (e.key === 'Backspace' && caretOffset === 0 && isFirstInline && onMergeWithPrevious) {
+    //   e.preventDefault();
+    //   onMergeWithPrevious({ inlineId: inline.id });
+    //   return;
+    // }
 
-    if (e.key === 'Delete' && caretOffset === textLength && isLastInline && onMergeWithNext) {
+    if (e.key === 'Delete' && position === textLength && isLastInline && onMergeWithNext) {
       e.preventDefault();
       onMergeWithNext({ inlineId: inline.id });
       return;

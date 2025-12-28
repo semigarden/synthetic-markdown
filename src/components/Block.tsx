@@ -8,30 +8,33 @@ interface BlockProps {
     synth: ReturnType<typeof useSynthController>
     block: BlockType
     inlines: InlineType[]
-    onInlineInput: (inline: InlineType, text: string, caretOffset: number) => void
-    onInlineSplit?: (inline: InlineType, caretOffset: number) => void
+    onChange?: (text: string) => void
+    onInlineInput: (inline: InlineType, text: string, position: number) => void
+    onInlineSplit?: (inline: InlineType, position: number) => void
     onMergeWithPrevious?: (inline: InlineType) => void
     onMergeWithNext?: (inline: InlineType) => void
 }
 
-const Block: React.FC<BlockProps> = ({ synth, block, inlines, onInlineInput, onInlineSplit, onMergeWithPrevious, onMergeWithNext }) => {
+const Block: React.FC<BlockProps> = ({ synth, block, inlines, onChange, onInlineInput, onInlineSplit, onMergeWithPrevious, onMergeWithNext }) => {
     const [focus, setFocus] = useState(false)
 
-    if (block.type === 'paragraph') {
-        console.log('block text', `"${block.text}"`, block.text.length)
-        console.log('inlines', JSON.stringify(inlines, null, 2))
-    }
+    // if (block.type === 'paragraph') {
+    //     console.log('block text', `"${block.text}"`, block.text.length)
+    //     console.log('inlines', JSON.stringify(inlines, null, 2))
+    // }
 
     const renderInlines = () => (
         inlines.map((inline, index) => (
             <Inline
                 key={inline.id}
+                synth={synth}
                 inline={inline}
-                onInput={({ text, caretOffset }) => {
-                    onInlineInput(inline, text, caretOffset)
+                onChange={onChange}
+                onInput={({ text, position }) => {
+                    onInlineInput(inline, text, position)
                 }}
-                onSplit={onInlineSplit ? ({ caretOffset }) => {
-                    onInlineSplit(inline, caretOffset)
+                onSplit={onInlineSplit ? ({ position }) => {
+                    onInlineSplit(inline, position)
                 } : undefined}
                 onMergeWithPrevious={onMergeWithPrevious ? () => {
                     onMergeWithPrevious(inline)
@@ -85,6 +88,7 @@ const Block: React.FC<BlockProps> = ({ synth, block, inlines, onInlineInput, onI
     const commonProps = {
         'data-block-id': block.id,
         'data-block-type': block.type,
+        id: block.id,
         className: styles.block,
         onClick: handleBlockClick,
         onBlur: handleBlockBlur,
@@ -134,7 +138,7 @@ const Block: React.FC<BlockProps> = ({ synth, block, inlines, onInlineInput, onI
             const ListTag = listBlock.ordered ? 'ol' : 'ul'
             return (
                 <ListTag 
-                    {...commonProps} 
+                    {...commonProps}
                     className={`${styles.block} ${styles.list}`}
                     start={listBlock.ordered && listBlock.listStart !== 1 ? listBlock.listStart : undefined}
                 >
@@ -144,6 +148,7 @@ const Block: React.FC<BlockProps> = ({ synth, block, inlines, onInlineInput, onI
                             synth={synth}
                             block={item} 
                             inlines={[]} 
+                            onChange={onChange}
                             onInlineInput={onInlineInput}
                             onInlineSplit={onInlineSplit}
                             onMergeWithPrevious={onMergeWithPrevious}
@@ -163,6 +168,7 @@ const Block: React.FC<BlockProps> = ({ synth, block, inlines, onInlineInput, onI
                             synth={synth}
                             block={child}
                             inlines={synth.engine.getInlines(child)}
+                            onChange={onChange}
                             onInlineInput={onInlineInput}
                             onInlineSplit={onInlineSplit}
                             onMergeWithPrevious={onMergeWithPrevious}
@@ -189,6 +195,7 @@ const Block: React.FC<BlockProps> = ({ synth, block, inlines, onInlineInput, onI
                                 synth={synth}
                                 block={child}
                                 inlines={synth.engine.getInlines(child)}
+                                onChange={onChange}
                                 onInlineInput={onInlineInput}
                                 onInlineSplit={onInlineSplit}
                                 onMergeWithPrevious={onMergeWithPrevious}
@@ -230,6 +237,7 @@ const Block: React.FC<BlockProps> = ({ synth, block, inlines, onInlineInput, onI
                                                     synth={synth}
                                                     block={child}
                                                     inlines={synth.engine.getInlines(child)}
+                                                    onChange={onChange}
                                                     onInlineInput={onInlineInput}
                                                     onInlineSplit={onInlineSplit}
                                                     onMergeWithPrevious={onMergeWithPrevious}
@@ -258,7 +266,7 @@ const Block: React.FC<BlockProps> = ({ synth, block, inlines, onInlineInput, onI
         case 'footnote': {
             const label = (block as any).label
             return (
-                <div {...commonProps} className={`${styles.block} ${styles.footnote}`} id={`fn-${label}`}>
+                <div {...commonProps} className={`${styles.block} ${styles.footnote}`}>
                     <sup className={styles.footnoteLabel}>[{label}]</sup>
                     <span className={styles.footnoteContent}>
                         {renderInlines()}

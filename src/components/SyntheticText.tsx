@@ -66,55 +66,55 @@ const SyntheticText = forwardRef<SyntheticTextRef, SyntheticTextProps>(({
         onChange?.(newSourceText);
     }, [synth, onChange]);
 
-    const handleMergeWithPrevious = useCallback((inline: InlineType) => {
-        const result = synth.engine.mergeWithPreviousBlock(inline);
-        if (!result) return;
+    // const handleMergeWithPrevious = useCallback((inline: InlineType) => {
+    //     // const result = synth.engine.mergeWithPreviousBlock(inline);
+    //     // if (!result) return;
 
-        const { newSourceText, mergedBlockId, caretOffset } = result;
+    //     // const { newSourceText, mergedBlockId, caretOffset } = result;
 
-        requestAnimationFrame(() => {
-            const mergedBlock = synth.engine.blocks.find(b => b.id === mergedBlockId);
-            if (mergedBlock) {
-                const inlines = synth.engine.getInlines(mergedBlock);
-                if (inlines.length > 0) {
-                    let targetInline = inlines[0];
-                    let inlineCaretOffset = caretOffset;
+    //     // requestAnimationFrame(() => {
+    //     //     const mergedBlock = synth.engine.blocks.find(b => b.id === mergedBlockId);
+    //     //     if (mergedBlock) {
+    //     //         const inlines = synth.engine.getInlines(mergedBlock);
+    //     //         if (inlines.length > 0) {
+    //     //             let targetInline = inlines[0];
+    //     //             let inlineCaretOffset = caretOffset;
                     
-                    for (const inl of inlines) {
-                        if (inl.position.start <= caretOffset && inl.position.end >= caretOffset) {
-                            targetInline = inl;
-                            inlineCaretOffset = caretOffset - inl.position.start;
-                            break;
-                        }
-                        if (inl.position.end <= caretOffset) {
-                            targetInline = inl;
-                            inlineCaretOffset = inl.text.symbolic.length;
-                        }
-                    }
+    //     //             for (const inl of inlines) {
+    //     //                 if (inl.position.start <= caretOffset && inl.position.end >= caretOffset) {
+    //     //                     targetInline = inl;
+    //     //                     inlineCaretOffset = caretOffset - inl.position.start;
+    //     //                     break;
+    //     //                 }
+    //     //                 if (inl.position.end <= caretOffset) {
+    //     //                     targetInline = inl;
+    //     //                     inlineCaretOffset = inl.text.symbolic.length;
+    //     //                 }
+    //     //             }
 
-                    synth.saveCaret(targetInline.id, inlineCaretOffset);
+    //     //             synth.saveCaret(targetInline.id, inlineCaretOffset);
                     
-                    const el = document.getElementById(targetInline.id);
-                    if (el) {
-                        el.focus();
-                        requestAnimationFrame(() => {
-                            const range = document.createRange();
-                            const sel = window.getSelection();
-                            const node = el.firstChild ?? el;
-                            const offset = Math.min(inlineCaretOffset, node.textContent?.length ?? 0);
-                            range.setStart(node, offset);
-                            range.collapse(true);
-                            sel?.removeAllRanges();
-                            sel?.addRange(range);
-                        });
-                    }
-                }
-            }
-        });
+    //     //             const el = document.getElementById(targetInline.id);
+    //     //             if (el) {
+    //     //                 el.focus();
+    //     //                 requestAnimationFrame(() => {
+    //     //                     const range = document.createRange();
+    //     //                     const sel = window.getSelection();
+    //     //                     const node = el.firstChild ?? el;
+    //     //                     const offset = Math.min(inlineCaretOffset, node.textContent?.length ?? 0);
+    //     //                     range.setStart(node, offset);
+    //     //                     range.collapse(true);
+    //     //                     sel?.removeAllRanges();
+    //     //                     sel?.addRange(range);
+    //     //                 });
+    //     //             }
+    //     //         }
+    //     //     }
+    //     // });
 
-        synth.forceRender();
-        onChange?.(newSourceText);
-    }, [synth, onChange]);
+    //     synth.forceRender();
+    //     onChange?.(newSourceText);
+    // }, [synth, onChange]);
 
     const handleMergeWithNext = useCallback((inline: InlineType) => {
         const result = synth.engine.mergeWithNextBlock(inline);
@@ -169,10 +169,11 @@ const SyntheticText = forwardRef<SyntheticTextRef, SyntheticTextProps>(({
                     key={block.id}
                     synth={synth}
                     block={block}
+                    onChange={onChange}
                     inlines={synth.engine.getInlines(block)}
                     onInlineInput={handleInlineInput}
                     onInlineSplit={handleInlineSplit}
-                    onMergeWithPrevious={handleMergeWithPrevious}
+                    // onMergeWithPrevious={handleMergeWithPrevious}
                     onMergeWithNext={handleMergeWithNext}
                 />
             ))}
