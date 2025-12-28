@@ -2,8 +2,10 @@ import React, { useCallback, useState } from 'react'
 import styles from '../styles/Synth.module.scss'
 import Inline from './Inline'
 import type { Block as BlockType, Inline as InlineType } from '../hooks/createSynthEngine'
+import { useSynthController } from '../hooks/useSynthController'
 
 interface BlockProps {
+    synth: ReturnType<typeof useSynthController>
     block: BlockType
     inlines: InlineType[]
     onInlineInput: (inline: InlineType, text: string, caretOffset: number) => void
@@ -12,8 +14,14 @@ interface BlockProps {
     onMergeWithNext?: (inline: InlineType) => void
 }
 
-const Block: React.FC<BlockProps> = ({ block, inlines, onInlineInput, onInlineSplit, onMergeWithPrevious, onMergeWithNext }) => {
+const Block: React.FC<BlockProps> = ({ synth, block, inlines, onInlineInput, onInlineSplit, onMergeWithPrevious, onMergeWithNext }) => {
     const [focus, setFocus] = useState(false)
+
+    console.log('block', JSON.stringify(block, null, 2))
+
+    // if (block.type === 'listItem') {
+    //     console.log('block', JSON.stringify(block, null, 2))
+    // }
     
     const renderInlines = () => (
         inlines.map((inline, index) => (
@@ -43,6 +51,10 @@ const Block: React.FC<BlockProps> = ({ block, inlines, onInlineInput, onInlineSp
         if (target.hasAttribute('data-inline-id')) return
 
         if (block.type === 'thematicBreak') {
+            setFocus(true)
+        }
+
+        if (block.type === 'listItem') {
             setFocus(true)
         }
 
@@ -130,6 +142,7 @@ const Block: React.FC<BlockProps> = ({ block, inlines, onInlineInput, onInlineSp
                     {listBlock.children?.map((item: BlockType) => (
                         <Block 
                             key={item.id} 
+                            synth={synth}
                             block={item} 
                             inlines={[]} 
                             onInlineInput={onInlineInput}
@@ -145,7 +158,18 @@ const Block: React.FC<BlockProps> = ({ block, inlines, onInlineInput, onInlineSp
         case 'listItem':
             return (
                 <li {...commonProps} className={`${styles.block} ${styles.listItem}`}>
-                    {renderInlines()}
+                    {block.children?.map(child => (
+                        <Block
+                            key={child.id}
+                            synth={synth}
+                            block={child}
+                            inlines={synth.engine.getInlines(child)}
+                            onInlineInput={onInlineInput}
+                            onInlineSplit={onInlineSplit}
+                            onMergeWithPrevious={onMergeWithPrevious}
+                            onMergeWithNext={onMergeWithNext}
+                        />
+                    ))}
                 </li>
             )
 

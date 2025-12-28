@@ -60,6 +60,7 @@ interface List extends BlockType<'list'> {
 
 interface ListItem extends BlockType<'listItem'> {
     checked?: boolean
+    children: Paragraph[]
 }
 
 interface ThematicBreak extends BlockType<'thematicBreak'> {
@@ -85,6 +86,7 @@ interface Footnote extends BlockType<'footnote'> {
 
 interface TaskListItem extends BlockType<'taskListItem'> {
     checked: boolean
+    children: Paragraph[]
 }
 
 
@@ -293,12 +295,22 @@ export function createSynthEngine() {
 
                 case "listItem": {
                     const listItemText = line.replace(/^(\s*([-*+]|(\d+[.)])))\s+/, "");
+
+                    const paragraph: Paragraph = {
+                        id: uuid(),
+                        type: "paragraph",
+                        text: listItemText,
+                        start,
+                        end,
+                    };
+
                     const listItem: ListItem = {
                         id: uuid(),
                         type: "listItem",
                         text: listItemText,
                         start,
                         end,
+                        children: [paragraph],
                     };
 
                     // Find or create parent list
@@ -325,6 +337,15 @@ export function createSynthEngine() {
 
                 case "taskListItem": {
                     const taskMatch = line.match(/^\s*([-*+])\s+\[([ xX])\]\s+(.*)/);
+
+                    const paragraph: Paragraph = {
+                        id: uuid(),
+                        type: "paragraph",
+                        text: taskMatch ? taskMatch[3] : line,
+                        start,
+                        end,
+                    };
+
                     block = {
                         id: blockId,
                         type: "taskListItem",
@@ -332,6 +353,7 @@ export function createSynthEngine() {
                         checked: taskMatch ? taskMatch[2].toLowerCase() === 'x' : false,
                         start,
                         end,
+                        children: [paragraph],
                     };
                     nextBlocks.push(block);
                     break;
@@ -504,9 +526,29 @@ export function createSynthEngine() {
 
         // console.log("blocks", JSON.stringify(blocks, null, 2));
 
-        const lastBlock = blocks[blocks.length - 1];
-        if (!inlines.has(lastBlock.id)) {
-            parseInlines(lastBlock);
+        // const lastBlock = blocks[blocks.length - 1];
+        // if (!inlines.has(lastBlock.id)) {
+        //     parseInlines(lastBlock);
+        // }
+        for (const block of blocks) {
+            parseInlinesRecursive(block);
+        }
+    }
+
+    function parseInlinesRecursive(block: Block) {
+        switch (block.type) {
+            case "paragraph":
+            case "heading":
+            case "codeBlock":
+                parseInlines(block);
+                break;
+    
+            default:
+                if ('children' in block && Array.isArray(block.children)) {
+                    for (const child of block.children) {
+                        parseInlinesRecursive(child as Block);
+                    }
+                }
         }
     }
 
@@ -1579,9 +1621,20 @@ export function createSynthEngine() {
         }
         return current;
     }
+
+    function findBlockById(blocks: Block[], id: string): Block | null {
+        for (const block of blocks) {
+            if (block.id === id) return block;
+            if ('children' in block && block.children) {
+                const found = findBlockById(block.children as Block[], id);
+                if (found) return found;
+            }
+        }
+        return null;
+    }
     
     function applyInlineEdit(inline: Inline, nextPureText: string): string {
-        const block = blocks.find(b => b.id === inline.blockId);
+        const block = findBlockById(blocks, inline.blockId);
         if (!block) {
             throw new Error(`Block not found for inline edit: ${inline.blockId}`);
         }

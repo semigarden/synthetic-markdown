@@ -167,6 +167,7 @@ const SyntheticText = forwardRef<SyntheticTextRef, SyntheticTextProps>(({
             {synth.engine.blocks.map(block => (
                 <Block
                     key={block.id}
+                    synth={synth}
                     block={block}
                     inlines={synth.engine.getInlines(block)}
                     onInlineInput={handleInlineInput}
