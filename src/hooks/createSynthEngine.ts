@@ -60,7 +60,7 @@ interface List extends BlockType<'list'> {
 
 interface ListItem extends BlockType<'listItem'> {
     checked?: boolean
-    children: Paragraph[]
+    children: Block[]
 }
 
 interface ThematicBreak extends BlockType<'thematicBreak'> {
@@ -75,6 +75,7 @@ interface TableRow extends BlockType<'tableRow'> {
 }
 
 interface TableCell extends BlockType<'tableCell'> {
+    children: Block[]
 }
 
 interface HTMLBlock extends BlockType<'htmlBlock'> {
@@ -418,13 +419,7 @@ export function createSynthEngine() {
                         text: line,
                         start,
                         end,
-                        children: cells.map((cellText) => ({
-                            id: uuid(),
-                            type: "tableCell" as const,
-                            text: cellText.trim(),
-                            start,
-                            end,
-                        })),
+                        children: cells
                     };
                     table.children.push(row);
                     nextBlocks.push(table);
@@ -552,8 +547,8 @@ export function createSynthEngine() {
         }
     }
 
-    function parseTableRow(line: string): string[] {
-        const cells: string[] = [];
+    function parseTableRow(line: string): TableCell[] {
+        const cellTexts: string[] = [];
         let current = "";
         let escaped = false;
         let inCode = false;
@@ -580,7 +575,7 @@ export function createSynthEngine() {
             }
             
             if (char === "|" && !inCode) {
-                cells.push(current);
+                cellTexts.push(current);
                 current = "";
                 continue;
             }
@@ -588,13 +583,33 @@ export function createSynthEngine() {
             current += char;
         }
         
-        if (current || cells.length > 0) {
-            cells.push(current);
+        if (current || cellTexts.length > 0) {
+            cellTexts.push(current);
         }
         
         // Remove empty first/last cells from leading/trailing pipes
-        if (cells.length > 0 && cells[0].trim() === "") cells.shift();
-        if (cells.length > 0 && cells[cells.length - 1].trim() === "") cells.pop();
+        if (cellTexts.length > 0 && cellTexts[0].trim() === "") cellTexts.shift();
+        if (cellTexts.length > 0 && cellTexts[cellTexts.length - 1].trim() === "") cellTexts.pop();
+
+        let cells: TableCell[] = [];
+        for (const cellText of cellTexts) {
+            const paragraph: Paragraph = {
+                id: uuid(),
+                type: "paragraph",
+                text: cellText,
+                start: 0,
+                end: cellText.length,
+            };
+
+            cells.push({
+                id: uuid(),
+                type: "tableCell",
+                text: cellText,
+                start: 0,
+                end: cellText.length,
+                children: [paragraph],
+            });
+        }
         
         return cells;
     }

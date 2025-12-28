@@ -184,7 +184,18 @@ const Block: React.FC<BlockProps> = ({ synth, block, inlines, onInlineInput, onI
                         className={styles.taskCheckbox}
                     />
                     <span className={styles.taskContent}>
-                        {renderInlines()}
+                        {block.children?.map(child => (
+                            <Block
+                                key={child.id}
+                                synth={synth}
+                                block={child}
+                                inlines={synth.engine.getInlines(child)}
+                                onInlineInput={onInlineInput}
+                                onInlineSplit={onInlineSplit}
+                                onMergeWithPrevious={onMergeWithPrevious}
+                                onMergeWithNext={onMergeWithNext}
+                            />
+                        ))}
                     </span>
                 </li>
             )
@@ -198,13 +209,24 @@ const Block: React.FC<BlockProps> = ({ synth, block, inlines, onInlineInput, onI
             return (
                 <table {...commonProps} className={`${styles.block} ${styles.table}`}>
                     <tbody>
-                        {tableBlock.children?.map((row: BlockType, rowIndex: number) => (
+                        {tableBlock.children?.map((row: any, rowIndex: number) => (
                             <tr key={row.id} className={styles.tableRow}>
-                                {(row as any).children?.map((cell: BlockType) => {
+                                {(row as any).children?.map((cell: any) => {
                                     const CellTag = rowIndex === 0 ? 'th' : 'td'
                                     return (
                                         <CellTag key={cell.id} className={styles.tableCell}>
-                                            {cell.text}
+                                            {cell.children?.map((child: BlockType) => (
+                                                <Block
+                                                    key={child.id}
+                                                    synth={synth}
+                                                    block={child}
+                                                    inlines={synth.engine.getInlines(child)}
+                                                    onInlineInput={onInlineInput}
+                                                    onInlineSplit={onInlineSplit}
+                                                    onMergeWithPrevious={onMergeWithPrevious}
+                                                    onMergeWithNext={onMergeWithNext}
+                                                />
+                                            ))}
                                         </CellTag>
                                     )
                                 })}
