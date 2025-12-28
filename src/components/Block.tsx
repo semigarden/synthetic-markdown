@@ -17,6 +17,11 @@ interface BlockProps {
 const Block: React.FC<BlockProps> = ({ synth, block, inlines, onInlineInput, onInlineSplit, onMergeWithPrevious, onMergeWithNext }) => {
     const [focus, setFocus] = useState(false)
 
+    if (block.type === 'paragraph') {
+        console.log('block text', `"${block.text}"`, block.text.length)
+        console.log('inlines', JSON.stringify(inlines, null, 2))
+    }
+
     const renderInlines = () => (
         inlines.map((inline, index) => (
             <Inline

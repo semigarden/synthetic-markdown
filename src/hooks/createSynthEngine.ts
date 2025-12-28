@@ -95,10 +95,14 @@ interface InlineType<T extends string = string> {
     id: string
     blockId: string
     type: T
-    synthetic: string
-    pure: string
-    start: number
-    end: number
+    text: {
+        symbolic: string
+        semantic: string
+    }
+    position: {
+        start: number
+        end: number
+    }
 }
 
 export type Inline =
@@ -522,18 +526,9 @@ export function createSynthEngine() {
         blocks = nextBlocks;
         sourceText = nextText;
 
-        // console.log("blocks", JSON.stringify(blocks, null, 2));
-
-        // const lastBlock = blocks[blocks.length - 1];
-        // if (!inlines.has(lastBlock.id)) {
-        //     parseInlines(lastBlock);
-        // }
         for (const block of blocks) {
             parseInlinesRecursive(block);
         }
-
-        console.log('sourceText', `"${sourceText}"`)
-        console.log('blocks', JSON.stringify(blocks, null, 2))
     }
 
     function parseInlinesRecursive(block: Block) {
@@ -735,10 +730,14 @@ export function createSynthEngine() {
                 id: uuid(),
                 type: "text",
                 blockId,
-                synthetic: "",
-                pure: "",
-                start: 0,
-                end: 0,
+                text: {
+                    symbolic: "",
+                    semantic: "",
+                },
+                position: {
+                    start: 0,
+                    end: 0,
+                },
             };
             next.push(emptyInline);
             inlines.set(blockId, next);
@@ -755,10 +754,14 @@ export function createSynthEngine() {
                 id: uuid(),
                 type: "text",
                 blockId,
-                synthetic: text,
-                pure: codeContent,
-                start: 0,
-                end: text.length,
+                text: {
+                    symbolic: text,
+                    semantic: codeContent,
+                },
+                position: {
+                    start: 0,
+                    end: text.length,
+                },
             });
             inlines.set(blockId, next);
             return next;
@@ -808,10 +811,14 @@ export function createSynthEngine() {
                         id: uuid(),
                         type: "text",
                         blockId,
-                        synthetic: content,
-                        pure: decodeHTMLEntity(content),
-                        start: offset + start,
-                        end: offset + end,
+                        text: {
+                            symbolic: content,
+                            semantic: decodeHTMLEntity(content),
+                        },
+                        position: {
+                            start: offset + start,
+                            end: offset + end,
+                        },
                     });
                 }
             }
@@ -857,10 +864,14 @@ export function createSynthEngine() {
                         id: uuid(),
                         type: "text",
                         blockId,
-                        synthetic: text.slice(pos, pos + 2),
-                        pure: escaped,
-                        start: offset + pos,
-                        end: offset + pos + 2,
+                        text: {
+                            symbolic: text.slice(pos, pos + 2),
+                            semantic: escaped,
+                        },
+                        position: {
+                            start: offset + pos,
+                            end: offset + pos + 2,
+                        },
                     });
                     pos += 2;
                     textStart = pos;
@@ -873,10 +884,14 @@ export function createSynthEngine() {
                         id: uuid(),
                         type: "hardBreak",
                         blockId,
-                        synthetic: "\\\n",
-                        pure: "\n",
-                        start: offset + pos,
-                        end: offset + pos + 2,
+                        text: {
+                            symbolic: "\\\n",
+                            semantic: "\n",
+                        },
+                        position: {
+                            start: offset + pos,
+                            end: offset + pos + 2,
+                        },
                     });
                     pos += 2;
                     textStart = pos;
@@ -895,11 +910,15 @@ export function createSynthEngine() {
                         id: uuid(),
                         type: "entity",
                         blockId,
-                        synthetic: entityRaw,
-                        pure: decoded,
+                        text: {
+                            symbolic: entityRaw,
+                            semantic: decoded,
+                        },
+                        position: {
+                            start: offset + pos,
+                            end: offset + pos + entityRaw.length,
+                        },
                         decoded,
-                        start: offset + pos,
-                        end: offset + pos + entityRaw.length,
                     });
                     pos += entityRaw.length;
                     textStart = pos;
@@ -937,10 +956,14 @@ export function createSynthEngine() {
                                 id: uuid(),
                                 type: "codeSpan",
                                 blockId,
-                                synthetic: text.slice(pos, searchPos + backtickCount),
-                                pure: codeContent,
-                                start: offset + pos,
-                                end: offset + searchPos + backtickCount,
+                                text: {
+                                    symbolic: text.slice(pos, searchPos + backtickCount),
+                                    semantic: codeContent,
+                                },
+                                position: {
+                                    start: offset + pos,
+                                    end: offset + searchPos + backtickCount,
+                                },
                             });
                             pos = searchPos + backtickCount;
                             textStart = pos;
@@ -959,10 +982,14 @@ export function createSynthEngine() {
                         id: uuid(),
                         type: "text",
                         blockId,
-                        synthetic: "`".repeat(backtickCount),
-                        pure: "`".repeat(backtickCount),
-                        start: offset + pos,
-                        end: offset + pos + backtickCount,
+                        text: {
+                            symbolic: "`".repeat(backtickCount),
+                            semantic: "`".repeat(backtickCount),
+                        },
+                        position: {
+                            start: offset + pos,
+                            end: offset + pos + backtickCount,
+                        },
                     });
                     pos += backtickCount;
                     textStart = pos;
@@ -979,11 +1006,15 @@ export function createSynthEngine() {
                         id: uuid(),
                         type: "autolink",
                         blockId,
-                        synthetic: autolinkMatch[0],
-                        pure: autolinkMatch[1],
+                        text: {
+                            symbolic: autolinkMatch[0],
+                            semantic: autolinkMatch[1],
+                        },
+                        position: {
+                            start: offset + pos,
+                            end: offset + pos + autolinkMatch[0].length,
+                        },
                         url: autolinkMatch[1],
-                        start: offset + pos,
-                        end: offset + pos + autolinkMatch[0].length,
                     });
                     pos += autolinkMatch[0].length;
                     textStart = pos;
@@ -998,11 +1029,15 @@ export function createSynthEngine() {
                         id: uuid(),
                         type: "autolink",
                         blockId,
-                        synthetic: emailMatch[0],
-                        pure: emailMatch[1],
+                        text: {
+                            symbolic: emailMatch[0],
+                            semantic: emailMatch[1],
+                        },
+                        position: {
+                            start: offset + pos,
+                            end: offset + pos + emailMatch[0].length,
+                        },
                         url: "mailto:" + emailMatch[1],
-                        start: offset + pos,
-                        end: offset + pos + emailMatch[0].length,
                     });
                     pos += emailMatch[0].length;
                     textStart = pos;
@@ -1017,10 +1052,14 @@ export function createSynthEngine() {
                         id: uuid(),
                         type: "rawHTML",
                         blockId,
-                        synthetic: htmlMatch[0],
-                        pure: htmlMatch[0],
-                        start: offset + pos,
-                        end: offset + pos + htmlMatch[0].length,
+                        text: {
+                            symbolic: htmlMatch[0],
+                            semantic: htmlMatch[0],
+                        },
+                        position: {
+                            start: offset + pos,
+                            end: offset + pos + htmlMatch[0].length,
+                        },
                     });
                     pos += htmlMatch[0].length;
                     textStart = pos;
@@ -1061,11 +1100,15 @@ export function createSynthEngine() {
                         id: uuid(),
                         type: "footnoteRef",
                         blockId,
-                        synthetic: footnoteMatch[0],
-                        pure: footnoteMatch[1],
+                        text: {
+                            symbolic: footnoteMatch[0],
+                            semantic: footnoteMatch[1],
+                        },
+                        position: {
+                            start: offset + pos,
+                            end: offset + pos + footnoteMatch[0].length,
+                        },
                         label: footnoteMatch[1],
-                        start: offset + pos,
-                        end: offset + pos + footnoteMatch[0].length,
                     });
                     pos += footnoteMatch[0].length;
                     textStart = pos;
@@ -1090,11 +1133,15 @@ export function createSynthEngine() {
                             id: uuid(),
                             type: "strikethrough",
                             blockId,
-                            synthetic: text.slice(pos, closePos + 2),
-                            pure: innerText,
+                            text: {
+                                symbolic: text.slice(pos, closePos + 2),
+                                semantic: innerText,
+                            },
+                            position: {
+                                start: offset + pos,
+                                end: offset + closePos + 2,
+                            },
                             children: innerInlines,
-                            start: offset + pos,
-                            end: offset + closePos + 2,
                         });
                         pos = closePos + 2;
                         textStart = pos;
@@ -1133,10 +1180,14 @@ export function createSynthEngine() {
                         id: uuid(),
                         type: "text",
                         blockId,
-                        synthetic: delimText,
-                        pure: delimText,
-                        start: offset + pos,
-                        end: offset + pos + runLength,
+                        text: {
+                            symbolic: delimText,
+                            semantic: delimText,
+                        },
+                        position: {
+                            start: offset + pos,
+                            end: offset + pos + runLength,
+                        },
                     });
 
                     delimiterStack.push({
@@ -1167,10 +1218,14 @@ export function createSynthEngine() {
                         id: uuid(),
                         type: "hardBreak",
                         blockId,
-                        synthetic: " ".repeat(spaceCount) + "\n",
-                        pure: "\n",
-                        start: offset + pos,
-                        end: offset + pos + spaceCount + 1,
+                        text: {
+                            symbolic: " ".repeat(spaceCount) + "\n",
+                            semantic: "\n",
+                        },
+                        position: {
+                            start: offset + pos,
+                            end: offset + pos + spaceCount + 1,
+                        },
                     });
                     pos += spaceCount + 1;
                     textStart = pos;
@@ -1185,10 +1240,14 @@ export function createSynthEngine() {
                     id: uuid(),
                     type: "softBreak",
                     blockId,
-                    synthetic: "\n",
-                    pure: " ",
-                    start: offset + pos,
-                    end: offset + pos + 1,
+                    text: {
+                        symbolic: "\n",
+                        semantic: "\n",
+                    },
+                    position: {
+                        start: offset + pos,
+                        end: offset + pos + 1,
+                    },
                 });
                 pos++;
                 textStart = pos;
@@ -1204,11 +1263,15 @@ export function createSynthEngine() {
                         id: uuid(),
                         type: "emoji",
                         blockId,
-                        synthetic: emojiMatch[0],
-                        pure: emojiMatch[0],
+                        text: {
+                            symbolic: emojiMatch[0],
+                            semantic: emojiMatch[0],
+                        },
+                        position: {
+                            start: offset + pos,
+                            end: offset + pos + emojiMatch[0].length,
+                        },
                         name: emojiMatch[1],
-                        start: offset + pos,
-                        end: offset + pos + emojiMatch[0].length,
                     });
                     pos += emojiMatch[0].length;
                     textStart = pos;
@@ -1256,13 +1319,17 @@ export function createSynthEngine() {
                         id: uuid(),
                         type: "link",
                         blockId,
-                        synthetic: text.slice(start, destResult.end),
-                        pure: linkText,
+                        text: {
+                            symbolic: text.slice(start, destResult.end),
+                            semantic: linkText,
+                        },
+                        position: {
+                            start: offset + start,
+                            end: offset + destResult.end,
+                        },
                         url: destResult.url,
                         title: destResult.title,
                         children,
-                        start: offset + start,
-                        end: offset + destResult.end,
                     },
                     end: destResult.end,
                 };
@@ -1293,13 +1360,17 @@ export function createSynthEngine() {
                     id: uuid(),
                     type: "link",
                     blockId,
-                    synthetic: text.slice(start, refEnd),
-                    pure: linkText,
+                    text: {
+                        symbolic: text.slice(start, refEnd),
+                        semantic: linkText,
+                    },
+                    position: {
+                        start: offset + start,
+                        end: offset + refEnd,
+                    },
                     url: ref.url,
                     title: ref.title,
                     children,
-                    start: offset + start,
-                    end: offset + refEnd,
                 },
                 end: refEnd,
             };
@@ -1339,13 +1410,17 @@ export function createSynthEngine() {
                         id: uuid(),
                         type: "image",
                         blockId,
-                        synthetic: text.slice(start, destResult.end),
-                        pure: altText,
+                        text: {
+                            symbolic: text.slice(start, destResult.end),
+                            semantic: altText,
+                        },
+                        position: {
+                            start: offset + start,
+                            end: offset + destResult.end,
+                        },
                         url: destResult.url,
                         alt: altText,
                         title: destResult.title,
-                        start: offset + start,
-                        end: offset + destResult.end,
                     },
                     end: destResult.end,
                 };
@@ -1375,13 +1450,17 @@ export function createSynthEngine() {
                     id: uuid(),
                     type: "image",
                     blockId,
-                    synthetic: text.slice(start, refEnd),
-                    pure: altText,
+                    text: {
+                        symbolic: text.slice(start, refEnd),
+                        semantic: altText,
+                    },
+                    position: {
+                        start: offset + start,
+                        end: offset + refEnd,
+                    },
                     url: ref.url,
                     alt: altText,
                     title: ref.title,
-                    start: offset + start,
-                    end: offset + refEnd,
                 },
                 end: refEnd,
             };
@@ -1527,9 +1606,9 @@ export function createSynthEngine() {
 
             let cursor = 0;
             for (const child of children) {
-                const len = child.end - child.start;
-                child.start = cursor;
-                child.end = cursor + len;
+                const len = child.position.end - child.position.start;
+                child.position.start = cursor;
+                child.position.end = cursor + len;
                 cursor += len;
             }
             
@@ -1538,21 +1617,25 @@ export function createSynthEngine() {
             const delimStr = opener.type.repeat(delimCount);
 
             // Build the raw text
-            let synthetic = delimStr;
+            let symbolic = delimStr;
             for (const child of children) {
-                synthetic += child.synthetic;
+                symbolic += child.text.symbolic;
             }
-            synthetic += delimStr;
+            symbolic += delimStr;
 
             const emphNode: Inline = {
                 id: uuid(),
                 type: emphType,
                 blockId,
-                synthetic,
-                pure: children.map(c => c.pure).join(""),
+                text: {
+                    symbolic,
+                    semantic: children.map(c => c.text.semantic).join(""),
+                },
+                position: {
+                    start: openerNode.position.start,
+                    end: closerNode.position.end,
+                },
                 children: children,
-                start: openerNode.start,
-                end: closerNode.end,
             };
 
             // Update opener/closer lengths and text
@@ -1564,9 +1647,9 @@ export function createSynthEngine() {
             } else {
                 const openerTextNode = nodes[openerNodePos];
                 if (openerTextNode.type === "text") {
-                    openerTextNode.synthetic = opener.type.repeat(opener.length);
-                    openerTextNode.pure = opener.type.repeat(opener.length);
-                    openerTextNode.end = openerTextNode.start + opener.length;
+                    openerTextNode.text.symbolic = opener.type.repeat(opener.length);
+                    openerTextNode.text.semantic = opener.type.repeat(opener.length);
+                    openerTextNode.position.end = openerTextNode.position.start + opener.length;
                 }
             }
 
@@ -1575,9 +1658,9 @@ export function createSynthEngine() {
             } else {
                 const closerTextNode = nodes[closerNodePos];
                 if (closerTextNode.type === "text") {
-                    closerTextNode.synthetic = closer.type.repeat(closer.length);
-                    closerTextNode.pure = closer.type.repeat(closer.length);
-                    closerTextNode.start = closerTextNode.end - closer.length;
+                    closerTextNode.text.symbolic = closer.type.repeat(closer.length);
+                    closerTextNode.text.semantic = closer.type.repeat(closer.length);
+                    closerTextNode.position.end = closerTextNode.position.start + closer.length;
                 }
             }
 
@@ -1654,7 +1737,7 @@ export function createSynthEngine() {
         return null;
     }
     
-    function applyInlineEdit(inline: Inline, nextPureText: string): string {
+    function applyInlineEdit(inline: Inline, nextSymbolic: string): string {
         const block = findBlockById(blocks, inline.blockId);
         if (!block) {
             throw new Error(`Block not found for inline edit: ${inline.blockId}`);
@@ -1664,59 +1747,53 @@ export function createSynthEngine() {
             throw new Error(`Inlines not found for block: ${block.id}`);
         }
 
-        let newSynthetic: string;
-        switch (inline.type) {
-            case "strong":
-                newSynthetic = `**${nextPureText}**`;
-                break;
-            case "emphasis":
-                newSynthetic = `*${nextPureText}*`;
-                break;
-            case "codeSpan":
-                newSynthetic = `\`${nextPureText}\``;
-                break;
-            case "strikethrough":
-                newSynthetic = `~~${nextPureText}~~`;
-                break;
-            case "link":
-                const linkInline = inline as Link;
-                newSynthetic = `[${nextPureText}](${linkInline.url}${linkInline.title ? ` "${linkInline.title}"` : ""})`;
-                break;
-            case "image":
-                const imageInline = inline as Image;
-                newSynthetic = `![${nextPureText}](${imageInline.url}${imageInline.title ? ` "${imageInline.title}"` : ""})`;
-                break;
-            case "text":
-            default:
-                newSynthetic = nextPureText;
-                break;
-        }
-
-        const oldLength = inline.end - inline.start;
-        const newLength = newSynthetic.length;
+        const oldLength = inline.position.end - inline.position.start;
+        const newLength = nextSymbolic.length;
         const delta = newLength - oldLength;
 
-        const globalStart = block.start + inline.start;
-        const globalEnd = block.start + inline.end;
+        const globalStart = block.start + inline.position.start;
+        const globalEnd = block.start + inline.position.end;
 
         const newSourceText =
-        sourceText.slice(0, globalStart) +
-        newSynthetic +
-        sourceText.slice(globalEnd);
+            sourceText.slice(0, globalStart) +
+            nextSymbolic +
+            sourceText.slice(globalEnd);
 
-        inline.pure = nextPureText;
-        inline.synthetic = newSynthetic;
-        inline.end += delta;
+        inline.text.symbolic = nextSymbolic;
+        inline.text.semantic = deriveSemantic(inline.type, nextSymbolic);
+        inline.position.end += delta;
 
         const inlineIndex = blockInlines.findIndex(i => i.id === inline.id);
-        for (let i = inlineIndex + 1; i < blockInlines.length; i++) {
-            blockInlines[i].start += delta;
-            blockInlines[i].end += delta;
+        if (inlineIndex === -1) {
+            throw new Error("Inline not found in block");
         }
+
+        for (let i = inlineIndex + 1; i < blockInlines.length; i++) {
+            blockInlines[i].position.start += delta;
+            blockInlines[i].position.end += delta;
+        }
+
+        block.end += delta;
 
         sourceText = newSourceText;
 
         return newSourceText;
+    }
+
+    function deriveSemantic(type: Inline["type"], symbolic: string): string {
+        switch (type) {
+            case "strong":
+                return symbolic.replace(/^\*\*|\*\*$/g, "");
+            case "emphasis":
+                return symbolic.replace(/^\*|\*$/g, "");
+            case "codeSpan":
+                return symbolic.replace(/^`|`$/g, "");
+            case "strikethrough":
+                return symbolic.replace(/^~~|~~$/g, "");
+            case "text":
+            default:
+                return symbolic;
+        }
     }
 
     function getLinkReferences() {
@@ -1729,7 +1806,7 @@ export function createSynthEngine() {
             throw new Error(`Block not found for split: ${inline.blockId}`);
         }
 
-        const globalInlineStart = block.start + inline.start;
+        const globalInlineStart = block.start + inline.position.start;
         const insertPosition = globalInlineStart + caretOffset;
 
         const newSourceText = 

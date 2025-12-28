@@ -81,14 +81,14 @@ const SyntheticText = forwardRef<SyntheticTextRef, SyntheticTextProps>(({
                     let inlineCaretOffset = caretOffset;
                     
                     for (const inl of inlines) {
-                        if (inl.start <= caretOffset && inl.end >= caretOffset) {
+                        if (inl.position.start <= caretOffset && inl.position.end >= caretOffset) {
                             targetInline = inl;
-                            inlineCaretOffset = caretOffset - inl.start;
+                            inlineCaretOffset = caretOffset - inl.position.start;
                             break;
                         }
-                        if (inl.end <= caretOffset) {
+                        if (inl.position.end <= caretOffset) {
                             targetInline = inl;
-                            inlineCaretOffset = inl.synthetic.length;
+                            inlineCaretOffset = inl.text.symbolic.length;
                         }
                     }
 
@@ -131,9 +131,9 @@ const SyntheticText = forwardRef<SyntheticTextRef, SyntheticTextProps>(({
                     let inlineCaretOffset = caretOffset;
                     
                     for (const inl of inlines) {
-                        if (inl.start <= caretOffset && inl.end >= caretOffset) {
+                        if (inl.position.start <= caretOffset && inl.position.end >= caretOffset) {
                             targetInline = inl;
-                            inlineCaretOffset = caretOffset - inl.start;
+                            inlineCaretOffset = caretOffset - inl.position.start;
                             break;
                         }
                     }
