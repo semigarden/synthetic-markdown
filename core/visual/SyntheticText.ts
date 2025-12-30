@@ -191,6 +191,17 @@ export class SyntheticText extends HTMLElement {
 
         if (newText === oldText) return
 
+        const sel = window.getSelection();
+        let caretOffset = 0;
+        if (sel && sel.rangeCount > 0) {
+            const range = sel.getRangeAt(0);
+            if (range.startContainer.nodeType === Node.TEXT_NODE) {
+                caretOffset = range.startOffset;
+            } else {
+                caretOffset = 0;
+            }
+        }
+
         const index = block.inlines.findIndex(i => i.id === inlineId)
 
         if (index === -1) return
@@ -220,27 +231,45 @@ export class SyntheticText extends HTMLElement {
         const position = block.inlines[contextStart].position.start
         const newInlines = parseInlineContent(contextText, inline.blockId, position)
 
-        if (this.shouldSkipReplacement(contextInlines, newInlines)) {
-            // Just update the text in the existing inline (safe, no structure change)
-            inline.text.symbolic = newText
-            inline.text.semantic = newText
-        
-            console.log(`skipped replacement: no structural change for "${newText}"`)
-            
-            // Optional: still dispatch change if you want to notify of plain text edits
-            this.dispatchEvent(new CustomEvent('change', { detail: { type: 'text-only' } }))
-            return;
-        }
+   
 
         console.log(`structural change detected: replacing 1 inline with ${newInlines.length}`)
 
         block.inlines.splice(contextStart, contextEnd - contextStart, ...newInlines)
         
+        let targetCaretInline: Inline | null = null;
+        let targetCaretOffset = caretOffset;
+
+        let accumulatedLength = 0;
+        for (const ni of newInlines) {
+            const textLength = ni.text?.symbolic.length ?? 0;
+            if (accumulatedLength + textLength >= caretOffset) {
+                targetCaretInline = ni;
+                targetCaretOffset = caretOffset - accumulatedLength;
+                break;
+            }
+            accumulatedLength += textLength;
+        }
+
+        if (!targetCaretInline && newInlines.length > 0) {
+            const firstText = newInlines.find(i => i.type === 'text');
+            if (firstText) {
+                targetCaretInline = firstText;
+                targetCaretOffset = firstText.text.symbolic.length;
+            }
+        }
+    
+        if (targetCaretInline) {
+            this.caret.setInlineId(targetCaretInline.id);
+            this.caret.setBlockId(targetCaretInline.blockId);
+            this.caret.setPosition(targetCaretOffset);
+        }
+
         console.log('new inlines', JSON.stringify(block.inlines, null, 2))
 
         renderBlock(block, this.syntheticEl)
 
-        // this.caret.restore()
+        this.restoreCaret()
 
         console.log(`inline${inline.id} changed: ${oldText} > ${newText}`)
 
@@ -277,4 +306,79 @@ export class SyntheticText extends HTMLElement {
         if (!ast) return;
         this.engine.setText(ast.blocks.map(b => b.text).join('\n'));
     }
+
+    private restoreCaret() {
+        if (!this.caret.getInlineId() || this.caret.getPosition() === null) {
+          return;
+        }
+      
+        const inlineId = this.caret.getInlineId()!;
+        const position = this.caret.getPosition()!;
+      
+        const inlineEl = this.syntheticEl?.querySelector(`[data-inline-id="${inlineId}"]`) as HTMLElement;
+        if (!inlineEl) {
+          console.warn('Could not find inline element for caret restore:', inlineId);
+          return;
+        }
+      
+        inlineEl.focus();
+      
+        const selection = window.getSelection();
+        if (!selection) return;
+      
+        selection.removeAllRanges();
+        const range = document.createRange();
+      
+        try {
+          let placed = false;
+      
+          if (inlineEl.childNodes.length > 0 && inlineEl.firstChild instanceof Text) {
+            const textNode = inlineEl.firstChild as Text;
+            const clamped = Math.min(position, textNode.length);
+            range.setStart(textNode, clamped);
+            range.collapse(true);
+            placed = true;
+          } 
+          else if (inlineEl.childNodes.length > 0) {
+            let currentPos = 0;
+            const walker = document.createTreeWalker(
+              inlineEl,
+              NodeFilter.SHOW_TEXT,
+              null
+            );
+      
+            let node: Text | null;
+            while ((node = walker.nextNode() as Text)) {
+              const len = node.length;
+              if (currentPos + len >= position) {
+                range.setStart(node, position - currentPos);
+                range.collapse(true);
+                placed = true;
+                break;
+              }
+              currentPos += len;
+            }
+          }
+      
+          if (!placed) {
+            if (inlineEl.childNodes.length > 0) {
+              range.selectNodeContents(inlineEl);
+              range.collapse(false);
+            } else {
+              range.setStart(inlineEl, 0);
+              range.collapse(true);
+            }
+          }
+      
+          selection.addRange(range);
+      
+          inlineEl.focus();
+      
+          inlineEl.scrollIntoView({ block: 'nearest' });
+      
+        } catch (err) {
+          console.warn('Failed to restore caret:', err);
+          inlineEl.focus();
+        }
+      }
 }
