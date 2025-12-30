@@ -23,6 +23,8 @@ export function renderInline(inline: Inline, focusedInlineId: string | null): No
         return span
     }
 
+    const inlineEl = document.createElement('span')
+
     switch (inline.type) {
         case 'text':
             const el = document.createElement('span')
@@ -35,10 +37,6 @@ export function renderInline(inline: Inline, focusedInlineId: string | null): No
             const el = document.createElement('em')
             el.id = inline.id
             el.dataset.inlineId = inline.id
-
-            for (const child of inline.inlines) {
-                el.appendChild(renderInline(child, focusedInlineId))
-            }
             return el
         }
 
@@ -46,10 +44,6 @@ export function renderInline(inline: Inline, focusedInlineId: string | null): No
             const el = document.createElement('strong')
             el.id = inline.id
             el.dataset.inlineId = inline.id
-
-            for (const child of inline.inlines) {
-                el.appendChild(renderInline(child, focusedInlineId))
-            }
             return el
         }
 

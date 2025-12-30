@@ -884,7 +884,6 @@ function parseInlineContent(text: string, blockId: string, offset: number = 0): 
                 if (closePos !== -1) {
                     addText(textStart, pos);
                     const innerText = text.slice(pos + 2, closePos);
-                    const innerInlines = parseInlineContent(innerText, blockId, offset + pos + 2);
                     const symbolic = text.slice(pos, closePos + 2);
                     result.push({
                         id: uuid(),
@@ -898,7 +897,6 @@ function parseInlineContent(text: string, blockId: string, offset: number = 0): 
                             start: offset + pos,
                             end: offset + closePos + 2,
                         },
-                        inlines: innerInlines,
                     });
                     pos = closePos + 2;
                     textStart = pos;
@@ -1084,7 +1082,6 @@ function parseLink(text: string, start: number, blockId: string, offset: number)
     if (pos < text.length && text[pos] === "(") {
         const destResult = parseLinkDestinationAndTitle(text, pos);
         if (destResult) {
-            const inlines = parseInlineContent(linkText, blockId, offset + start + 1);
             const symbolic = text.slice(start, destResult.end);
             return {
                 inline: {
@@ -1101,7 +1098,6 @@ function parseLink(text: string, start: number, blockId: string, offset: number)
                     },
                     url: destResult.url,
                     title: destResult.title,
-                    inlines,
                 },
                 end: destResult.end,
             };
@@ -1126,7 +1122,6 @@ function parseLink(text: string, start: number, blockId: string, offset: number)
     
     // const ref = linkReferences.get(refLabel);
     // if (ref) {
-    //     const inlines = parseInlineContent(linkText, blockId, offset + start + 1);
     //     return {
     //         inline: {
     //             id: uuid(),
@@ -1142,7 +1137,6 @@ function parseLink(text: string, start: number, blockId: string, offset: number)
     //             },
     //             url: ref.url,
     //             title: ref.title,
-    //             inlines,
     //         },
     //         end: refEnd,
     //     };
@@ -1374,29 +1368,15 @@ function processEmphasis(stack: Delimiter[], nodes: Inline[], blockId: string) {
         const openerNode = nodes[openerNodePos];
         const closerNode = nodes[closerNodePos];
 
-        // Extract inlines between opener and closer
-        const inlines = nodes.slice(openerNodePos + 1, closerNodePos);
-
-        let cursor = 0;
-        for (const inline of inlines) {
-            const len = inline.position.end - inline.position.start;
-            inline.position.start = cursor;
-            inline.position.end = cursor + len;
-            cursor += len;
-        }
-        
         const emphType = isStrong ? "strong" : "emphasis";
         const delimCount = isStrong ? 2 : 1;
         const delimStr = opener.type.repeat(delimCount);
 
         // Build the raw text
         let symbolic = delimStr;
-        for (const inline of inlines) {
-            symbolic += inline.text.symbolic;
-        }
         symbolic += delimStr;
 
-        const semantic = inlines.map(c => c.text.semantic).join("");
+        const semantic = openerNode.text.symbolic + closerNode.text.symbolic;
         const emphNode: Inline = {
             id: uuid(),
             type: emphType,
@@ -1409,7 +1389,6 @@ function processEmphasis(stack: Delimiter[], nodes: Inline[], blockId: string) {
                 start: openerNode.position.start,
                 end: closerNode.position.end,
             },
-            inlines,
         };
 
         // Update opener/closer lengths and text

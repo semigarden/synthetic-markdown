@@ -1,5 +1,5 @@
 import Engine from '../engine/engine'
-import { patchDOM, renderFull } from '../render/render'
+import { patchDOM, renderAST } from '../render/render'
 import { renderInlines } from '../render/renderInline'
 import css from './SyntheticText.scss?inline'
 
@@ -39,9 +39,9 @@ export class SyntheticText extends HTMLElement {
         const ast = this.engine.getAst()
         if (!ast) return
 
-        console.log('render')
+        console.log('render', JSON.stringify(ast, null, 2))
 
-        renderFull(ast, this.contentEl)
+        renderAST(ast, this.contentEl)
     }
 
     private addStyles() {

@@ -3,7 +3,7 @@ import { Document } from '../ast/types'
 import { renderBlock } from './renderBlock'
 import { renderInlines } from './renderInline'
 
-export function renderFull(
+export function renderAST(
     ast: Document,
     container: HTMLElement,
     focusedInlineId: string | null = null

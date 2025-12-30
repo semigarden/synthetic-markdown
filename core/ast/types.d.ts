@@ -124,11 +124,9 @@ interface Text extends InlineType<'text'> {
 }
 
 interface Emphasis extends InlineType<'emphasis'> {
-    inlines: Inline[]
 }
 
 interface Strong extends InlineType<'strong'> {
-    inlines: Inline[]
 }
 
 interface CodeSpan extends InlineType<'codeSpan'> {
@@ -137,7 +135,6 @@ interface CodeSpan extends InlineType<'codeSpan'> {
 interface Link extends InlineType<'link'> {
     url: string
     title?: string
-    inlines: Inline[]
 }
 
 interface Autolink extends InlineType<'autolink'> {
@@ -151,7 +148,6 @@ interface Image extends InlineType<'image'> {
 }
 
 interface Strikethrough extends InlineType<'strikethrough'> {
-    inlines: Inline[]
 }
 
 interface FootnoteRef extends InlineType<'footnoteRef'> {
