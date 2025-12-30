@@ -1,13 +1,13 @@
 export default class Caret {
     private inlineId: string | null = null
     private blockId: string | null = null
-    private offset: number | null = null
+    private position: number | null = null
     private affinity?: 'start' | 'end'
 
-    constructor(inlineId?: string, blockId?: string, offset?: number, affinity?: 'start' | 'end') {
+    constructor(inlineId?: string, blockId?: string, position?: number, affinity?: 'start' | 'end') {
         this.inlineId = inlineId ?? null
         this.blockId = blockId ?? null
-        this.offset = offset ?? null
+        this.position = position ?? null
         this.affinity = affinity ?? undefined
     }
 
@@ -19,8 +19,8 @@ export default class Caret {
         this.blockId = blockId
     }
 
-    setOffset(offset: number) {
-        this.offset = offset
+    setPosition(position: number) {
+        this.position = position
     }
 
     setAffinity(affinity?: 'start' | 'end') {
@@ -35,11 +35,18 @@ export default class Caret {
         return this.blockId
     }
     
-    getOffset() {
-        return this.offset
+    getPosition() {
+        return this.position
     }
 
     getAffinity() {
         return this.affinity
+    }
+
+    clear() {
+        this.inlineId = null
+        this.blockId = null
+        this.position = null
+        this.affinity = undefined
     }
 }

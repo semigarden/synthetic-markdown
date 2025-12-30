@@ -1,5 +1,5 @@
 import { buildAst } from '../ast/ast'
-import { Document } from '../ast/types'
+import { Document, Inline } from '../ast/types'
 
 export default class Engine {
     private text = ''
@@ -23,5 +23,18 @@ export default class Engine {
 
     getAst() {
         return this.ast
+    }
+
+    getInlineById(id: string): Inline | null {
+        return this.findInlineByIdRecursive(this.ast?.inlines ?? [], id)
+    }
+
+    private findInlineByIdRecursive(inlines: Inline[], targetId: string): Inline | null {
+        for (const inline of inlines) {
+            if (inline.id === targetId) {
+                return inline
+            }
+        }
+        return null
     }
 }

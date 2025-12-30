@@ -14,15 +14,6 @@ export function renderInlines(
 export function renderInline(inline: Inline, focusedInlineId: string | null): Node {
     const isFocused = inline.id === focusedInlineId
 
-    if (isFocused) {
-        
-        const span = document.createElement('span')
-        span.id = inline.id
-        span.dataset.inlineId = inline.id
-        span.textContent = inline.text.symbolic
-        return span
-    }
-
     const tag = getInlineTag(inline)
     const inlineEl = document.createElement(tag)
     inlineEl.id = inline.id
@@ -37,6 +28,7 @@ export function renderInline(inline: Inline, focusedInlineId: string | null): No
     inlineEl.style.maxWidth = '100%'
     inlineEl.style.height = 'auto'
     inlineEl.style.display = 'inline-block'
+
     return inlineEl
 }
 
