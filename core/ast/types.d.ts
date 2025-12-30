@@ -6,7 +6,7 @@ interface BlockType<T extends string = string> {
         start: number
         end: number
     }
-    inlines?: Inline[]
+    inlines: Inline[]
 }
 
 export type Block =

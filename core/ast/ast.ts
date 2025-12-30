@@ -63,6 +63,7 @@ function buildAst(text: string) {
                         start,
                         end,
                     },
+                    inlines: [],
                 };
                 blocks.push(block);
                 break;
@@ -79,6 +80,7 @@ function buildAst(text: string) {
                         end,
                     },
                     blocks: [],
+                    inlines: [],
                 };
                 blocks.push(block);
                 break;
@@ -98,6 +100,7 @@ function buildAst(text: string) {
                         start: start + markerLength,
                         end,
                     },
+                    inlines: [],
                 };
 
                 const listItem: ListItem = {
@@ -109,6 +112,7 @@ function buildAst(text: string) {
                         end,
                     },
                     blocks: [paragraph],
+                    inlines: [],
                 };
 
                 // Find or create parent list
@@ -129,6 +133,7 @@ function buildAst(text: string) {
                         listStart: detectedBlock.listStart,
                         tight: true,
                         blocks: [listItem],
+                        inlines: [],
                     };
                     blocks.push(newList);
                 }
@@ -146,6 +151,7 @@ function buildAst(text: string) {
                         start,
                         end,
                     },
+                    inlines: [],
                 };
 
                 block = {
@@ -158,6 +164,7 @@ function buildAst(text: string) {
                         end,
                     },
                     blocks: [paragraph],
+                    inlines: [],
                 };
                 blocks.push(block);
                 break;
@@ -172,6 +179,7 @@ function buildAst(text: string) {
                         start,
                         end,
                     },
+                    inlines: [],
                 };
                 blocks.push(block);
                 break;
@@ -193,6 +201,7 @@ function buildAst(text: string) {
                             start,
                             end,
                         },
+                        inlines: [],
                     };
                     blocks.push(block);
                 } else {
@@ -206,6 +215,7 @@ function buildAst(text: string) {
                             start,
                             end,
                         },
+                        inlines: [],
                     };
                     blocks.push(block);
                 }
@@ -222,6 +232,7 @@ function buildAst(text: string) {
                         end,
                     },
                     blocks: [],
+                    inlines: [],
                 };
                 const cells = parseTableRow(line);
                 const row: TableRow = {
@@ -232,7 +243,8 @@ function buildAst(text: string) {
                         start,
                         end,
                     },
-                    blocks: cells
+                    blocks: cells,
+                    inlines: [],
                 };
                 table.blocks.push(row);
                 blocks.push(table);
@@ -250,6 +262,7 @@ function buildAst(text: string) {
                         start,
                         end,
                     },
+                    inlines: [],
                 };
                 blocks.push(block);
                 break;
@@ -264,6 +277,7 @@ function buildAst(text: string) {
                         start,
                         end,
                     },
+                    inlines: [],
                 };
                 blocks.push(block);
                 break;
@@ -277,6 +291,7 @@ function buildAst(text: string) {
                         start,
                         end,
                     },
+                    inlines: [],
                 };
                 blocks.push(block);
                 break;
@@ -297,6 +312,7 @@ function buildAst(text: string) {
                             start,
                             end,
                         },
+                        inlines: [],
                     };
                     blocks.push(block);
                 }
@@ -317,6 +333,7 @@ function buildAst(text: string) {
                 start: 0,
                 end: 0,
             },
+            inlines: [],
         };
         blocks.push(emptyBlock);
     }
@@ -342,6 +359,7 @@ function buildAst(text: string) {
             end: blocks[blocks.length - 1].position.end,
         },
         blocks: blocks,
+        inlines: [],
     };
 
     for (const block of blocks) {
@@ -470,6 +488,7 @@ function parseTableRow(line: string): TableCell[] {
                 start: 0,
                 end: cellText.length,
             },
+            inlines: [],
         };
 
         cells.push({
@@ -481,6 +500,7 @@ function parseTableRow(line: string): TableCell[] {
                 end: cellText.length,
             },
             blocks: [paragraph],
+            inlines: [],
         });
     }
     
