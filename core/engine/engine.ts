@@ -1,5 +1,5 @@
 import { buildAst } from '../ast/ast'
-import { Document, Inline } from '../ast/types'
+import { Block, Document, Inline } from '../ast/types'
 
 export default class Engine {
     private text = ''
@@ -23,6 +23,23 @@ export default class Engine {
 
     getAst() {
         return this.ast
+    }
+
+    getBlockById(id: string): Block | null {
+        return this.findBlockByIdRecursive(this.ast?.blocks ?? [], id)
+    }
+
+    private findBlockByIdRecursive(blocks: Block[], targetId: string): Block | null {
+        for (const block of blocks) {
+            if (block.id === targetId) {
+                return block
+            }
+            if ('blocks' in block && block.blocks) {
+                const found = this.findBlockByIdRecursive(block.blocks, targetId)
+                if (found) return found
+            }
+        }
+        return null
     }
 
     getInlineById(id: string): Inline | null {

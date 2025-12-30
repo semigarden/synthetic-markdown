@@ -148,23 +148,36 @@ export class SyntheticText extends HTMLElement {
             }
         })
   
-        div.addEventListener('input', () => {
-            const text = div.textContent ?? ''
-            
-            this.onInput(text)
-
-            this.dispatchEvent(new CustomEvent('change', {
-                detail: { value: text },
-                bubbles: true,
-                composed: true,
-            }))
-        })
+        div.addEventListener('input', this.onInput.bind(this))
     
         this.root.appendChild(div)
         this.syntheticEl = div
     }
 
-    private onInput(text: string) {
-        console.log('onInput', text)
+    private onInput(e: Event) {
+        const target = e.target as HTMLDivElement
+
+        if (!target.dataset?.inlineId) return
+
+        const inlineId = target.dataset.inlineId!
+        const inline = this.engine.getInlineById(inlineId)
+        if (!inline) return
+
+        const block = this.engine.getBlockById(inline.blockId)
+        if (!block) return
+
+        const newText = target.textContent ?? ''
+
+        const oldText = inline.text.symbolic
+        inline.text.symbolic = newText
+        inline.text.semantic = newText
+
+        console.log(`inline${inline.id} changed: ${oldText} > ${newText}`)
+
+        this.dispatchEvent(new CustomEvent('change', {
+            detail: { value: newText },
+            bubbles: true,
+            composed: true,
+        }))
     }
 }
