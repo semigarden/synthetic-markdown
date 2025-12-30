@@ -10,7 +10,7 @@ export function renderAST(
   ) {
     container.textContent = ''
     for (const block of ast.blocks) {
-      container.appendChild(renderBlock(block, focusedInlineId))
+      container.appendChild(renderBlock(block, container, focusedInlineId))
     }
   }
 
@@ -57,7 +57,7 @@ export function patchDOM(
     let el = container.querySelector(`[data-block-id="${block.id}"]`) as HTMLElement
 
     if (!el) {
-      el = renderBlock(block, focusedInlineId)
+      el = renderBlock(block, container, focusedInlineId)
       container.appendChild(el)
     }
 

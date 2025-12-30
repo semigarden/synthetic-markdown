@@ -1,7 +1,10 @@
 import Engine from '../engine/engine'
 import Caret from './caret'
 import { renderAST } from '../render/render'
+import { renderBlock } from '../render/renderBlock'
 import css from './SyntheticText.scss?inline'
+import { parseInlineContent } from '../ast/ast'
+import { Inline } from '../ast/types'
 
 export class SyntheticText extends HTMLElement {
     private root: ShadowRoot
@@ -155,6 +158,8 @@ export class SyntheticText extends HTMLElement {
     }
 
     private onInput(e: Event) {
+        if (!this.syntheticEl) return
+
         const target = e.target as HTMLDivElement
 
         if (!target.dataset?.inlineId) return
@@ -163,14 +168,68 @@ export class SyntheticText extends HTMLElement {
         const inline = this.engine.getInlineById(inlineId)
         if (!inline) return
 
+        console.log('inline', JSON.stringify(inline, null, 2))
+
         const block = this.engine.getBlockById(inline.blockId)
         if (!block) return
 
-        const newText = target.textContent ?? ''
+        console.log('block', JSON.stringify(block, null, 2))
 
+        const newText = target.textContent ?? ''
         const oldText = inline.text.symbolic
-        inline.text.symbolic = newText
-        inline.text.semantic = newText
+
+        if (newText === oldText) return
+
+        const index = block.inlines.findIndex(i => i.id === inlineId)
+
+        if (index === -1) return
+
+        let contextStart = index
+        let contextEnd = index + 1
+
+        while (contextStart > 0 && block.inlines[contextStart - 1].type === 'text') {
+            contextStart--
+        }
+
+        while (contextEnd < block.inlines.length && block.inlines[contextEnd].type === 'text') {
+            contextEnd++
+        }
+
+        let contextText = ''
+        const contextInlines = block.inlines.slice(contextStart, contextEnd)
+        for (let i = 0; i < contextInlines.length; i++) {
+            const inline = contextInlines[i]
+            if (inline.id === inlineId) {
+                contextText += newText
+            } else {
+                contextText += inline.text.symbolic
+            }
+        }
+
+        const position = block.inlines[contextStart].position.start
+        const newInlines = parseInlineContent(contextText, inline.blockId, position)
+
+        if (this.shouldSkipReplacement(contextInlines, newInlines)) {
+            // Just update the text in the existing inline (safe, no structure change)
+            inline.text.symbolic = newText
+            inline.text.semantic = newText
+        
+            console.log(`skipped replacement: no structural change for "${newText}"`)
+            
+            // Optional: still dispatch change if you want to notify of plain text edits
+            this.dispatchEvent(new CustomEvent('change', { detail: { type: 'text-only' } }))
+            return;
+        }
+
+        console.log(`structural change detected: replacing 1 inline with ${newInlines.length}`)
+
+        block.inlines.splice(contextStart, contextEnd - contextStart, ...newInlines)
+        
+        console.log('new inlines', JSON.stringify(block.inlines, null, 2))
+
+        renderBlock(block, this.syntheticEl)
+
+        // this.caret.restore()
 
         console.log(`inline${inline.id} changed: ${oldText} > ${newText}`)
 
@@ -179,5 +238,19 @@ export class SyntheticText extends HTMLElement {
             bubbles: true,
             composed: true,
         }))
+    }
+
+    private shouldSkipReplacement(oldInlines: Inline[], newInlines: Inline[]): boolean {
+        if (oldInlines.length !== newInlines.length) return false;
+      
+        for (let i = 0; i < oldInlines.length; i++) {
+          const oldI = oldInlines[i];
+          const newI = newInlines[i];
+          if (oldI.type !== newI.type) return false;
+          if (oldI.type === 'text' && oldI.text.symbolic !== newI.text.symbolic) return false;
+          if (oldI.type !== 'text' && oldI.text.symbolic !== newI.text.symbolic) return false;
+        }
+      
+        return true;
     }
 }

@@ -557,11 +557,12 @@ function extractFencedCodeContent(text: string, fence: string): string {
     return contentLines.join("\n");
 }
 
-function parseInlineContent(text: string, blockId: string, offset: number = 0): Inline[] {
+export function parseInlineContent(text: string, blockId: string, offset: number = 0): Inline[] {
     const result: Inline[] = [];
     const delimiterStack: Delimiter[] = [];
     let pos = 0;
     let textStart = 0;
+    console.log('parseInlineContent', text, blockId, offset)
 
     const addText = (start: number, end: number) => {
         if (end > start) {
