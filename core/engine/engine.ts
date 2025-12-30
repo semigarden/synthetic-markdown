@@ -11,10 +11,10 @@ export default class Engine {
   
     setText(text: string) {
         if (this.text === '' && text !== '') {
-            this.text = text
             this.ast = buildAst(text)
             console.log('buildAst', JSON.stringify(this.ast, null, 2))
         }
+        this.text = text
     }
 
     getText() {
@@ -43,15 +43,23 @@ export default class Engine {
     }
 
     getInlineById(id: string): Inline | null {
-        return this.findInlineByIdRecursive(this.ast?.inlines ?? [], id)
+        if (!this.ast?.blocks) return null;
+      
+        for (const block of this.ast.blocks) {
+            const found = this.findInlineByIdRecursive(block.inlines, id);
+            if (found) return found;
+        }
+      
+        return null;
     }
-
+      
     private findInlineByIdRecursive(inlines: Inline[], targetId: string): Inline | null {
         for (const inline of inlines) {
             if (inline.id === targetId) {
-                return inline
+                return inline;
             }
         }
-        return null
+      
+        return null;
     }
 }

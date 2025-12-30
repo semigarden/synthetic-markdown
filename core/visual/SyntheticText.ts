@@ -4,7 +4,7 @@ import { renderAST } from '../render/render'
 import { renderBlock } from '../render/renderBlock'
 import css from './SyntheticText.scss?inline'
 import { parseInlineContent } from '../ast/ast'
-import { Inline } from '../ast/types'
+import { Block, Inline } from '../ast/types'
 
 export class SyntheticText extends HTMLElement {
     private root: ShadowRoot
@@ -114,6 +114,8 @@ export class SyntheticText extends HTMLElement {
             const inline = this.engine.getInlineById(inlineId);
             if (!inline) return;
 
+            target.textContent = inline.text.symbolic
+
             this.isEditing = true;
             this.caret.setInlineId(inlineId);
             this.caret.setBlockId(inline.blockId);
@@ -137,7 +139,7 @@ export class SyntheticText extends HTMLElement {
                     preCaretRange.setEnd(range.startContainer, range.startOffset);
                     position = preCaretRange.toString().length;
                 }
-
+                
                 this.caret.setPosition(position);
                 console.log('caret position:', position, 'in text:', target.textContent);
             }
@@ -146,6 +148,15 @@ export class SyntheticText extends HTMLElement {
         div.addEventListener('focusout', (e) => {
             console.log('focusout')
             if (!this.syntheticEl?.contains(e.relatedTarget as Node)) {
+                const target = e.target as HTMLElement
+                if (!target.dataset?.inlineId) return;
+
+                const inlineId = target.dataset.inlineId!;
+                const inline = this.engine.getInlineById(inlineId);
+                if (!inline) return;
+
+                target.textContent = inline.text.semantic
+
                 this.isEditing = false;
                 this.caret.clear();
             }
@@ -233,8 +244,11 @@ export class SyntheticText extends HTMLElement {
 
         console.log(`inline${inline.id} changed: ${oldText} > ${newText}`)
 
+        this.updateBlockText(block)
+        this.updateASTText()
+
         this.dispatchEvent(new CustomEvent('change', {
-            detail: { value: newText },
+            detail: { value: this.engine.getText() },
             bubbles: true,
             composed: true,
         }))
@@ -252,5 +266,15 @@ export class SyntheticText extends HTMLElement {
         }
       
         return true;
+    }
+
+    private updateBlockText(block: Block) {
+        block.text = block.inlines.map(i => i.text.symbolic).join('');
+    }
+
+    private updateASTText() {
+        const ast = this.engine.getAst()
+        if (!ast) return;
+        this.engine.setText(ast.blocks.map(b => b.text).join('\n'));
     }
 }
