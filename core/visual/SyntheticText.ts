@@ -63,85 +63,132 @@ export class SyntheticText extends HTMLElement {
         this.restoreCaret()
     }
 
-    private getCaretPosition(div: HTMLElement): number {
-        if (!div) return 0
-        const selection = window.getSelection()
-        if (!selection || !selection.anchorNode) return 0
+    // private getCaretPosition(div: HTMLElement): number {
+    //     if (!div) return 0
+    //     const selection = window.getSelection()
+    //     if (!selection || !selection.anchorNode) return 0
 
-        const anchorNode = selection.anchorNode
-        const anchorOffset = selection.anchorOffset
+    //     const anchorNode = selection.anchorNode
+    //     const anchorOffset = selection.anchorOffset
 
-        let charCount = 0
+    //     let charCount = 0
 
-        const walkNodes = (node: Node): boolean => {
-            if (node === anchorNode) {
-                charCount += anchorOffset
-                return true
-            }
+    //     const walkNodes = (node: Node): boolean => {
+    //         if (node === anchorNode) {
+    //             charCount += anchorOffset
+    //             return true
+    //         }
 
-            if (node.nodeType === Node.TEXT_NODE) {
-                charCount += node.textContent?.length ?? 0
-            }
+    //         if (node.nodeType === Node.TEXT_NODE) {
+    //             charCount += node.textContent?.length ?? 0
+    //         }
 
-            for (let child = node.firstChild; child; child = child.nextSibling) {
-                if (walkNodes(child)) return true
-            }
+    //         for (let child = node.firstChild; child; child = child.nextSibling) {
+    //             if (walkNodes(child)) return true
+    //         }
 
-            return false
-        }
+    //         return false
+    //     }
 
-        walkNodes(div)
-        return charCount
+    //     walkNodes(div)
+    //     return charCount
+    // }
+    private getCaretPosition(): number {
+        const sel = window.getSelection()
+        if (!sel || sel.rangeCount === 0) return 0
+      
+        const range = sel.getRangeAt(0)
+        const preRange = range.cloneRange()
+        preRange.selectNodeContents(this.contentEl!)
+        preRange.setEnd(range.endContainer, range.endOffset)
+        return preRange.toString().length
     }
 
+    // private restoreCaret() {
+    //     if (this.caretPosition == null || !this.contentEl) return
+
+    //     const sel = window.getSelection()
+    //     if (!sel) return
+
+    //     let remaining = this.caretPosition
+    //     let targetNode: Node | null = null
+    //     let offset = 0
+
+    //     const walk = (node: Node): boolean => {
+    //         if (node.nodeType === Node.TEXT_NODE) {
+    //             const parentInlineId = (node.parentElement)?.dataset.inlineId
+    //             let nodeLength = node.textContent?.length ?? 0
+
+    //             if (parentInlineId) {
+    //                 const inline = this.engine.getInlineById(parentInlineId)
+    //                 if (inline) {
+    //                     nodeLength = parentInlineId === this.focusedInlineId
+    //                         ? inline.text.symbolic.length
+    //                         : inline.text.semantic.length
+    //                 }
+    //             }
+
+    //             if (remaining <= nodeLength) {
+    //                 targetNode = node
+    //                 offset = remaining
+    //                 return true
+    //             }
+
+    //             remaining -= nodeLength
+    //         }
+
+    //         for (let child = node.firstChild; child; child = child.nextSibling) {
+    //             if (walk(child)) return true
+    //         }
+
+    //         return false
+    //     }
+
+    //     walk(this.contentEl)
+
+    //     if (targetNode) {
+    //         const range = document.createRange()
+    //         range.setStart(targetNode, offset)
+    //         range.collapse(true)
+    //         sel.removeAllRanges()
+    //         sel.addRange(range)
+    //     }
+    // }
     private restoreCaret() {
         if (this.caretPosition == null || !this.contentEl) return
-
+      
         const sel = window.getSelection()
         if (!sel) return
-
+      
         let remaining = this.caretPosition
         let targetNode: Node | null = null
         let offset = 0
-
+      
         const walk = (node: Node): boolean => {
-            if (node.nodeType === Node.TEXT_NODE) {
-                const parentInlineId = (node.parentElement)?.dataset.inlineId
-                let nodeLength = node.textContent?.length ?? 0
-
-                if (parentInlineId) {
-                    const inline = this.engine.getInlineById(parentInlineId)
-                    if (inline) {
-                        nodeLength = parentInlineId === this.focusedInlineId
-                            ? inline.text.symbolic.length
-                            : inline.text.semantic.length
-                    }
-                }
-
-                if (remaining <= nodeLength) {
-                    targetNode = node
-                    offset = remaining
-                    return true
-                }
-
-                remaining -= nodeLength
+          if (node.nodeType === Node.TEXT_NODE) {
+            const length = node.textContent?.length ?? 0
+            if (remaining <= length) {
+              targetNode = node
+              offset = remaining
+              return true
             }
-
-            for (let child = node.firstChild; child; child = child.nextSibling) {
-                if (walk(child)) return true
-            }
-
-            return false
+            remaining -= length
+          }
+      
+          for (let child = node.firstChild; child; child = child.nextSibling) {
+            if (walk(child)) return true
+          }
+          return false
         }
-
+      
         walk(this.contentEl)
-
+      
         if (targetNode) {
-            const range = document.createRange()
-            range.setStart(targetNode, offset)
-            range.collapse(true)
-            sel.removeAllRanges()
-            sel.addRange(range)
+          const range = document.createRange()
+          range.setStart(targetNode, Math.min(offset, (targetNode as Text).textContent?.length ?? 0))
+          range.collapse(true)
+          sel.removeAllRanges()
+          sel.addRange(range)
         }
     }
 
@@ -201,7 +248,7 @@ export class SyntheticText extends HTMLElement {
                 }
 
               this.focusedInlineId = newFocusedId
-              this.caretPosition = this.getCaretPosition(div)
+              this.caretPosition = this.getCaretPosition()
 
               if (newFocusedId) {
                 const inline = this.engine.getInlineById(newFocusedId)
@@ -253,11 +300,13 @@ export class SyntheticText extends HTMLElement {
         div.addEventListener('input', () => {
             const next = div.textContent ?? ''
             this.engine.setSource(next)
-            this.patch()
 
-            requestAnimationFrame(() => {
-                this.caretPosition = this.getCaretPosition(div)
-              })
+            this.caretPosition = this.getCaretPosition()
+
+       
+            // 2. Update engine and patch
+            this.engine.setSource(next)
+            this.patch()
 
             this.dispatchEvent(new CustomEvent('change', {
             detail: { value: next },
