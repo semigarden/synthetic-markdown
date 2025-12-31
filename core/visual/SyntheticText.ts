@@ -125,24 +125,30 @@ export class SyntheticText extends HTMLElement {
 
             const range = selection.getRangeAt(0);
 
-            let clickOffset = 0;
+            let syntheticOffset = 0;
             if (target.contains(range.startContainer)) {
                 const preRange = document.createRange();
                 preRange.selectNodeContents(target);
                 preRange.setEnd(range.startContainer, range.startOffset);
-                clickOffset = preRange.toString().length;
+                syntheticOffset = preRange.toString().length;
             }
+
+            const syntheticVisibleLength = target.textContent?.length ?? 1;
 
             target.innerHTML = '';
             const newTextNode = document.createTextNode(inline.text.symbolic);
             target.appendChild(newTextNode);
 
-            clickOffset = Math.max(0, Math.min(clickOffset, inline.text.symbolic.length));
+            const symbolicOffset = this.mapSyntheticOffsetToSymbolic(
+                syntheticVisibleLength,
+                inline.text.symbolic.length,
+                syntheticOffset
+            );
 
+            const clampedOffset = Math.max(0, Math.min(symbolicOffset, inline.text.symbolic.length));
             const newRange = document.createRange();
-            newRange.setStart(newTextNode, clickOffset);
+            newRange.setStart(newTextNode, clampedOffset);
             newRange.collapse(true);
-
             selection.removeAllRanges();
             selection.addRange(newRange);
 
@@ -475,5 +481,18 @@ export class SyntheticText extends HTMLElement {
           console.warn('Failed to restore caret:', err);
           inlineEl.focus();
         }
-      }
+    }
+
+    private mapSyntheticOffsetToSymbolic(
+        syntheticLength: number,
+        symbolicLength: number,
+        syntheticOffset: number
+    ) {
+        if (syntheticOffset === 0) return 0;
+        let ratio = symbolicLength / syntheticLength;
+        ratio = Math.max(0.5, Math.min(2.0, ratio));
+        let offset = Math.round(syntheticOffset * ratio);
+
+        return Math.max(0, Math.min(offset, symbolicLength));
+    }
 }
