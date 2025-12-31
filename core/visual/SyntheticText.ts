@@ -220,20 +220,15 @@ export class SyntheticText extends HTMLElement {
 
         this.isEditing = true;
 
-        // 
-
         const sel = window.getSelection();
-        let caretOffset = 0;
+        let caretOffsetInTarget = 0;
         if (sel && sel.rangeCount > 0) {
             const range = sel.getRangeAt(0);
-            if (range.startContainer.nodeType === Node.TEXT_NODE) {
-                caretOffset = range.startOffset;
-            } else {
-                caretOffset = 0;
-            }
+            const preRange = document.createRange();
+            preRange.selectNodeContents(target);
+            preRange.setEnd(range.startContainer, range.startOffset);
+            caretOffsetInTarget = preRange.toString().length;
         }
-
-        
 
         let contextStart = inlineIndex
         let contextEnd = inlineIndex + 1
@@ -266,28 +261,32 @@ export class SyntheticText extends HTMLElement {
 
         block.inlines.splice(contextStart, contextEnd - contextStart, ...newInlines)
         
+        let charsBeforeEditedInline = 0;
+        for (let i = 0; i < contextInlines.length; i++) {
+            if (contextInlines[i].id === inlineId) break;
+            charsBeforeEditedInline += contextInlines[i].text.symbolic.length;
+        }
+        
+        const newCaretPosInContext = charsBeforeEditedInline + caretOffsetInTarget;
+        
         let targetCaretInline: Inline | null = null;
-        let targetCaretOffset = this.caret.getPosition() ?? 0;
-
-        const relativeCaretPos = targetCaretOffset - position
-
+        let targetCaretOffset = 0;
         let accumulatedLength = 0;
+        
         for (const ni of newInlines) {
             const textLength = ni.text?.symbolic.length ?? 0;
-            if (accumulatedLength + textLength >= relativeCaretPos) {
+            if (accumulatedLength + textLength >= newCaretPosInContext) {
                 targetCaretInline = ni;
-                targetCaretOffset = relativeCaretPos - accumulatedLength;
+                targetCaretOffset = newCaretPosInContext - accumulatedLength;
                 break;
             }
             accumulatedLength += textLength;
         }
 
         if (!targetCaretInline && newInlines.length > 0) {
-            const firstText = newInlines.find(i => i.type === 'text');
-            if (firstText) {
-                targetCaretInline = firstText;
-                targetCaretOffset = firstText.text.symbolic.length;
-            }
+            const lastInline = newInlines[newInlines.length - 1];
+            targetCaretInline = lastInline;
+            targetCaretOffset = lastInline.text.symbolic.length;
         }
     
         if (targetCaretInline) {
@@ -336,12 +335,10 @@ export class SyntheticText extends HTMLElement {
         for (let i = 0; i < block.inlines.length; i++) {
             const inline = block.inlines[i];
 
-            // Update inline id if missing or regenerate if needed
             if (!inline.id) {
                 inline.id = crypto.randomUUID();
             }
 
-            // Update inline position
             const textLength = inline.text.symbolic.length;
             inline.position = {
                 start: pos,
@@ -351,15 +348,12 @@ export class SyntheticText extends HTMLElement {
             pos += textLength;
         }
 
-        // Update block text
         block.text = block.inlines.map(i => i.text.symbolic).join('');
 
-        // Update block id if missing (optional)
         if (!block.id) {
             block.id = crypto.randomUUID();
         }
 
-        // Update block position if you track it globally (optional)
         block.position = {
             start: block.inlines[0]?.position.start ?? 0,
             end: block.inlines[block.inlines.length - 1]?.position.end ?? 0
@@ -370,41 +364,33 @@ export class SyntheticText extends HTMLElement {
         const ast = this.engine.getAst();
         if (!ast) return;
 
-        let globalPos = 0; // tracks offset across all blocks
+        let globalPos = 0;
 
         for (const block of ast.blocks) {
             let blockStart = globalPos;
 
-            // Update inlines positions
             let inlinePos = blockStart;
             for (const inline of block.inlines) {
                 const textLength = inline.text.symbolic.length;
 
-                // Ensure inline has an ID
                 if (!inline.id) inline.id = crypto.randomUUID();
 
-                // Update inline positions
                 inline.position = { start: inlinePos, end: inlinePos + textLength };
                 inlinePos += textLength;
             }
 
-            // Update block text from inlines
             block.text = block.inlines.map(i => i.text.symbolic).join('');
 
-            // Update block positions
             block.position = {
                 start: blockStart,
                 end: blockStart + block.text.length
             };
 
-            // Ensure block has an ID
             if (!block.id) block.id = crypto.randomUUID();
 
-            // Update global position (including newline between blocks)
-            globalPos += block.text.length + 1; // +1 for '\n'
+            globalPos += block.text.length + 1;
         }
 
-        // Update engine text (concatenated)
         this.engine.setText(ast.blocks.map(b => b.text).join('\n'));
     }
 
