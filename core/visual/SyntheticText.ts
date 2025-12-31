@@ -190,86 +190,174 @@ export class SyntheticText extends HTMLElement {
         })
   
         div.addEventListener('input', this.onInput.bind(this))
+
+        div.addEventListener('keydown', (e: KeyboardEvent) => {
+            if (e.key === 'Backspace') {
+                this.onBackspace(e)
+            }
+        })
     
         this.root.appendChild(div)
         this.syntheticEl = div
+    }
+
+    private onBackspace(e: KeyboardEvent) {
+        console.log('backspace')
+        const ctx = this.resolveInlineContext(e)
+        if (!ctx) return
+        const { inline, block, inlineIndex, inlineEl } = ctx
+        const value = inlineEl.textContent ?? ''
+
+        this.isEditing = true
+
+        const caretPositionInInline = this.caret.getPositionInInline(inlineEl)
+
+        if (caretPositionInInline === 0) {
+            e.preventDefault()
+            console.log('trigger merge with previous')
+        }
+        
+        this.isEditing = false
     }
 
     private onInput(e: Event) {
         console.log('input')
         const ctx = this.resolveInlineContext(e)
         if (!ctx) return
-        const { inline, block, inlineIndex, inlineEl } = ctx
-        const value = inlineEl.textContent ?? ''
 
         this.isEditing = true;
 
-        const caretPositionInInline = this.caret.getPositionInInline(inlineEl)
+        const caretOffset = this.caret.getPositionInInline(ctx.inlineEl)
+        const result = this.normalizeTextContext({
+            inline: ctx.inline,
+            block: ctx.block,
+            inlineIndex: ctx.inlineIndex,
+            value: ctx.inlineEl.textContent ?? '',
+            caretOffset
+        })
 
+        this.applyInlineNormalization(ctx.block, result)
+    
+        renderBlock(ctx.block, this.syntheticEl!)
+
+        console.log(`inline${ctx.inline.id} changed: ${ctx.inline.text.symbolic} > ${ctx.inlineEl.textContent ?? ''}`)
+
+        this.updateBlock(ctx.block)
+        this.updateAST()
+        this.restoreCaret()
+        this.emitChange()
+
+        this.isEditing = false;
+    }
+
+    private normalizeTextContext(params: {
+        inline: Inline
+        block: Block
+        inlineIndex: number
+        value: string
+        caretOffset: number
+    }): {
+        contextStart: number
+        contextEnd: number
+        oldInlines: Inline[]
+        newInlines: Inline[]
+        caretInline: Inline | null
+        caretPosition: number
+    } {
+        const { inline, block, inlineIndex, value, caretOffset } = params
+    
         let contextStart = inlineIndex
         let contextEnd = inlineIndex + 1
-
+    
         while (contextStart > 0 && block.inlines[contextStart - 1].type === 'text') {
             contextStart--
         }
-
+    
         while (contextEnd < block.inlines.length && block.inlines[contextEnd].type === 'text') {
             contextEnd++
         }
-
+    
+        const oldInlines = block.inlines.slice(contextStart, contextEnd)
+    
         let contextText = ''
-        const contextInlines = block.inlines.slice(contextStart, contextEnd)
-        for (let i = 0; i < contextInlines.length; i++) {
-            if (contextInlines[i].id === inline.id) {
-                contextText += value
-            } else {
-                contextText += contextInlines[i].text.symbolic
-            }
-        }
-
-        const position = block.inlines[contextStart].position.start
-        const newInlines = parseInlineContent(contextText, inline.blockId, position)
-
-   
-
-        console.log(`structural change detected: replacing 1 inline with ${JSON.stringify(newInlines, null, 2)}`)
-
-        block.inlines.splice(contextStart, contextEnd - contextStart, ...newInlines)
-        
-        const caretPositionInInlines = this.caret.getPositionInInlines(contextInlines, inline.id, caretPositionInInline)
-        
-        let { inline: caretInline, position: caretPosition } = this.caret.getInlineFromPositionInInlines(newInlines, caretPositionInInlines)
-
-        if (!caretInline && newInlines.length > 0) {
-            const lastInline = newInlines[newInlines.length - 1];
-            caretInline = lastInline;
-            caretPosition = lastInline.text.symbolic.length;
+        for (const i of oldInlines) {
+            contextText += i.id === inline.id ? value : i.text.symbolic
         }
     
-        if (caretInline) {
-            this.caret.setInlineId(caretInline.id);
-            this.caret.setBlockId(caretInline.blockId);
-            this.caret.setPosition(caretPosition);
+        const position = block.inlines[contextStart].position.start
+        const newInlines = parseInlineContent(contextText, inline.blockId, position)
+    
+        const caretPositionInContext =
+            this.caret.getPositionInInlines(oldInlines, inline.id, caretOffset)
+    
+        let caretInline: Inline | null = null
+        let caretPosition = 0
+        let acc = 0
+    
+        for (const ni of newInlines) {
+            const len = ni.text?.symbolic.length ?? 0
+            if (acc + len >= caretPositionInContext) {
+                caretInline = ni
+                caretPosition = caretPositionInContext - acc
+                break
+            }
+            acc += len
         }
+    
+        if (!caretInline && newInlines.length) {
+            const last = newInlines[newInlines.length - 1]
+            caretInline = last
+            caretPosition = last.text.symbolic.length
+        }
+    
+        return {
+            contextStart,
+            contextEnd,
+            oldInlines,
+            newInlines,
+            caretInline,
+            caretPosition
+        }
+    }
 
-        console.log('new inlines', JSON.stringify(block.inlines, null, 2))
+    private applyInlineNormalization(
+        block: Block,
+        result: {
+            contextStart: number
+            contextEnd: number
+            newInlines: Inline[]
+            caretInline: Inline | null
+            caretPosition: number
+        }
+    ) {
+        const {
+            contextStart,
+            contextEnd,
+            newInlines,
+            caretInline,
+            caretPosition
+        } = result
+    
+        block.inlines.splice(
+            contextStart,
+            contextEnd - contextStart,
+            ...newInlines
+        )
+    
+        if (caretInline) {
+            this.caret.setInlineId(caretInline.id)
+            this.caret.setBlockId(caretInline.blockId)
+            this.caret.setPosition(caretPosition)
+        }
+    }
+    
 
-        renderBlock(block, this.syntheticEl!)
-
-        this.restoreCaret()
-
-        console.log(`inline${inline.id} changed: ${inline.text.symbolic} > ${value}`)
-
-        this.updateBlock(block)
-        this.updateAST()
-
+    private emitChange() {
         this.dispatchEvent(new CustomEvent('change', {
             detail: { value: this.engine.getText() },
             bubbles: true,
             composed: true,
         }))
-
-        this.isEditing = false;
     }
 
     private updateBlock(block: Block) {
