@@ -197,38 +197,14 @@ export class SyntheticText extends HTMLElement {
 
     private onInput(e: Event) {
         console.log('input')
-        if (!this.syntheticEl) return
-
-        const target = e.target as HTMLDivElement
-        if (!target.dataset?.inlineId) return
-
-        const inlineId = target.dataset.inlineId!
-        const inline = this.engine.getInlineById(inlineId)
-        if (!inline) return
-
-        const block = this.engine.getBlockById(inline.blockId)
-        if (!block) return
-
-        const inlineIndex = block.inlines.findIndex(i => i.id === inlineId)
-        if (inlineIndex === -1) return
-
-        // check if changed
-        const newText = target.textContent ?? ''
-        const oldText = inline.text.symbolic
-
-        if (newText === oldText) return
+        const ctx = this.resolveInlineContext(e)
+        if (!ctx) return
+        const { inline, block, inlineIndex, inlineEl } = ctx
+        const value = inlineEl.textContent ?? ''
 
         this.isEditing = true;
 
-        const sel = window.getSelection();
-        let caretOffsetInTarget = 0;
-        if (sel && sel.rangeCount > 0) {
-            const range = sel.getRangeAt(0);
-            const preRange = document.createRange();
-            preRange.selectNodeContents(target);
-            preRange.setEnd(range.startContainer, range.startOffset);
-            caretOffsetInTarget = preRange.toString().length;
-        }
+        const caretPositionInInline = this.caret.getPositionInInline(inlineEl)
 
         let contextStart = inlineIndex
         let contextEnd = inlineIndex + 1
@@ -244,11 +220,10 @@ export class SyntheticText extends HTMLElement {
         let contextText = ''
         const contextInlines = block.inlines.slice(contextStart, contextEnd)
         for (let i = 0; i < contextInlines.length; i++) {
-            const inline = contextInlines[i]
-            if (inline.id === inlineId) {
-                contextText += newText
+            if (contextInlines[i].id === inline.id) {
+                contextText += value
             } else {
-                contextText += inline.text.symbolic
+                contextText += contextInlines[i].text.symbolic
             }
         }
 
@@ -261,47 +236,29 @@ export class SyntheticText extends HTMLElement {
 
         block.inlines.splice(contextStart, contextEnd - contextStart, ...newInlines)
         
-        let charsBeforeEditedInline = 0;
-        for (let i = 0; i < contextInlines.length; i++) {
-            if (contextInlines[i].id === inlineId) break;
-            charsBeforeEditedInline += contextInlines[i].text.symbolic.length;
-        }
+        const caretPositionInInlines = this.caret.getPositionInInlines(contextInlines, inline.id, caretPositionInInline)
         
-        const newCaretPosInContext = charsBeforeEditedInline + caretOffsetInTarget;
-        
-        let targetCaretInline: Inline | null = null;
-        let targetCaretOffset = 0;
-        let accumulatedLength = 0;
-        
-        for (const ni of newInlines) {
-            const textLength = ni.text?.symbolic.length ?? 0;
-            if (accumulatedLength + textLength >= newCaretPosInContext) {
-                targetCaretInline = ni;
-                targetCaretOffset = newCaretPosInContext - accumulatedLength;
-                break;
-            }
-            accumulatedLength += textLength;
-        }
+        let { inline: caretInline, position: caretPosition } = this.caret.getInlineFromPositionInInlines(newInlines, caretPositionInInlines)
 
-        if (!targetCaretInline && newInlines.length > 0) {
+        if (!caretInline && newInlines.length > 0) {
             const lastInline = newInlines[newInlines.length - 1];
-            targetCaretInline = lastInline;
-            targetCaretOffset = lastInline.text.symbolic.length;
+            caretInline = lastInline;
+            caretPosition = lastInline.text.symbolic.length;
         }
     
-        if (targetCaretInline) {
-            this.caret.setInlineId(targetCaretInline.id);
-            this.caret.setBlockId(targetCaretInline.blockId);
-            this.caret.setPosition(targetCaretOffset);
+        if (caretInline) {
+            this.caret.setInlineId(caretInline.id);
+            this.caret.setBlockId(caretInline.blockId);
+            this.caret.setPosition(caretPosition);
         }
 
         console.log('new inlines', JSON.stringify(block.inlines, null, 2))
 
-        renderBlock(block, this.syntheticEl)
+        renderBlock(block, this.syntheticEl!)
 
         this.restoreCaret()
 
-        console.log(`inline${inline.id} changed: ${oldText} > ${newText}`)
+        console.log(`inline${inline.id} changed: ${inline.text.symbolic} > ${value}`)
 
         this.updateBlock(block)
         this.updateAST()
@@ -313,20 +270,6 @@ export class SyntheticText extends HTMLElement {
         }))
 
         this.isEditing = false;
-    }
-
-    private shouldSkipReplacement(oldInlines: Inline[], newInlines: Inline[]): boolean {
-        if (oldInlines.length !== newInlines.length) return false;
-      
-        for (let i = 0; i < oldInlines.length; i++) {
-          const oldI = oldInlines[i];
-          const newI = newInlines[i];
-          if (oldI.type !== newI.type) return false;
-          if (oldI.type === 'text' && oldI.text.symbolic !== newI.text.symbolic) return false;
-          if (oldI.type !== 'text' && oldI.text.symbolic !== newI.text.symbolic) return false;
-        }
-      
-        return true;
     }
 
     private updateBlock(block: Block) {
@@ -480,5 +423,31 @@ export class SyntheticText extends HTMLElement {
         let offset = Math.round(syntheticOffset * ratio);
 
         return Math.max(0, Math.min(offset, symbolicLength));
+    }
+
+    private resolveInlineContext(e: Event) {
+        if (!this.syntheticEl) return null
+
+        const target = e.target as HTMLDivElement
+        if (!target.dataset?.inlineId) return null
+
+        const inlineId = target.dataset.inlineId!
+        const inline = this.engine.getInlineById(inlineId)
+        if (!inline) return null
+
+        const block = this.engine.getBlockById(inline.blockId)
+        if (!block) return null
+
+        const inlineIndex = block.inlines.findIndex(i => i.id === inlineId)
+        if (inlineIndex === -1) return null
+
+        const ctx: {
+            inline: Inline,
+            block: Block,
+            inlineIndex: number,
+            inlineEl: HTMLElement
+        } = { inline, block, inlineIndex, inlineEl: target }
+
+        return ctx
     }
 }
