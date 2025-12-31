@@ -68,7 +68,7 @@ export class SyntheticText extends HTMLElement {
         div.classList.add('syntheticText')
 
         document.addEventListener('selectionchange', () => {
-            console.log('selectionchange')
+            // console.log('selectionchange')
             if (this.isEditing) return;
             if (!this.syntheticEl) return;
         
@@ -109,7 +109,7 @@ export class SyntheticText extends HTMLElement {
             
                 this.caret.setPosition(position);
             
-                console.log('Caret moved to:', inlineId, 'position:', position);
+                // console.log('Caret moved to:', inlineId, 'position:', position);
             })
         });
 
@@ -169,7 +169,7 @@ export class SyntheticText extends HTMLElement {
                 }
             }
 
-            console.log('focusout')
+            // console.log('focusout')
             if (!this.syntheticEl?.contains(e.relatedTarget as Node)) {
                 const target = e.target as HTMLElement
                 if (!target.dataset?.inlineId) return;
@@ -205,17 +205,59 @@ export class SyntheticText extends HTMLElement {
         console.log('backspace')
         const ctx = this.resolveInlineContext(e)
         if (!ctx) return
-        const { inline, block, inlineIndex, inlineEl } = ctx
-        const value = inlineEl.textContent ?? ''
 
         this.isEditing = true
 
-        const caretPositionInInline = this.caret.getPositionInInline(inlineEl)
+        const caretPosition = this.caret.getPositionInInline(ctx.inlineEl)
 
-        if (caretPositionInInline === 0) {
-            e.preventDefault()
-            console.log('trigger merge with previous')
+        if (caretPosition !== 0) {
+            this.isEditing = false
+            return
         }
+
+        if (ctx.inlineIndex === 0) {
+            this.isEditing = false
+            return
+        }
+
+        e.preventDefault()
+
+        const previousInline = ctx.block.inlines[ctx.inlineIndex - 1]
+        const mergedText = previousInline.text.symbolic + ctx.inline.text.symbolic
+        const newInlines = parseInlineContent(mergedText, ctx.block.id, previousInline.position.start)
+
+        ctx.block.inlines.splice(ctx.inlineIndex - 1, 2, ...newInlines)
+
+        const caretTargetPosition = previousInline.text.symbolic.length
+
+        let acc = 0
+        let caretInline: Inline | null = null
+        let caretOffset = 0
+
+        for (const ni of newInlines) {
+            const len = ni.text.symbolic.length
+            if (acc + len >= caretTargetPosition) {
+                caretInline = ni
+                caretOffset = caretTargetPosition - acc
+                break
+            }
+            acc += len
+        }
+
+        if (caretInline) {
+            this.caret.setInlineId(caretInline.id)
+            this.caret.setBlockId(caretInline.blockId)
+            this.caret.setPosition(caretOffset)
+        }
+
+        renderBlock(ctx.block, this.syntheticEl!)
+
+        console.log(`inline${ctx.inline.id} merged with previous: ${ctx.inline.text.symbolic} > ${ctx.inlineEl.textContent ?? ''}`)
+
+        this.updateBlock(ctx.block)
+        this.updateAST()
+        this.restoreCaret()
+        this.emitChange()
         
         this.isEditing = false
     }

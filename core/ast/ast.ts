@@ -562,7 +562,7 @@ export function parseInlineContent(text: string, blockId: string, offset: number
     const delimiterStack: Delimiter[] = [];
     let pos = 0;
     let textStart = 0;
-    console.log('parseInlineContent', text, blockId, offset)
+    // console.log('parseInlineContent', text, blockId, offset)
 
     const addText = (start: number, end: number) => {
         if (end > start) {
