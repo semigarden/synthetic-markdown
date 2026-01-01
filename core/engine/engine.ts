@@ -21,8 +21,6 @@ export default class Engine {
             this.ast = buildAst(text)
             this.blocks = this.ast?.blocks ?? []
             this.inlines = this.ast?.inlines ?? []
-
-            // console.log('buildAst', JSON.stringify(this.ast.blocks, null, 2))
         }
         this.text = text
     }
