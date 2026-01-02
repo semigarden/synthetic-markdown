@@ -308,6 +308,8 @@ export class SyntheticText extends HTMLElement {
             return
         }
 
+        e.preventDefault()
+
         if (ctx.inlineIndex === 0) {
             console.log('backspace at start of block')
             const blockIndex = this.engine.ast.blocks.findIndex(b => b.id === ctx.block.id)
@@ -367,57 +369,25 @@ export class SyntheticText extends HTMLElement {
             return
         }
 
-        e.preventDefault()
-
         const previousInline = ctx.block.inlines[ctx.inlineIndex - 1]
 
-        // if (ctx.inline.text.symbolic.length === 0) {
-        //     ctx.block.inlines.splice(ctx.inlineIndex, 1)
-        
-        //     this.caret.setInlineId(previousInline.id)
-        //     this.caret.setBlockId(previousInline.blockId)
-        //     this.caret.setPosition(previousInline.text.symbolic.length)
-        
-        //     renderBlock(ctx.block, this.syntheticEl!)
-        //     this.updateBlock(ctx.block)
-        //     this.updateAST()
-        //     this.restoreCaret()
-        //     this.emitChange()
-        
-        //     this.isEditing = false
-        //     return
-        // }
-
-        const mergedText = previousInline.text.symbolic + ctx.inline.text.symbolic
-        const newInlines = parseInlineContent(mergedText, ctx.block.id, previousInline.position.start)
-
-        ctx.block.inlines.splice(ctx.inlineIndex - 1, 2, ...newInlines)
-
-        const caretTargetPosition = previousInline.text.symbolic.length
-
-        let acc = 0
-        let caretInline: Inline | null = null
-        let caretOffset = 0
-
-        for (const ni of newInlines) {
-            const len = ni.text.symbolic.length
-            if (acc + len >= caretTargetPosition) {
-                caretInline = ni
-                caretOffset = caretTargetPosition - acc
-                break
+        const currentBlockText = ctx.block.inlines.map(i => {
+            if (i.id === previousInline.id && previousInline.text.symbolic.length > 0) {
+                return i.text.symbolic.slice(0, -1)
             }
-            acc += len
-        }
+            return i.text.symbolic
+        }).join('')
 
-        if (caretInline) {
-            this.caret.setInlineId(caretInline.id)
-            this.caret.setBlockId(caretInline.blockId)
-            this.caret.setPosition(caretOffset)
-        }
+        const newInlines = parseInlineContent(currentBlockText, ctx.block.id, previousInline.position.end - 1)
+
+        ctx.block.inlines = newInlines
+
+        const targetInline = newInlines[ctx.inlineIndex - 1]
+
+        this.caret.setInlineId(targetInline.id)
+        this.caret.setBlockId(targetInline.blockId)
 
         renderBlock(ctx.block, this.syntheticEl!)
-
-        console.log(`inline${ctx.inline.id} merged with previous: ${ctx.inline.text.symbolic} > ${ctx.inlineEl.textContent ?? ''}`)
 
         this.updateBlock(ctx.block)
         this.updateAST()
