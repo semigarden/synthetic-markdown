@@ -6,6 +6,8 @@ export default class Caret {
     private position: number | null = null
     private affinity?: 'start' | 'end'
 
+    public pendingTextRestore: { blockId: string; offset: number } | null = null
+
     constructor(inlineId?: string, blockId?: string, position?: number, affinity?: 'start' | 'end') {
         this.inlineId = inlineId ?? null
         this.blockId = blockId ?? null

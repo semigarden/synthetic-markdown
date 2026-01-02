@@ -309,6 +309,60 @@ export class SyntheticText extends HTMLElement {
         }
 
         if (ctx.inlineIndex === 0) {
+            console.log('backspace at start of block')
+            const blockIndex = this.engine.ast.blocks.findIndex(b => b.id === ctx.block.id)
+            if (blockIndex <= 0) {
+                this.isEditing = false
+                return
+            }
+
+            const prevBlock = this.engine.ast.blocks[blockIndex - 1]
+
+            const prevLastInlineIndex = prevBlock.inlines.length - 1
+
+            const prevText = prevBlock.inlines
+                .map(i => i.text.symbolic)
+                .join('')
+
+            const currText = ctx.block.inlines
+                .map(i => i.text.symbolic)
+                .join('')
+
+            const mergedText = prevText + currText
+
+            const newInlines = parseInlineContent(
+                mergedText,
+                prevBlock.id,
+                prevBlock.position.start
+            )
+
+            prevBlock.text = mergedText
+            prevBlock.inlines = newInlines
+
+
+            this.engine.ast.blocks.splice(blockIndex, 1)
+
+            const targetInline = newInlines[prevLastInlineIndex + 1]
+
+            this.caret.setInlineId(targetInline.id)
+            this.caret.setBlockId(targetInline.blockId)
+
+            renderBlock(prevBlock, this.syntheticEl!)
+
+            const blockEl = this.syntheticEl?.querySelector(`[data-block-id="${ctx.block.id}"]`)
+            if (blockEl) {
+                blockEl.remove()
+            }
+
+            this.updateBlock(prevBlock)
+            this.updateAST()
+
+            requestAnimationFrame(() => {
+                this.restoreCaret()
+            })
+
+            this.emitChange()
+
             this.isEditing = false
             return
         }
@@ -316,6 +370,24 @@ export class SyntheticText extends HTMLElement {
         e.preventDefault()
 
         const previousInline = ctx.block.inlines[ctx.inlineIndex - 1]
+
+        // if (ctx.inline.text.symbolic.length === 0) {
+        //     ctx.block.inlines.splice(ctx.inlineIndex, 1)
+        
+        //     this.caret.setInlineId(previousInline.id)
+        //     this.caret.setBlockId(previousInline.blockId)
+        //     this.caret.setPosition(previousInline.text.symbolic.length)
+        
+        //     renderBlock(ctx.block, this.syntheticEl!)
+        //     this.updateBlock(ctx.block)
+        //     this.updateAST()
+        //     this.restoreCaret()
+        //     this.emitChange()
+        
+        //     this.isEditing = false
+        //     return
+        // }
+
         const mergedText = previousInline.text.symbolic + ctx.inline.text.symbolic
         const newInlines = parseInlineContent(mergedText, ctx.block.id, previousInline.position.start)
 
@@ -497,6 +569,7 @@ export class SyntheticText extends HTMLElement {
     }
 
     private updateBlock(block: Block) {
+        console.log('updateBlock', JSON.stringify(block, null, 2))
         let pos = 0;
         for (const inline of block.inlines) {
             if (!inline.id) inline.id = uuid()
@@ -661,5 +734,77 @@ export class SyntheticText extends HTMLElement {
         } = { inline, block, inlineIndex, inlineEl: target }
 
         return ctx
+    }
+
+    private restoreCaretByTextOffset() {
+        const pending = this.caret.pendingTextRestore
+        if (!pending) return
+    
+        const blockEl = this.syntheticEl?.querySelector(
+            `[data-block-id="${pending.blockId}"]`
+        )
+        if (!blockEl) return
+    
+        let acc = 0
+    
+        const inlineEls = blockEl.querySelectorAll('[data-inline-id]')
+    
+        for (const inlineEl of inlineEls) {
+            const text = inlineEl.textContent ?? ''
+            const len = text.length
+    
+            if (acc + len >= pending.offset) {
+                const offsetInInline = pending.offset - acc
+                this.placeCaret(inlineEl.firstChild ?? inlineEl, offsetInInline)
+                this.caret.pendingTextRestore = null
+                return
+            }
+    
+            acc += len
+        }
+    
+        // fallback → end of block
+        const lastInline = inlineEls[inlineEls.length - 1]
+        if (lastInline) {
+            const len = lastInline.textContent?.length ?? 0
+            this.placeCaret(lastInline.firstChild ?? lastInline, len)
+        }
+    
+        this.caret.pendingTextRestore = null
+    }
+
+    private placeCaret(target: Node, offset: number) {
+        const selection = window.getSelection()
+        if (!selection) return
+    
+        const range = document.createRange()
+    
+        // Normalize target:
+        // If element node, try to use its first text child
+        let node: Node = target
+    
+        if (node.nodeType === Node.ELEMENT_NODE) {
+            if (node.firstChild) {
+                node = node.firstChild
+            } else {
+                // Empty element → caret can only be at offset 0
+                range.setStart(node, 0)
+                range.collapse(true)
+                selection.removeAllRanges()
+                selection.addRange(range)
+                return
+            }
+        }
+    
+        if (node.nodeType !== Node.TEXT_NODE) return
+    
+        const textLength = node.textContent?.length ?? 0
+        const safeOffset = Math.max(0, Math.min(offset, textLength))
+    
+        range.setStart(node, safeOffset)
+        range.collapse(true)
+    
+        selection.removeAllRanges()
+        selection.addRange(range)
     }
 }
