@@ -23,6 +23,15 @@ export function renderBlock(block: Block, container: HTMLElement, focusedInlineI
           el.appendChild(code)
           renderInlines(block.inlines, code, focusedInlineId)
           break
+        case 'list':
+          el = document.createElement(block.ordered ? 'ol' : 'ul')
+          el.style.margin = '0px'
+          el.style.border = '1px solid purple'
+          break
+        case 'listItem':
+          el = document.createElement('li')
+          el.style.border = '1px solid green'
+          break
         default:
           el = document.createElement('div')
       }
@@ -36,6 +45,10 @@ export function renderBlock(block: Block, container: HTMLElement, focusedInlineI
       code.innerHTML = ''
       renderInlines(block.inlines, code, focusedInlineId)
       if (!el.querySelector('code')) el.appendChild(code)
+    } if (block.type === 'list' || block.type === 'listItem') {
+      for (const child of block.blocks) {
+        renderBlock(child, el, focusedInlineId)
+      }
     } else {
       renderInlines(block.inlines, el, focusedInlineId)
     }
