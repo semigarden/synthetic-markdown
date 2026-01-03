@@ -173,30 +173,25 @@ function buildAst(text: string, previousAst: Document | null = null): Document {
 
             case "paragraph":
             default: {
-                const lastBlock = blocks[blocks.length - 1];
-                if (lastBlock && lastBlock.type === "paragraph" && line.trim() !== "") {
-                    lastBlock.text += "\n" + line;
-                    lastBlock.position.end = end + 1;
-                } else {
-                    block = {
-                        id: tempUuid(),
-                        type: "paragraph",
-                        text: line,
-                        position: { start, end },
-                        inlines: [],
-                    }
-
-                    const text: Inline = {
-                        id: uuid(),
-                        type: "text",
-                        blockId: block.id,
-                        text: { symbolic: "", semantic: "" },
-                        position: { start: 0, end: 0 },
-                    }
-
-                    block.inlines.push(text);
-                    blocks.push(block);
+                block = {
+                    id: tempUuid(),
+                    type: "paragraph",
+                    text: line,
+                    position: { start, end },
+                    inlines: [],
                 }
+
+                const text: Inline = {
+                    id: uuid(),
+                    type: "text",
+                    blockId: block.id,
+                    text: { symbolic: "", semantic: "" },
+                    position: { start: 0, end: 0 },
+                }
+
+                block.inlines.push(text);
+                blocks.push(block);
+
                 break;
             }
 
@@ -962,53 +957,53 @@ export function parseInlineContent(text: string, blockId: string, offset: number
             continue;
         }
 
-        // Hard line break: two+ spaces at end of line followed by newline
-        if (text[pos] === " ") {
-            let spaceCount = 1;
-            while (pos + spaceCount < text.length && text[pos + spaceCount] === " ") {
-                spaceCount++;
-            }
-            if (spaceCount >= 2 && pos + spaceCount < text.length && text[pos + spaceCount] === "\n") {
-                addText(textStart, pos);
-                const symbolic = " ".repeat(spaceCount) + "\n";
-                result.push({
-                    id: uuid(),
-                    type: "hardBreak",
-                    blockId,
-                    text: {
-                        symbolic,
-                        semantic: "\n",
-                    },
-                    position: {
-                        start: offset + pos,
-                        end: offset + pos + spaceCount + 1,
-                    },
-                });
-                pos += spaceCount + 1;
-                textStart = pos;
-                continue;
-            }
-        }
+        // // Hard line break: two+ spaces at end of line followed by newline
+        // if (text[pos] === " ") {
+        //     let spaceCount = 1;
+        //     while (pos + spaceCount < text.length && text[pos + spaceCount] === " ") {
+        //         spaceCount++;
+        //     }
+        //     if (spaceCount >= 2 && pos + spaceCount < text.length && text[pos + spaceCount] === "\n") {
+        //         addText(textStart, pos);
+        //         const symbolic = " ".repeat(spaceCount) + "\n";
+        //         result.push({
+        //             id: uuid(),
+        //             type: "hardBreak",
+        //             blockId,
+        //             text: {
+        //                 symbolic,
+        //                 semantic: "\n",
+        //             },
+        //             position: {
+        //                 start: offset + pos,
+        //                 end: offset + pos + spaceCount + 1,
+        //             },
+        //         });
+        //         pos += spaceCount + 1;
+        //         textStart = pos;
+        //         continue;
+        //     }
+        // }
 
-        if (text[pos] === "\n") {
-            addText(textStart, pos);
-            result.push({
-                id: uuid(),
-                type: "softBreak",
-                blockId,
-                text: {
-                    symbolic: "\n",
-                    semantic: "\n",
-                },
-                position: {
-                    start: offset + pos,
-                    end: offset + pos + 1,
-                },
-            });
-            pos++;
-            textStart = pos;
-            continue;
-        }
+        // if (text[pos] === "\n") {
+        //     addText(textStart, pos);
+        //     result.push({
+        //         id: uuid(),
+        //         type: "softBreak",
+        //         blockId,
+        //         text: {
+        //             symbolic: "\n",
+        //             semantic: "\n",
+        //         },
+        //         position: {
+        //             start: offset + pos,
+        //             end: offset + pos + 1,
+        //         },
+        //     });
+        //     pos++;
+        //     textStart = pos;
+        //     continue;
+        // }
 
         if (text[pos] === ":") {
             const emojiMatch = text.slice(pos).match(/^:([a-zA-Z0-9_+-]+):/);
