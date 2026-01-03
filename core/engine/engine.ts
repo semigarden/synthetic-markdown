@@ -16,6 +16,7 @@ export default class Engine {
             this.ast = buildAst(text)
         }
         this.text = text
+        console.log('ast', JSON.stringify(this.ast, null, 2))
     }
 
     getText() {

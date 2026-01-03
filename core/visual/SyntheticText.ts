@@ -215,6 +215,52 @@ export class SyntheticText extends HTMLElement {
 
         e.preventDefault()
 
+        if (ctx.inlineIndex === 0) {
+            const newInline: Inline = {
+                id: uuid(),
+                type: 'text',
+                blockId: ctx.block.id,
+                text: { symbolic: '', semantic: '' },
+                position: { start: 0, end: 0 }
+            }
+
+            const inlines = ctx.block.inlines
+            const text = inlines.map(i => i.text.symbolic).join('')
+
+            const newBlock: Block = {
+                id: uuid(),
+                type: 'paragraph',
+                text: text,
+                inlines,
+                position: { start: ctx.block.position.start, end: text.length }
+            }
+
+            ctx.block.text = ''
+            ctx.block.inlines = [newInline]
+            ctx.block.position = { start: ctx.block.position.start, end: ctx.block.position.start }
+
+            const targetInline = newBlock.inlines[0]
+
+            console.log('newBlock', JSON.stringify(newBlock, null, 2))
+            console.log('targetInline', JSON.stringify(ctx.block, null, 2))
+
+            this.caret.setInlineId(targetInline.id)
+            this.caret.setBlockId(targetInline.blockId)
+            this.caret.setPosition(targetInline.position.start)
+
+            renderBlock(ctx.block, this.syntheticEl!)
+            renderBlock(newBlock, this.syntheticEl!)
+
+            this.updateBlock(ctx.block)
+            this.updateBlock(newBlock)
+            this.updateAST()
+            this.restoreCaret()
+            this.emitChange()
+
+            this.isEditing = false
+            return
+        }
+
         const caretPosition = this.caret.getPositionInInline(ctx.inlineEl)
         const text = ctx.inline.text.symbolic
 
@@ -338,13 +384,34 @@ export class SyntheticText extends HTMLElement {
                 prevBlock.position.start
             )
 
+            if (newInlines.length === 0) {
+                newInlines.push({
+                    id: uuid(),
+                    type: 'text',
+                    blockId: prevBlock.id,
+                    text: { symbolic: '', semantic: '' },
+                    position: { start: 0, end: 0 }
+                })
+            }
+
             prevBlock.text = mergedText
             prevBlock.inlines = newInlines
 
 
             this.engine.ast.blocks.splice(blockIndex, 1)
+            console.log('prevBlock', JSON.stringify(mergedText, null, 2))
 
-            const targetInline = newInlines[prevLastInlineIndex + 1]
+            console.log('ctx.inline.type', JSON.stringify(prevBlock.inlines, null, 2))
+            let targetInlineIndex: number
+            if (ctx.inline.type === prevBlock.inlines[prevLastInlineIndex].type && ctx.inline.type === 'text') {
+                targetInlineIndex = prevLastInlineIndex
+            } else {
+                targetInlineIndex = prevLastInlineIndex + 1
+            }
+            const targetInline = newInlines[targetInlineIndex]
+
+            console.log('prevBlock.inlines.length', JSON.stringify(newInlines, null, 2))
+            console.log('targetInline', JSON.stringify(prevBlock.inlines.length, null, 2))
 
             this.caret.setInlineId(targetInline.id)
             this.caret.setBlockId(targetInline.blockId)

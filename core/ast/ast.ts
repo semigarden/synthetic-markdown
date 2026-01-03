@@ -311,9 +311,9 @@ function buildAst(text: string, previousAst: Document | null = null): Document {
         const previousVersion = prevBlockMap.get(block.id);
         parseInlinesRecursive(block, previousVersion);
 
-        if (block.inlines) {
-            ast.inlines.push(...block.inlines);
-        }
+        // if (block.inlines) {
+        //     ast.inlines.push(...block.inlines);
+        // }
     }
 
     return ast;
