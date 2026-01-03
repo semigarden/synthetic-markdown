@@ -190,7 +190,7 @@ export class SyntheticText extends HTMLElement {
                 this.focusedBlockId = null;
             }
         })
-  
+
         div.addEventListener('input', this.onInput.bind(this))
 
         div.addEventListener('keydown', (e: KeyboardEvent) => {
@@ -362,9 +362,9 @@ export class SyntheticText extends HTMLElement {
         this.restoreCaret()
         this.emitChange()
 
-        console.log('ast', JSON.stringify(this.engine.ast, null, 2))
+        // console.log('ast', JSON.stringify(this.engine.ast, null, 2))
 
-        console.log(`inline ${ctx.inline.id} split: ${ctx.inline.text.symbolic} > ${ctx.inlineEl.textContent ?? ''}`)
+        // console.log(`inline ${ctx.inline.id} split: ${ctx.inline.text.symbolic} > ${ctx.inlineEl.textContent ?? ''}`)
 
         this.isEditing = false
     }
@@ -397,6 +397,8 @@ export class SyntheticText extends HTMLElement {
             const prevBlock = this.engine.ast.blocks[blockIndex - 1]
 
             const prevLastInlineIndex = prevBlock.inlines.length - 1
+            const targetPosition = prevBlock.inlines[prevLastInlineIndex].position.end
+            console.log('targetPosition', targetPosition)
 
             const prevText = prevBlock.inlines
                 .map(i => i.text.symbolic)
@@ -429,9 +431,9 @@ export class SyntheticText extends HTMLElement {
 
 
             this.engine.ast.blocks.splice(blockIndex, 1)
-            console.log('prevBlock', JSON.stringify(mergedText, null, 2))
+            // console.log('prevBlock', JSON.stringify(mergedText, null, 2))
 
-            console.log('ctx.inline.type', JSON.stringify(prevBlock.inlines, null, 2))
+            // console.log('ctx.inline.type', JSON.stringify(prevBlock.inlines, null, 2))
             let targetInlineIndex: number
             if (ctx.inline.type === prevBlock.inlines[prevLastInlineIndex].type && ctx.inline.type === 'text') {
                 targetInlineIndex = prevLastInlineIndex
@@ -440,12 +442,12 @@ export class SyntheticText extends HTMLElement {
             }
             const targetInline = newInlines[targetInlineIndex]
 
-            console.log('prevBlock.inlines.length', JSON.stringify(newInlines, null, 2))
-            console.log('targetInline', JSON.stringify(prevBlock.inlines.length, null, 2))
+            // console.log('prevBlock.inlines.length', JSON.stringify(newInlines, null, 2))
+            // console.log('targetInline', JSON.stringify(prevBlock.inlines.length, null, 2))
 
             this.caret.setInlineId(targetInline.id)
             this.caret.setBlockId(targetInline.blockId)
-            this.caret.setPosition(0)
+            this.caret.setPosition(targetPosition)
 
             renderBlock(prevBlock, this.syntheticEl!)
 
@@ -638,23 +640,23 @@ export class SyntheticText extends HTMLElement {
     }
 
     private updateBlock(block: Block) {
-        // console.log('updateBlock', JSON.stringify(block, null, 2))
-        let pos = 0;
-        for (const inline of block.inlines) {
-            if (!inline.id) inline.id = uuid()
-            const len = inline.text.symbolic.length
-            inline.position = { start: pos, end: pos + len }
-            pos += len
-        }
+        // // console.log('updateBlock', JSON.stringify(block, null, 2))
+        // let pos = 0;
+        // for (const inline of block.inlines) {
+        //     if (!inline.id) inline.id = uuid()
+        //     const len = inline.text.symbolic.length
+        //     inline.position = { start: pos, end: pos + len }
+        //     pos += len
+        // }
 
-        block.text = block.inlines.map(i => i.text.symbolic).join('')
+        // block.text = block.inlines.map(i => i.text.symbolic).join('')
 
-        if (!block.id) block.id = uuid()
+        // if (!block.id) block.id = uuid()
 
-        block.position = {
-            start: block.inlines[0]?.position.start ?? 0,
-            end: block.inlines[block.inlines.length - 1]?.position.end ?? 0,
-        }
+        // block.position = {
+        //     start: block.inlines[0]?.position.start ?? 0,
+        //     end: block.inlines[block.inlines.length - 1]?.position.end ?? 0,
+        // }
     }
 
     private updateAST() {
@@ -662,8 +664,7 @@ export class SyntheticText extends HTMLElement {
 
         let globalPos = 0;
 
-        for (let i = 0; i < ast.blocks.length; i++) {
-            const block = ast.blocks[i]
+        for (const block of ast.blocks) {
             const blockStart = globalPos;
 
             for (const inline of block.inlines) {
@@ -678,9 +679,6 @@ export class SyntheticText extends HTMLElement {
 
             if (!block.id) block.id = uuid()
 
-            // if (i < ast.blocks.length - 1) {
-            //     globalPos += 2 // '\n\n'
-            // }
             globalPos += 1
         }
 
@@ -688,6 +686,8 @@ export class SyntheticText extends HTMLElement {
         this.engine.text = joinedText
         this.engine.ast.text = joinedText
         // this.engine.setText(joinedText)
+
+        console.log('ast', JSON.stringify(this.engine.ast, null, 2))
     }
 
     private restoreCaret() {

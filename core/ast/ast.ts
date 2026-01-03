@@ -38,7 +38,7 @@ function buildAst(text: string, previousAst: Document | null = null): Document {
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const start = offset;
-        const end = i === lines.length - 1 ? text.length : offset + line.length;
+        const end = offset + line.length;
 
         if (state.inFencedCodeBlock) {
             const closeMatch = line.match(
@@ -197,7 +197,7 @@ function buildAst(text: string, previousAst: Document | null = null): Document {
 
         }
 
-        offset = end + 1;
+        offset = end;
     }
 
     const prevBlocks = previousAst?.blocks || [];
@@ -285,13 +285,15 @@ function buildAst(text: string, previousAst: Document | null = null): Document {
     };
     reconcileNested(blocks);
 
+    const syntheticText = text.replace(/\n/g, '');
+
     const ast: Document = {
         id: previousAst?.id || uuid(),
         type: "document",
         text,
         position: {
             start: 0,
-            end: text.length,
+            end: syntheticText.length,
         },
         blocks,
         inlines: [],
