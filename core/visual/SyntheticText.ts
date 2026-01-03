@@ -588,8 +588,20 @@ export class SyntheticText extends HTMLElement {
 
         if (!caretInline && newInlines.length === 0) {
             const prevInline = block.inlines[inlineIndex - 1]
-            caretInline = prevInline
-            caretPosition = prevInline.text.symbolic.length
+            if (prevInline) {
+                caretInline = prevInline
+                caretPosition = prevInline.text.symbolic.length
+            } else {
+                newInlines.push({
+                    id: uuid(),
+                    type: 'text',
+                    blockId: block.id,
+                    text: { symbolic: '', semantic: '' },
+                    position: { start: 0, end: 0 }
+                })
+                caretInline = newInlines[0]
+                caretPosition = 0
+            }
         }
 
         return {
