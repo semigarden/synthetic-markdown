@@ -3,7 +3,7 @@ import Caret from './caret'
 import { renderAST } from '../render/render'
 import { renderBlock } from '../render/renderBlock'
 import css from './SyntheticText.scss?inline'
-import { parseInlineContent } from '../ast/ast'
+import { parseInlineContent, detectType, buildBlocks } from '../ast/ast'
 import { Block, BlockType, Inline } from '../ast/types'
 import { uuid } from '../utils/utils'
 
@@ -251,8 +251,10 @@ export class SyntheticText extends HTMLElement {
 
         const caretPosition = this.caret.getPositionInInline(ctx.inlineEl)
         const blocks = this.engine.ast.blocks
-        const blockIndex = blocks.findIndex(b => b.id === ctx.block.id)
+        const flattenedBlocks = this.flattenBlocks(blocks)
+        const blockIndex = flattenedBlocks.findIndex(b => b.id === ctx.block.id)
 
+        console.log('blockIndex', blockIndex, 'ctx.block.id', ctx.block.id, 'blocks', JSON.stringify(blocks, null, 2))
         if (blockIndex === -1) return
 
         console.log('caretPosition', caretPosition)
@@ -537,6 +539,21 @@ export class SyntheticText extends HTMLElement {
 
         this.isEditing = true;
 
+        console.log('ctx', ctx.inlineEl.textContent)
+        const newText = ctx.inlineEl.textContent ?? ''
+        const detectedBlockType = this.detectBlockType(newText)
+
+        const blockTypeChanged =
+            detectedBlockType.type !== ctx.block.type ||
+            (detectedBlockType.type === 'heading' && ctx.block.type === 'heading' && detectedBlockType.level !== ctx.block.level)
+        
+        if (blockTypeChanged) {
+            console.log('block type changed', detectedBlockType.type, ctx.block.type)
+            this.transformBlock(ctx.block, newText, detectedBlockType.type)
+            this.isEditing = false
+            return
+        }
+
         const caretOffset = this.caret.getPositionInInline(ctx.inlineEl)
         const result = this.normalizeTextContext({
             inline: ctx.inline,
@@ -557,6 +574,50 @@ export class SyntheticText extends HTMLElement {
         this.emitChange()
 
         this.isEditing = false;
+    }
+
+    private transformBlock(block: Block, text: string, type: Block["type"]) {
+        const flattenedBlocks = this.flattenBlocks(this.engine.ast.blocks)
+        const blockIndex = flattenedBlocks.findIndex(b => b.id === block.id)
+        if (blockIndex === -1) return block
+
+        const newBlocks = buildBlocks(text, this.engine.ast)
+        if (newBlocks.length === 0) return block
+
+        this.engine.ast.blocks.splice(blockIndex, 1, ...newBlocks)
+
+        for (const newBlock of newBlocks) {
+            const oldBlockEl = this.syntheticEl?.querySelector(`[data-block-id="${block.id}"]`)
+            if (oldBlockEl) {
+                oldBlockEl.remove()
+            }
+            renderBlock(newBlock, this.syntheticEl!)
+
+            if (newBlock.type === 'list') {
+                const nestedBlocks = this.flattenBlocks(newBlock.blocks)
+                const lastNestedBlock = nestedBlocks.at(-1)
+
+                if (lastNestedBlock) {
+                    const lastNestedInline = lastNestedBlock?.inlines.at(-1)
+                    if (lastNestedInline) {
+                        this.caret.setInlineId(lastNestedInline.id)
+                        this.caret.setBlockId(lastNestedBlock.id)
+                        this.caret.setPosition(lastNestedInline.text.symbolic.length)
+                        this.restoreCaret()
+                    }
+                }
+            }
+        }
+
+        this.updateAST()
+        this.restoreCaret()
+        this.emitChange()
+
+        // console.log('newBlocks', JSON.stringify(this.engine.ast.blocks, null, 2))
+    }
+
+    private detectBlockType(text: string) {
+        return detectType(text)
     }
 
     private normalizeTextContext(params: {
@@ -688,54 +749,110 @@ export class SyntheticText extends HTMLElement {
         }))
     }
 
-    private updateBlock(block: Block) {
-        // // console.log('updateBlock', JSON.stringify(block, null, 2))
-        // let pos = 0;
-        // for (const inline of block.inlines) {
-        //     if (!inline.id) inline.id = uuid()
-        //     const len = inline.text.symbolic.length
-        //     inline.position = { start: pos, end: pos + len }
-        //     pos += len
-        // }
-
-        // block.text = block.inlines.map(i => i.text.symbolic).join('')
-
-        // if (!block.id) block.id = uuid()
-
-        // block.position = {
-        //     start: block.inlines[0]?.position.start ?? 0,
-        //     end: block.inlines[block.inlines.length - 1]?.position.end ?? 0,
-        // }
-    }
-
     private updateAST() {
         const ast = this.engine.ast
+        let globalPos = 0
 
-        let globalPos = 0;
+        const updateBlock = (block: Block): string => {
+            const start = globalPos
+            let text = ''
 
-        for (const block of ast.blocks) {
-            const blockStart = globalPos;
+            if (!('blocks' in block) || !block.blocks) {
+                let localPos = 0
 
-            for (const inline of block.inlines) {
-                if (!inline.id) inline.id = uuid()
-                const len = inline.text.symbolic.length
-                inline.position = { start: 0, end: len };
+                for (const inline of block.inlines) {
+                    if (!inline.id) inline.id = uuid()
+                        const len = inline.text.symbolic.length
+                        inline.position = {
+                        start: localPos,
+                        end: localPos + len,
+                    }
+                    localPos += len
+                }
+
+                text = block.inlines.map(i => i.text.symbolic).join('')
+                block.text = text
+                block.position = { start, end: start + text.length }
+                globalPos += text.length
+
+                return text
             }
 
-            block.text = block.inlines.map(i => i.text.symbolic).join('')
-            block.position = { start: blockStart, end: blockStart +block.text.length }
+            if (block.type === 'list') {
+                const parts: string[] = []
 
-            if (!block.id) block.id = uuid()
+                for (let i = 0; i < block.blocks.length; i++) {
+                    const item = block.blocks[i]
+                    const itemText = updateBlock(item)
+                    parts.push(itemText)
 
-            globalPos += 1
+                    if (i < block.blocks.length - 1) {
+                        parts.push('\n')
+                        globalPos += 1
+                    }
+                }
+
+                text = parts.join('')
+            }
+
+            else if (block.type === 'listItem') {
+                const marker = block.text ?? ''
+                text += marker
+                globalPos += marker.length
+
+                const content = updateBlock(block.blocks[0])
+                text += content
+            }
+
+            block.text = text
+            block.position = { start, end: globalPos }
+
+            return text
         }
 
-        const joinedText = ast.blocks.map(b => b.text).join('\n')
-        this.engine.text = joinedText
-        this.engine.ast.text = joinedText
+        const parts: string[] = []
+        for (let i = 0; i < ast.blocks.length; i++) {
+            parts.push(updateBlock(ast.blocks[i]))
+            if (i < ast.blocks.length - 1) {
+                parts.push('\n')
+                globalPos += 1
+            }
+        }
 
-        // console.log('ast', JSON.stringify(this.engine.ast, null, 2))
+        ast.text = parts.join('')
+        this.engine.text = ast.text
+
+        console.log('ast', JSON.stringify(ast, null, 2))
     }
+
+    // private updateAST() {
+    //     const ast = this.engine.ast
+
+    //     let globalPos = 0;
+
+    //     for (const block of ast.blocks) {
+    //         const blockStart = globalPos;
+
+    //         for (const inline of block.inlines) {
+    //             if (!inline.id) inline.id = uuid()
+    //             const len = inline.text.symbolic.length
+    //             inline.position = { start: 0, end: len };
+    //         }
+
+    //         block.text = block.inlines.map(i => i.text.symbolic).join('')
+    //         block.position = { start: blockStart, end: blockStart +block.text.length }
+
+    //         if (!block.id) block.id = uuid()
+
+    //         globalPos += 1
+    //     }
+
+    //     const joinedText = ast.blocks.map(b => b.text).join('\n')
+    //     this.engine.text = joinedText
+    //     this.engine.ast.text = joinedText
+
+    //     console.log('ast', JSON.stringify(this.engine.ast, null, 2))
+    // }
 
     private restoreCaret() {
         console.log('restoreCaret', this.caret.getInlineId(), this.caret.getPosition())
@@ -960,5 +1077,13 @@ export class SyntheticText extends HTMLElement {
     
         selection.removeAllRanges()
         selection.addRange(range)
+    }
+
+    private flattenBlocks(blocks: Block[], acc: Block[] = []): Block[] {
+        for (const b of blocks) {
+          acc.push(b)
+          if ('blocks' in b && b.blocks) this.flattenBlocks(b.blocks, acc)
+        }
+        return acc
     }
 }

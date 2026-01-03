@@ -22,6 +22,25 @@ function levenshteinDistance(a: string, b: string): number {
 }
 
 function buildAst(text: string, previousAst: Document | null = null): Document {
+    const blocks = buildBlocks(text, previousAst);
+    const syntheticText = text.replace(/\n/g, '');
+
+    const ast: Document = {
+        id: previousAst?.id || uuid(),
+        type: "document",
+        text,
+        position: {
+            start: 0,
+            end: syntheticText.length,
+        },
+        blocks,
+        inlines: [],
+    };
+
+    return ast;
+}
+
+export function buildBlocks(text: string, previousAst: Document | null = null): Block[] {
     const lines = text.split("\n");
     let offset = 0;
     const blocks: Block[] = [];
@@ -111,7 +130,7 @@ function buildAst(text: string, previousAst: Document | null = null): Document {
                 const listItem: Block = {
                     id: tempUuid(),
                     type: "listItem",
-                    text: listItemText,
+                    text: markerMatch ? markerMatch[0] + listItemText : listItemText,
                     position: { start, end },
                     blocks: [paragraph],
                     inlines: [],
@@ -285,20 +304,6 @@ function buildAst(text: string, previousAst: Document | null = null): Document {
     };
     reconcileNested(blocks);
 
-    const syntheticText = text.replace(/\n/g, '');
-
-    const ast: Document = {
-        id: previousAst?.id || uuid(),
-        type: "document",
-        text,
-        position: {
-            start: 0,
-            end: syntheticText.length,
-        },
-        blocks,
-        inlines: [],
-    };
-
     const prevBlockMap = new Map<string, Block>();
     previousAst?.blocks.forEach(b => {
         if (b.id) prevBlockMap.set(b.id, b);
@@ -307,13 +312,9 @@ function buildAst(text: string, previousAst: Document | null = null): Document {
     for (const block of blocks) {
         const previousVersion = prevBlockMap.get(block.id);
         parseInlinesRecursive(block, previousVersion);
-
-        // if (block.inlines) {
-        //     ast.inlines.push(...block.inlines);
-        // }
     }
 
-    return ast;
+    return blocks;
 }
 
 function parseInlinesRecursive(block: Block, previousBlock?: Block) {
@@ -1393,7 +1394,7 @@ function processEmphasis(stack: Delimiter[], nodes: Inline[], blockId: string) {
 
 
 
-function detectType(line: string): DetectedBlock {
+export function detectType(line: string): DetectedBlock {
     const trimmed = line.trim();
 
     // Empty line -> blank line
