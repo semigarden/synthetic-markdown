@@ -4,13 +4,17 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "main": "./dist/lib.js",
-  "module": "./dist/lib.js",
-  "types": "./dist/lib.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/lib.js",
-      "types": "./dist/lib.d.ts"
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./react": {
+      "import": "./dist/react.js",
+      "types": "./dist/react.d.ts"
     }
   },
   "files": [

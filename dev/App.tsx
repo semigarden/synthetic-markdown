@@ -1,11 +1,10 @@
-import React, { useEffect, useState } from 'react'
-import Component from './Component'
+import { useEffect, useState } from 'react'
 import { loadText, saveText } from './db'
+import SyntheticText from '../react/SyntheticText'
 
 const App = () => {
   const [value, setValue] = useState('')
 
-  // load once
   useEffect(() => {
     loadText().then(setValue)
   }, [])
@@ -16,7 +15,7 @@ const App = () => {
   }
 
   return (
-    <Component text={value} onChange={handleChange} />
+    <SyntheticText value={value} onChange={handleChange} />
   )
 }
 

@@ -1,5 +1,5 @@
 {
-  "files": ["dev/elements.d.ts"],
+  "files": ["react/jsx.d.ts"],
   "compilerOptions": {
     "jsx": "react-jsx",
     "module": "ESNext",
@@ -10,6 +10,7 @@
   "include": [
     "dev",
     "core",
+    "react",
     "**/*.d.ts"
   ]
 }
