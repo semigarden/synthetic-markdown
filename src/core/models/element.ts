@@ -1,7 +1,7 @@
 import AST from './ast'
 import Caret from './caret'
 import Editor from './editor'
-import css from './SyntheticText.scss?inline'
+import css from '../styles/element.scss?inline'
 import { buildAst } from '../ast/ast'
 import { renderAST } from '../render/render'
 
