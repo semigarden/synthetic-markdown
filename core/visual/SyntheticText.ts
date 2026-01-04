@@ -4,7 +4,7 @@ import { renderAST } from '../render/render'
 import { renderBlock } from '../render/renderBlock'
 import css from './SyntheticText.scss?inline'
 import { parseInlineContent, detectType, buildBlocks } from '../ast/ast'
-import { Block, BlockType, Inline, ListItem } from '../ast/types'
+import { Block, Inline, ListItem } from '../ast/types'
 import { uuid } from '../utils/utils'
 
 export class SyntheticText extends HTMLElement {
@@ -16,7 +16,6 @@ export class SyntheticText extends HTMLElement {
     private connected = false
     private isRendered = false
     private isEditing = false
-    private focusedBlockId: string | null = null
     private focusedInlineId: string | null = null
 
 
@@ -155,7 +154,6 @@ export class SyntheticText extends HTMLElement {
             selection.addRange(newRange);
 
             this.focusedInlineId = inline.id;
-            this.focusedBlockId = inline.blockId;
         });
 
         div.addEventListener('focusout', (e) => {
@@ -187,7 +185,6 @@ export class SyntheticText extends HTMLElement {
                 this.isEditing = false;
                 this.caret.clear();
                 this.focusedInlineId = null;
-                this.focusedBlockId = null;
             }
         })
 
@@ -842,7 +839,8 @@ export class SyntheticText extends HTMLElement {
             detectedBlockType.type !== ctx.block.type ||
             (detectedBlockType.type === 'heading' && ctx.block.type === 'heading' && detectedBlockType.level !== ctx.block.level)
         
-        if (blockTypeChanged && detectedBlockType.type !== 'blankLine') {
+        const ignoreTypes = ['blankLine', 'heading', 'thematicBreak', 'codeBlock']
+        if (blockTypeChanged && !ignoreTypes.includes(detectedBlockType.type)) {
             console.log('block type changed', detectedBlockType.type, ctx.block.type)
             this.transformBlock(ctx.block, newText, detectedBlockType.type)
             return
