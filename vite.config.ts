@@ -19,7 +19,7 @@ export default defineConfig({
   build: {
     lib: {
       entry: {
-        index: path.resolve(__dirname, 'src/index.ts'),
+        index: path.resolve(__dirname, 'src/index.tsx'),
         react: path.resolve(__dirname, 'src/react/index.ts'),
       },
       name: 'SyntheticMD',
