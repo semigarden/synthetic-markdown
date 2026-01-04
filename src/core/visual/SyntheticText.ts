@@ -13,11 +13,9 @@ export class SyntheticText extends HTMLElement {
     private syntheticEl?: HTMLDivElement
     private engine = new Engine()
     private caret = new Caret()
-    private connected = false
     private isEditing = false
     private focusedInlineId: string | null = null
-    private hasInitialized = false
-    private isExternalUpdate = false
+    private hasAcceptedExternalValue = false
 
     constructor() {
         super()
@@ -25,44 +23,25 @@ export class SyntheticText extends HTMLElement {
     }
 
     connectedCallback() {
-        this.connected = true
+        const attrValue = this.getAttribute('value') ?? ''
 
-        const initialValue = this.getAttribute('value') ?? ''
-        this.engine.setText(initialValue)
-        this.engine.ast = buildAst(initialValue)
+        this.engine.setText(attrValue)
+        this.engine.ast = buildAst(attrValue)
 
         this.addStyles()
         this.addDOM()
         this.render()
-
-        this.hasInitialized = true
-    }
-
-    static get observedAttributes() {
-        return ['value']
-    }
-
-    attributeChangedCallback(
-        name: string,
-        oldValue: string | null,
-        newValue: string | null
-    ) {
-        if (name !== 'value') return
-        if (newValue === oldValue) return
-
-        if (this.hasInitialized) return
-
-        this.isExternalUpdate = true
-        this.value = newValue ?? ''
-        this.isExternalUpdate = false
     }
 
     set value(value: string) {
-        this.engine.setText(value)
-        
-        if (this.connected && this.isExternalUpdate && !this.hasInitialized) {
+        if (value === this.engine.getText()) return
+        if (this.isEditing) return
+
+        if (!this.hasAcceptedExternalValue && value !== '') {
+            this.engine.setText(value)
             this.engine.ast = buildAst(value)
             this.render()
+            this.hasAcceptedExternalValue = true
         }
     }
 
@@ -612,6 +591,7 @@ export class SyntheticText extends HTMLElement {
             console.log('backspace at start of block')
             
             const blockIndex = flattenedBlocks.findIndex(b => b.id === ctx.block.id)
+            if (blockIndex === -1 || blockIndex === 0) return
 
             const parentBlock = this.getParentBlock(ctx.block)
             if (parentBlock) {
