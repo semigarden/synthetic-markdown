@@ -4,6 +4,7 @@ import { Block, Inline, ListItem } from "../ast/types"
 import { parseInlineContent, detectType, buildBlocks } from "../ast/ast"
 import { uuid } from "../utils/utils"
 import { renderBlock } from "../render/renderBlock"
+import { Intent } from "../utils/key"
 
 class Editor {
     private ast: AST
@@ -18,6 +19,14 @@ class Editor {
         this.root = root
         this.emitChange = emitChange
         this.isEditing = false
+    }
+
+    public onIntent(intent: Intent, event: KeyboardEvent) {
+        if (intent === 'enter') {
+            this.onEnter(event)
+        } else if (intent === 'backspace') {
+            this.onBackspace(event)
+        }
     }
 
     public onInput(e: Event) {

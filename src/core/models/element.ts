@@ -4,6 +4,7 @@ import Editor from './editor'
 import scss from '../styles/element.scss?inline'
 import { buildAst } from '../ast/ast'
 import { renderAST } from '../render/render'
+import { onKey, Intent } from '../utils/key'
 
 class Element extends HTMLElement {
     private root: ShadowRoot
@@ -199,13 +200,12 @@ class Element extends HTMLElement {
             this.editor?.onInput(e)
         })
 
-        div.addEventListener('keydown', (e: KeyboardEvent) => {
-            if (e.key === 'Enter') {
-                this.editor?.onEnter(e)
-            }
-            if (e.key === 'Backspace') {
-                this.editor?.onBackspace(e)
-            }
+        div.addEventListener('keydown', (event: KeyboardEvent) => {
+            const intent = onKey[event.key]
+            if (!intent) return
+
+            event.preventDefault()
+            this.editor?.onIntent(intent, event)
         })
 
         div.addEventListener('click', (e: MouseEvent) => {
