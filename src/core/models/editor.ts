@@ -5,7 +5,7 @@ import { parseInlineContent, detectType, buildBlocks } from "../ast/ast"
 import { uuid } from "../utils/utils"
 import { renderBlock } from "../render/renderBlock"
 
-class Input {
+class Editor {
     private engine: Engine
     private caret: Caret
     private root: HTMLElement
@@ -962,4 +962,4 @@ class Input {
     }
 }
 
-export default Input
+export default Editor

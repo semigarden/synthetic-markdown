@@ -3,7 +3,7 @@ import Caret from './caret'
 import { renderAST } from '../render/render'
 import css from './SyntheticText.scss?inline'
 import { buildAst } from '../ast/ast'
-import Input from '../models/input'
+import Editor from '../models/editor'
 
 export class SyntheticText extends HTMLElement {
     private root: ShadowRoot
@@ -14,7 +14,7 @@ export class SyntheticText extends HTMLElement {
     private isEditing = false
     private focusedInlineId: string | null = null
     private hasAcceptedExternalValue = false
-    private input: Input | null = null
+    private editor: Editor | null = null
 
     constructor() {
         super()
@@ -32,7 +32,7 @@ export class SyntheticText extends HTMLElement {
         this.render()
 
         this.caret = new Caret(this.syntheticEl!)
-        this.input = new Input(this.engine, this.caret, this.syntheticEl!, this.emitChange.bind(this))
+        this.editor = new Editor(this.engine, this.caret, this.syntheticEl!, this.emitChange.bind(this))
     }
 
     set value(value: string) {
@@ -196,15 +196,15 @@ export class SyntheticText extends HTMLElement {
         })
 
         div.addEventListener('input', (e: Event) => {
-            this.input?.onInput(e)
+            this.editor?.onInput(e)
         })
 
         div.addEventListener('keydown', (e: KeyboardEvent) => {
             if (e.key === 'Enter') {
-                this.input?.onEnter(e)
+                this.editor?.onEnter(e)
             }
             if (e.key === 'Backspace') {
-                this.input?.onBackspace(e)
+                this.editor?.onBackspace(e)
             }
         })
 
