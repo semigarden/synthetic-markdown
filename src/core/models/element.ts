@@ -4,7 +4,7 @@ import Editor from './editor'
 import scss from '../styles/element.scss?inline'
 import { buildAst } from '../ast/ast'
 import { renderAST } from '../render/render'
-import { onKey, Intent } from '../utils/key'
+import { onKey } from '../utils/key'
 
 class Element extends HTMLElement {
     private root: ShadowRoot
