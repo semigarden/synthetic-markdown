@@ -419,10 +419,88 @@ export class SyntheticText extends HTMLElement {
 
         if (ctx.inlineIndex === 0 && caretPosition === 0) {
             console.log('backspace at start of block')
-            const blockIndex = this.engine.ast.blocks.findIndex(b => b.id === ctx.block.id)
-            if (blockIndex <= 0) {
-                this.isEditing = false
-                return
+            const flattenedBlocks = this.flattenBlocks(this.engine.ast.blocks)
+            const blockIndex = flattenedBlocks.findIndex(b => b.id === ctx.block.id)
+
+            const parentBlock = this.getParentBlock(ctx.block)
+            if (parentBlock) {
+                if (parentBlock.type === 'listItem') {
+                    const listItemBlock = parentBlock
+                    const listBlock = this.getParentBlock(parentBlock)
+                    if (listBlock && listBlock.type === 'list') {
+                        // console.log('list', JSON.stringify(listBlock, null, 2))
+                        const listBlockIndex = this.engine.ast.blocks.findIndex(b => b.id === listBlock.id)
+                        const listItemBlockIndex = flattenedBlocks.findIndex(b => b.id === listItemBlock.id)
+                        const listItemIndex = listBlock.blocks.findIndex(b => b.id === listItemBlock.id)
+
+                        if (listItemIndex === 0) {
+                            const newText = listItemBlock.text.slice(0, 1) + listItemBlock.text.slice(2, -1)
+                            console.log('newText', JSON.stringify(newText, null, 2))
+                            const detectedBlockType = this.detectBlockType(newText)
+                            if (detectedBlockType.type !== listItemBlock.type) {
+                                
+                                if (listBlock.blocks.length === 1) {
+                                    const listBlockEl = this.syntheticEl?.querySelector(`[data-block-id="${listBlock.id}"]`)
+                                    if (listBlockEl) {
+                                        listBlockEl.remove()
+                                    }
+    
+                                    const newBlock = {
+                                        id: uuid(),
+                                        type: detectedBlockType.type,
+                                        text: newText,
+                                        inlines: [],
+                                        position: { start: listItemBlock.position.start, end: listItemBlock.position.start + newText.length }
+                                    } as Block
+    
+                                    const newBlockInlines = parseInlineContent(newText, newBlock.id, newBlock.position.start)
+    
+                                    newBlock.inlines = newBlockInlines
+
+                                    this.engine.ast.blocks.splice(listBlockIndex, 1, newBlock)
+
+                                    const prevBlock = this.engine.ast.blocks[listBlockIndex - 1]
+
+                                    console.log('list', JSON.stringify(newBlock, null, 2))
+                                    renderBlock(newBlock, this.syntheticEl!, null, prevBlock)
+
+                                    this.caret.setInlineId(newBlockInlines[0].id)
+                                    this.caret.setBlockId(newBlock.id)
+                                    this.caret.setPosition(1)
+
+                                    this.updateAST()
+                                    this.restoreCaret()
+                                    this.emitChange()
+                                }
+                            }
+
+                            
+                            // this.engine.ast.blocks.splice(listBlockIndex, 1, newBlock)
+                            // renderBlock(newBlock, this.syntheticEl!)
+                        }
+                        // console.log('listBlockIndex', listBlockIndex, 'listItemBlockIndex', listItemBlockIndex, 'listItemIndex', listItemIndex)
+                        // const newText = listBlock.text.slice(0, -1)
+                        // const newBlock = this.normalizeBlockType(listBlock)
+                        // console.log('list', JSON.stringify(newBlock, null, 2))
+                        // this.engine.ast.blocks.splice(listBlockIndex, 1, newBlock)
+                        // renderBlock(newBlock, this.syntheticEl!)
+                    }
+                    // const parentBlockIndex = flattenedBlocks.findIndex(b => b.id === parentBlock.id)
+                    // const newText = parentBlock.text.slice(0, -1)
+
+                    // const newBlock = this.normalizeBlockType(parentBlock)
+                    // console.log('list', JSON.stringify(newBlock, null, 2))
+
+                    // this.engine.ast.blocks.splice(parentBlockIndex, 1, newBlock)
+                    // renderBlock(newBlock, this.syntheticEl!)
+
+                    // this.updateAST()
+                    // this.restoreCaret()
+                    // this.emitChange()
+
+                    this.isEditing = false
+                    return
+                }
             }
 
             const prevBlock = this.engine.ast.blocks[blockIndex - 1]
@@ -550,6 +628,12 @@ export class SyntheticText extends HTMLElement {
         if (blockTypeChanged) {
             console.log('block type changed', detectedBlockType.type, ctx.block.type)
             this.transformBlock(ctx.block, newText, detectedBlockType.type)
+
+
+            this.updateAST()
+            this.restoreCaret()
+            this.emitChange()
+        
             this.isEditing = false
             return
         }
@@ -567,13 +651,55 @@ export class SyntheticText extends HTMLElement {
     
         renderBlock(ctx.block, this.syntheticEl!, result.caretInline?.id ?? null)
 
-        console.log(`inline ${ctx.inline.id} changed: ${ctx.inline.text.symbolic} > ${ctx.inlineEl.textContent ?? ''}`)
+        // console.log(`inline ${ctx.inline.id} changed: ${ctx.inline.text.symbolic} > ${ctx.inlineEl.textContent ?? ''}`)
 
+        
         this.updateAST()
         this.restoreCaret()
         this.emitChange()
 
+        console.log('ast', JSON.stringify(this.engine.ast, null, 2))
+
         this.isEditing = false;
+    }
+
+    private normalizeBlockType(block: Block): Block {
+        const text = block.inlines.map(i => i.text.symbolic).join('')
+
+        const listMatch = /^(\s*([-*+]|(\d+[.)])))\s+/.exec(text)
+        if (block.type === 'listItem' && !listMatch) {
+            return {
+                id: block.id,
+                type: 'paragraph',
+                text,
+                position: block.position,
+                inlines: parseInlineContent(text, block.id, block.position.start),
+            }
+        }
+
+        if (block.type === 'paragraph' && listMatch) {
+            const marker = listMatch[0]
+            const content = text.slice(marker.length)
+        
+            const paragraph: Block = {
+                id: uuid(),
+                type: 'paragraph',
+                text: content,
+                position: block.position,
+                inlines: parseInlineContent(content, block.id, block.position.start),
+            }
+      
+            return {
+                id: block.id,
+                type: 'listItem',
+                text: content,
+                position: block.position,
+                blocks: [paragraph],
+                inlines: [],
+            }
+        }
+      
+        return block
     }
 
     private transformBlock(block: Block, text: string, type: Block["type"]) {
@@ -581,37 +707,40 @@ export class SyntheticText extends HTMLElement {
         const blockIndex = flattenedBlocks.findIndex(b => b.id === block.id)
         if (blockIndex === -1) return block
 
-        const newBlocks = buildBlocks(text, this.engine.ast)
-        if (newBlocks.length === 0) return block
+        const newBlock = buildBlocks(text, this.engine.ast)[0]
 
-        this.engine.ast.blocks.splice(blockIndex, 1, ...newBlocks)
+        this.engine.ast.blocks.splice(blockIndex, 1, newBlock)
 
-        for (const newBlock of newBlocks) {
-            const oldBlockEl = this.syntheticEl?.querySelector(`[data-block-id="${block.id}"]`)
-            if (oldBlockEl) {
-                oldBlockEl.remove()
-            }
+        const oldBlockEl = this.syntheticEl?.querySelector(`[data-block-id="${block.id}"]`)
+        if (oldBlockEl) {
+            oldBlockEl.remove()
+        }
+
+        const prevBlock = this.engine.ast.blocks[blockIndex - 1]
+        if (prevBlock) {
+            renderBlock(newBlock, this.syntheticEl!, null, prevBlock)
+        } else {
             renderBlock(newBlock, this.syntheticEl!)
+        }
 
-            if (newBlock.type === 'list') {
-                const nestedBlocks = this.flattenBlocks(newBlock.blocks)
-                const lastNestedBlock = nestedBlocks.at(-1)
+        if (newBlock.type === 'list') {
+            const nestedBlocks = this.flattenBlocks(newBlock.blocks)
+            const lastNestedBlock = nestedBlocks.at(-1)
 
-                if (lastNestedBlock) {
-                    const lastNestedInline = lastNestedBlock?.inlines.at(-1)
-                    if (lastNestedInline) {
-                        this.caret.setInlineId(lastNestedInline.id)
-                        this.caret.setBlockId(lastNestedBlock.id)
-                        this.caret.setPosition(lastNestedInline.text.symbolic.length)
-                        this.restoreCaret()
-                    }
+            if (lastNestedBlock) {
+                const lastNestedInline = lastNestedBlock?.inlines.at(-1)
+                if (lastNestedInline) {
+                    this.caret.setInlineId(lastNestedInline.id)
+                    this.caret.setBlockId(lastNestedBlock.id)
+                    this.caret.setPosition(lastNestedInline.text.symbolic.length + 1)
+                    this.restoreCaret()
                 }
             }
         }
 
-        this.updateAST()
-        this.restoreCaret()
-        this.emitChange()
+        // this.updateAST()
+        // this.restoreCaret()
+        // this.emitChange()
 
         // console.log('newBlocks', JSON.stringify(this.engine.ast.blocks, null, 2))
     }
@@ -708,6 +837,12 @@ export class SyntheticText extends HTMLElement {
         }
     }
 
+    private getParentBlock(block: Block): Block | null {
+        const flattenedBlocks = this.flattenBlocks(this.engine.ast.blocks)
+        const parentBlock = flattenedBlocks.find(b => b.type === 'list' && b.blocks?.some(b => b.id === block.id)) ?? flattenedBlocks.find(b => b.type === 'listItem' && b.blocks?.some(b => b.id === block.id))
+        return parentBlock ?? null
+    }
+
     private applyInlineNormalization(
         block: Block,
         result: {
@@ -796,7 +931,7 @@ export class SyntheticText extends HTMLElement {
             }
 
             else if (block.type === 'listItem') {
-                const marker = block.text ?? ''
+                const marker = '- '
                 text += marker
                 globalPos += marker.length
 
@@ -822,7 +957,7 @@ export class SyntheticText extends HTMLElement {
         ast.text = parts.join('')
         this.engine.text = ast.text
 
-        console.log('ast', JSON.stringify(ast, null, 2))
+        // console.log('ast', JSON.stringify(ast, null, 2))
     }
 
     // private updateAST() {
