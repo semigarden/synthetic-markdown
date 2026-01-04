@@ -2,7 +2,7 @@ import { buildAst } from '../ast/ast'
 import { Block, Document, Inline } from '../ast/types'
 import { uuid } from '../utils/utils'
 
-export default class Engine {
+class AST {
     public text = ''
     public ast: Document = buildAst('')
 
@@ -77,3 +77,5 @@ export default class Engine {
         return null
     }
 }
+
+export default AST

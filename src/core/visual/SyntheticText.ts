@@ -1,15 +1,16 @@
-import Engine from '../models/engine'
 import Caret from './caret'
+import AST from '../models/ast'
+import Editor from '../models/editor'
 import { renderAST } from '../render/render'
 import css from './SyntheticText.scss?inline'
 import { buildAst } from '../ast/ast'
-import Editor from '../models/editor'
+
 
 export class SyntheticText extends HTMLElement {
     private root: ShadowRoot
     private styled = false
     private syntheticEl?: HTMLElement
-    private engine = new Engine()
+    private ast = new AST()
     private caret: Caret | null = null
     private isEditing = false
     private focusedInlineId: string | null = null
@@ -24,36 +25,36 @@ export class SyntheticText extends HTMLElement {
     connectedCallback() {
         const attrValue = this.getAttribute('value') ?? ''
 
-        this.engine.setText(attrValue)
-        this.engine.ast = buildAst(attrValue)
+        this.ast.setText(attrValue)
+        this.ast.ast = buildAst(attrValue)
 
         this.addStyles()
         this.addDOM()
         this.render()
 
         this.caret = new Caret(this.syntheticEl!)
-        this.editor = new Editor(this.engine, this.caret, this.syntheticEl!, this.emitChange.bind(this))
+        this.editor = new Editor(this.ast, this.caret, this.syntheticEl!, this.emitChange.bind(this))
     }
 
     set value(value: string) {
-        if (value === this.engine.getText()) return
+        if (value === this.ast.getText()) return
         if (this.isEditing) return
 
         if (!this.hasAcceptedExternalValue && value !== '') {
-            this.engine.setText(value)
-            this.engine.ast = buildAst(value)
+            this.ast.setText(value)
+            this.ast.ast = buildAst(value)
             this.render()
             this.hasAcceptedExternalValue = true
         }
     }
 
     get value() {
-        return this.engine.getText()
+        return this.ast.getText()
     }
 
     private render() {
         if (!this.syntheticEl) return
-        const ast = this.engine.getAst()
+        const ast = this.ast.getAst()
         if (!ast) return
 
         renderAST(ast, this.syntheticEl)
@@ -101,10 +102,10 @@ export class SyntheticText extends HTMLElement {
                 }
             
                 const inlineId = inlineEl.dataset.inlineId!;
-                const inline = this.engine.getInlineById(inlineId);
+                const inline = this.ast.getInlineById(inlineId);
                 if (!inline) return;
 
-                const block = this.engine.getBlockById(inline.blockId);
+                const block = this.ast.getBlockById(inline.blockId);
                 if (!block) return;
 
                 this.caret?.setInlineId(inlineId);
@@ -125,7 +126,7 @@ export class SyntheticText extends HTMLElement {
             const target = e.target as HTMLElement;
             if (!target.dataset?.inlineId) return;
           
-            const inline = this.engine.getInlineById(target.dataset.inlineId!);
+            const inline = this.ast.getInlineById(target.dataset.inlineId!);
             if (!inline) return;
 
             const selection = window.getSelection();
@@ -168,7 +169,7 @@ export class SyntheticText extends HTMLElement {
                 const inlineEl = this.syntheticEl?.querySelector(`[data-inline-id="${this.focusedInlineId}"]`) as HTMLElement;
                 if (!inlineEl) return;
 
-                const inline = this.engine.getInlineById(this.focusedInlineId);
+                const inline = this.ast.getInlineById(this.focusedInlineId);
                 if (inline) {
                     inlineEl.innerHTML = '';
                     const newTextNode = document.createTextNode(inline.text.semantic);
@@ -182,7 +183,7 @@ export class SyntheticText extends HTMLElement {
                 if (!target.dataset?.inlineId) return;
 
                 const inlineId = target.dataset.inlineId!;
-                const inline = this.engine.getInlineById(inlineId);
+                const inline = this.ast.getInlineById(inlineId);
                 if (!inline) return;
 
                 target.innerHTML = '';
@@ -215,7 +216,7 @@ export class SyntheticText extends HTMLElement {
             }
             if (target.dataset?.blockId) {
                 // console.log('click on block', target.dataset.blockId)
-                const block = this.engine.getBlockById(target.dataset.blockId)
+                const block = this.ast.getBlockById(target.dataset.blockId)
                 if (block) {
                     const lastInline = block.inlines.at(-1)
                     if (lastInline) {
@@ -228,7 +229,7 @@ export class SyntheticText extends HTMLElement {
             }
             if (target.classList.contains('syntheticText')) {
                 // console.log('click on syntheticText')
-                const lastBlock = this.engine.ast.blocks.at(-1)
+                const lastBlock = this.ast.ast.blocks.at(-1)
                 if (lastBlock) {
                     const lastInline = lastBlock.inlines.at(-1)
                     if (lastInline) {

@@ -1,4 +1,4 @@
-import Engine from "./engine"
+import AST from "./ast"
 import Caret from "../visual/caret"
 import { Block, Inline, ListItem } from "../ast/types"
 import { parseInlineContent, detectType, buildBlocks } from "../ast/ast"
@@ -6,14 +6,14 @@ import { uuid } from "../utils/utils"
 import { renderBlock } from "../render/renderBlock"
 
 class Editor {
-    private engine: Engine
+    private ast: AST
     private caret: Caret
     private root: HTMLElement
     private emitChange: () => void
     private isEditing: boolean
 
-    constructor(engine: Engine, caret: Caret, root: HTMLElement, emitChange: () => void ) {
-        this.engine = engine
+    constructor(ast: AST, caret: Caret, root: HTMLElement, emitChange: () => void ) {
+        this.ast = ast
         this.caret = caret
         this.root = root
         this.emitChange = emitChange
@@ -78,7 +78,7 @@ class Editor {
         e.preventDefault()
 
         const caretPosition = this.caret.getPositionInInline(ctx.inlineEl)
-        const blocks = this.engine.ast.blocks
+        const blocks = this.ast.ast.blocks
         const flattenedBlocks = this.flattenBlocks(blocks)
         const blockIndex = flattenedBlocks.findIndex(b => b.id === ctx.block.id)
 
@@ -162,7 +162,7 @@ class Editor {
             }
 
             const inlines = ctx.block.inlines
-            const text = inlines.map(i => i.text.symbolic).join('')
+            const text = inlines.map((i: Inline) => i.text.symbolic).join('')
 
             const newBlock: Block = {
                 id: uuid(),
@@ -411,7 +411,7 @@ class Editor {
 
         e.preventDefault()
 
-        const flattenedBlocks = this.flattenBlocks(this.engine.ast.blocks)
+        const flattenedBlocks = this.flattenBlocks(this.ast.ast.blocks)
 
         if (ctx.inlineIndex === 0 && caretPosition === 0) {
             console.log('backspace at start of block')
@@ -426,7 +426,7 @@ class Editor {
                     const list = this.getParentBlock(parentBlock)
                     if (list && list.type === 'list') {
                         // console.log('list', JSON.stringify(listBlock, null, 2))
-                        const listBlockIndex = this.engine.ast.blocks.findIndex(b => b.id === list.id)
+                        const listBlockIndex = this.ast.ast.blocks.findIndex(b => b.id === list.id)
                         const listItemBlockIndex = flattenedBlocks.findIndex(b => b.id === listItemBlock.id)
                         const listItemIndex = list.blocks.findIndex(b => b.id === listItemBlock.id)
 
@@ -454,9 +454,9 @@ class Editor {
     
                                     newBlock.inlines = newBlockInlines
 
-                                    this.engine.ast.blocks.splice(listBlockIndex, 1, newBlock)
+                                    this.ast.ast.blocks.splice(listBlockIndex, 1, newBlock)
 
-                                    const prevBlock = this.engine.ast.blocks[listBlockIndex - 1]
+                                    const prevBlock = this.ast.ast.blocks[listBlockIndex - 1]
 
                                     console.log('list', JSON.stringify(newBlock, null, 2))
                                     renderBlock(newBlock, this.root, null, prevBlock)
@@ -483,11 +483,11 @@ class Editor {
                             const targetPosition = prevListItemParagraph.inlines[prevLastInlineIndex].position.end
 
                             const prevText = prevListItemParagraph.inlines
-                                .map(i => i.text.symbolic)
+                                .map((i: Inline) => i.text.symbolic)
                                 .join('')
 
                             const currText = ctx.block.inlines
-                                .map(i => i.text.symbolic)
+                                .map((i: Inline) => i.text.symbolic)
                                 .join('')
 
                             const mergedText = prevText + currText
@@ -557,11 +557,11 @@ class Editor {
             console.log('targetPosition', targetPosition)
 
             const prevText = prevBlock.inlines
-                .map(i => i.text.symbolic)
+                .map((i: Inline) => i.text.symbolic)
                 .join('')
 
             const currText = ctx.block.inlines
-                .map(i => i.text.symbolic)
+                .map((i: Inline) => i.text.symbolic)
                 .join('')
 
             const mergedText = prevText + currText
@@ -586,9 +586,9 @@ class Editor {
             prevBlock.inlines = newInlines
 
 
-            const index = this.engine.ast.blocks.findIndex(b => b.id === ctx.block.id)
+            const index = this.ast.ast.blocks.findIndex(b => b.id === ctx.block.id)
 
-            this.engine.ast.blocks.splice(index, 1)
+            this.ast.ast.blocks.splice(index, 1)
 
             let targetInlineIndex: number
             if (ctx.inline.type === prevBlock.inlines[prevLastInlineIndex].type && ctx.inline.type === 'text') {
@@ -611,7 +611,7 @@ class Editor {
 
             this.updateAST()
 
-            console.log('ast', JSON.stringify(this.engine.ast, null, 2))
+            console.log('ast', JSON.stringify(this.ast.ast, null, 2))
 
             requestAnimationFrame(() => {
                 this.caret?.restoreCaret()
@@ -627,7 +627,7 @@ class Editor {
 
         const previousInline = ctx.block.inlines[ctx.inlineIndex - 1]
 
-        const currentBlockText = ctx.block.inlines.map(i => {
+        const currentBlockText = ctx.block.inlines.map((i: Inline) => {
             if (i.id === previousInline.id && previousInline.text.symbolic.length > 0) {
                 return i.text.symbolic.slice(0, -1)
             }
@@ -779,10 +779,10 @@ class Editor {
     }
 
     private transformBlock(block: Block, text: string, type: Block["type"]) {
-        const flattenedBlocks = this.flattenBlocks(this.engine.ast.blocks)
+        const flattenedBlocks = this.flattenBlocks(this.ast.ast.blocks)
         const blockIndex = flattenedBlocks.findIndex(b => b.id === block.id)
 
-        const newBlock = buildBlocks(text, this.engine.ast)[0]
+        const newBlock = buildBlocks(text, this.ast.ast)[0]
 
         const oldBlockEl = this.root.querySelector(`[data-block-id="${block.id}"]`)
         if (oldBlockEl) {
@@ -802,9 +802,9 @@ class Editor {
                     this.caret?.restoreCaret()
                 }
 
-                this.engine.ast.blocks.splice(blockIndex, 1, newBlock)
+                this.ast.ast.blocks.splice(blockIndex, 1, newBlock)
 
-                const prevBlock = this.engine.ast.blocks[blockIndex - 1]
+                const prevBlock = this.ast.ast.blocks[blockIndex - 1]
                 if (prevBlock) {
                     renderBlock(newBlock, this.root, null, prevBlock)
                 } else {
@@ -820,9 +820,9 @@ class Editor {
             }
         }
 
-        this.engine.ast.blocks.splice(blockIndex, 1, newBlock)
+        this.ast.ast.blocks.splice(blockIndex, 1, newBlock)
 
-        const prevBlock = this.engine.ast.blocks[blockIndex - 1]
+        const prevBlock = this.ast.ast.blocks[blockIndex - 1]
         if (prevBlock) {
             renderBlock(newBlock, this.root, null, prevBlock)
         } else {
@@ -837,7 +837,7 @@ class Editor {
     }
 
     private getParentBlock(block: Block): Block | null {
-        const flattenedBlocks = this.flattenBlocks(this.engine.ast.blocks)
+        const flattenedBlocks = this.flattenBlocks(this.ast.ast.blocks)
         const parentBlock = flattenedBlocks.find(b => b.type === 'list' && b.blocks?.some(b => b.id === block.id)) ?? flattenedBlocks.find(b => b.type === 'listItem' && b.blocks?.some(b => b.id === block.id))
         return parentBlock ?? null
     }
@@ -859,7 +859,7 @@ class Editor {
     
         // console.log('engine.ast', JSON.stringify(this.engine.ast, null, 2))
         // console.log('resolve 1', blockId, inlineId)
-        const block = this.engine.getBlockById(blockId)
+        const block = this.ast.getBlockById(blockId)
         if (!block) return null
     
         // console.log('resolve 2', inlineId)
@@ -886,7 +886,7 @@ class Editor {
     }
 
     private updateAST() {
-        const ast = this.engine.ast
+        const ast = this.ast.ast
         let globalPos = 0
 
         const updateBlock = (block: Block): string => {
@@ -906,7 +906,7 @@ class Editor {
                     localPos += len
                 }
 
-                text = block.inlines.map(i => i.text.symbolic).join('')
+                text = block.inlines.map((i: Inline) => i.text.symbolic).join('')
                 block.text = text
                 block.position = { start, end: start + text.length }
                 globalPos += text.length
@@ -956,7 +956,7 @@ class Editor {
         }
 
         ast.text = parts.join('')
-        this.engine.text = ast.text
+        this.ast.text = ast.text
 
         // console.log('ast', JSON.stringify(ast, null, 2))
     }
