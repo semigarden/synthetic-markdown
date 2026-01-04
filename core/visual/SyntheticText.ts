@@ -4,7 +4,7 @@ import { renderAST } from '../render/render'
 import { renderBlock } from '../render/renderBlock'
 import css from './SyntheticText.scss?inline'
 import { parseInlineContent, detectType, buildBlocks } from '../ast/ast'
-import { Block, BlockType, Inline } from '../ast/types'
+import { Block, BlockType, Inline, ListItem } from '../ast/types'
 import { uuid } from '../utils/utils'
 
 export class SyntheticText extends HTMLElement {
@@ -261,6 +261,76 @@ export class SyntheticText extends HTMLElement {
 
         if (ctx.inlineIndex === 0 && caretPosition === 0) {
             console.log('enter at start of block')
+
+            const parentBlock = this.getParentBlock(ctx.block)
+            if (parentBlock) {
+                if (parentBlock.type === 'listItem') {
+                    console.log('list item block', JSON.stringify(parentBlock, null, 2))
+
+                    const listItemBlock = parentBlock
+                    const listBlock = this.getParentBlock(parentBlock)
+                    if (listBlock && listBlock.type === 'list') {
+                        const newListItemBlock = {
+                            id: uuid(),
+                            type: 'listItem',
+                            text: listItemBlock.text.slice(0, -ctx.block.text.length),
+                            position: listItemBlock.position,
+                            blocks: [],
+                            inlines: [],
+                        } as ListItem
+
+                        const newParagraphBlock = {
+                            id: uuid(),
+                            type: 'paragraph',
+                            text: ctx.block.text,
+                            position: { start: ctx.block.position.start, end: ctx.block.position.end },
+                            inlines: [],
+                        } as Block
+
+                        const newParagraphInline = {
+                            id: uuid(),
+                            type: 'text',
+                            text: { symbolic: ctx.inline.text.symbolic, semantic: ctx.inline.text.semantic },
+                            position: { start: ctx.inline.position.start, end: ctx.inline.position.start + ctx.inline.text.symbolic.length },
+                        } as Inline
+
+                        newParagraphBlock.inlines.push(newParagraphInline)
+
+                        newListItemBlock.blocks.push(newParagraphBlock)
+
+                        ctx.block.text = ''
+                        ctx.block.inlines[0].text = { symbolic: '', semantic: '' }
+                        ctx.block.position = { start: ctx.block.position.start, end: ctx.block.position.start }
+
+                        console.log('newListItemBlock', JSON.stringify(newListItemBlock, null, 2))
+
+                        const index = listBlock.blocks.findIndex(b => b.id === listItemBlock.id)
+                        // this.engine.ast.blocks.splice(listBlockIndex, 1, listBlock)
+                        listBlock.blocks.splice(index + 1, 0, newListItemBlock)
+
+                        renderBlock(newListItemBlock, this.syntheticEl!, null, listItemBlock)
+
+                        this.caret.setInlineId(newParagraphInline.id)
+                        this.caret.setBlockId(newParagraphBlock.id)
+                        this.caret.setPosition(0)
+
+                        this.updateAST()
+                        this.restoreCaret()
+                        this.emitChange()
+
+                        this.isEditing = false
+                        return
+                        
+                    }
+
+                    return
+                    // const listItemBlock = parentBlock
+                    // const listBlock = this.getParentBlock(parentBlock)
+                    // if (listBlock && listBlock.type === 'list') {
+                    //     const listBlockIndex = this.engine.ast.blocks.findIndex(b => b.id === listBlock.id)
+                    // }
+                }
+            }
 
             const emptyInline: Inline = {
                 id: uuid(),

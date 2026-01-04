@@ -54,7 +54,7 @@ interface List extends BlockType<'list'> {
     ordered: boolean
     listStart?: number
     tight: boolean
-    blocks: ListItem[]
+    blocks: Block[]
 }
 
 interface ListItem extends BlockType<'listItem'> {
