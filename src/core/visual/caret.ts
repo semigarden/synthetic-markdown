@@ -1,6 +1,7 @@
 import { Inline } from "../ast/types"
 
 export default class Caret {
+    private root: HTMLElement
     private inlineId: string | null = null
     private blockId: string | null = null
     private position: number | null = null
@@ -8,7 +9,8 @@ export default class Caret {
 
     public pendingTextRestore: { blockId: string; offset: number } | null = null
 
-    constructor(inlineId?: string, blockId?: string, position?: number, affinity?: 'start' | 'end') {
+    constructor(root: HTMLElement, inlineId?: string, blockId?: string, position?: number, affinity?: 'start' | 'end') {
+        this.root = root
         this.inlineId = inlineId ?? null
         this.blockId = blockId ?? null
         this.position = position ?? null
@@ -100,6 +102,82 @@ export default class Caret {
         return {
             inline,
             position
+        }
+    }
+
+    public restoreCaret() {
+        console.log('restoreCaret', this.getInlineId(), this.getPosition())
+        if (!this.getInlineId() || this.getPosition() === null) {
+          return;
+        }
+      
+        const inlineId = this.getInlineId()!;
+        const position = this.getPosition()!;
+      
+        const inlineEl = this.root.querySelector(`[data-inline-id="${inlineId}"]`) as HTMLElement;
+        if (!inlineEl) {
+          console.warn('Could not find inline element for caret restore:', inlineId);
+          return;
+        }
+      
+        inlineEl.focus();
+      
+        const selection = window.getSelection();
+        if (!selection) return;
+      
+        selection.removeAllRanges();
+        const range = document.createRange();
+      
+        try {
+          let placed = false;
+      
+          if (inlineEl.childNodes.length > 0 && inlineEl.firstChild instanceof Text) {
+            const textNode = inlineEl.firstChild as Text;
+            const clamped = Math.min(position, textNode.length);
+            range.setStart(textNode, clamped);
+            range.collapse(true);
+            placed = true;
+          } 
+          else if (inlineEl.childNodes.length > 0) {
+            let currentPos = 0;
+            const walker = document.createTreeWalker(
+              inlineEl,
+              NodeFilter.SHOW_TEXT,
+              null
+            );
+      
+            let node: Text | null;
+            while ((node = walker.nextNode() as Text)) {
+              const len = node.length;
+              if (currentPos + len >= position) {
+                range.setStart(node, position - currentPos);
+                range.collapse(true);
+                placed = true;
+                break;
+              }
+              currentPos += len;
+            }
+          }
+      
+          if (!placed) {
+            if (inlineEl.childNodes.length > 0) {
+              range.selectNodeContents(inlineEl);
+              range.collapse(false);
+            } else {
+              range.setStart(inlineEl, 0);
+              range.collapse(true);
+            }
+          }
+      
+          selection.addRange(range);
+      
+          inlineEl.focus();
+      
+          inlineEl.scrollIntoView({ block: 'nearest' });
+      
+        } catch (err) {
+          console.warn('Failed to restore caret:', err);
+          inlineEl.focus();
         }
     }
 }
