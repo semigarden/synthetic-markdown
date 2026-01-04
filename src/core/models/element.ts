@@ -1,7 +1,7 @@
 import AST from './ast'
 import Caret from './caret'
 import Editor from './editor'
-import css from '../styles/element.scss?inline'
+import scss from '../styles/element.scss?inline'
 import { buildAst } from '../ast/ast'
 import { renderAST } from '../render/render'
 
@@ -63,7 +63,7 @@ class Element extends HTMLElement {
         if (this.styled) return
     
         const style = document.createElement('style')
-        style.textContent = css
+        style.textContent = scss
         this.root.appendChild(style)
     
         this.styled = true
@@ -73,7 +73,7 @@ class Element extends HTMLElement {
         if (this.syntheticEl) return
     
         const div = document.createElement('div')
-        div.classList.add('syntheticText')
+        div.classList.add('element')
 
         document.addEventListener('selectionchange', () => {
             // console.log('selectionchange')
@@ -226,7 +226,7 @@ class Element extends HTMLElement {
                     }
                 }
             }
-            if (target.classList.contains('syntheticText')) {
+            if (target.classList.contains('element')) {
                 // console.log('click on syntheticText')
                 const lastBlock = this.ast.ast.blocks.at(-1)
                 if (lastBlock) {
