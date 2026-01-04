@@ -625,16 +625,9 @@ export class SyntheticText extends HTMLElement {
             detectedBlockType.type !== ctx.block.type ||
             (detectedBlockType.type === 'heading' && ctx.block.type === 'heading' && detectedBlockType.level !== ctx.block.level)
         
-        if (blockTypeChanged) {
+        if (blockTypeChanged && detectedBlockType.type !== 'blankLine') {
             console.log('block type changed', detectedBlockType.type, ctx.block.type)
             this.transformBlock(ctx.block, newText, detectedBlockType.type)
-
-
-            this.updateAST()
-            this.restoreCaret()
-            this.emitChange()
-        
-            this.isEditing = false
             return
         }
 
@@ -705,22 +698,12 @@ export class SyntheticText extends HTMLElement {
     private transformBlock(block: Block, text: string, type: Block["type"]) {
         const flattenedBlocks = this.flattenBlocks(this.engine.ast.blocks)
         const blockIndex = flattenedBlocks.findIndex(b => b.id === block.id)
-        if (blockIndex === -1) return block
 
         const newBlock = buildBlocks(text, this.engine.ast)[0]
-
-        this.engine.ast.blocks.splice(blockIndex, 1, newBlock)
 
         const oldBlockEl = this.syntheticEl?.querySelector(`[data-block-id="${block.id}"]`)
         if (oldBlockEl) {
             oldBlockEl.remove()
-        }
-
-        const prevBlock = this.engine.ast.blocks[blockIndex - 1]
-        if (prevBlock) {
-            renderBlock(newBlock, this.syntheticEl!, null, prevBlock)
-        } else {
-            renderBlock(newBlock, this.syntheticEl!)
         }
 
         if (newBlock.type === 'list') {
@@ -735,14 +718,39 @@ export class SyntheticText extends HTMLElement {
                     this.caret.setPosition(lastNestedInline.text.symbolic.length + 1)
                     this.restoreCaret()
                 }
+
+                this.engine.ast.blocks.splice(blockIndex, 1, newBlock)
+
+                const prevBlock = this.engine.ast.blocks[blockIndex - 1]
+                if (prevBlock) {
+                    renderBlock(newBlock, this.syntheticEl!, null, prevBlock)
+                } else {
+                    renderBlock(newBlock, this.syntheticEl!)
+                }
+
+                this.updateAST()
+                this.restoreCaret()
+                this.emitChange()
+            
+                this.isEditing = false
+                return
             }
         }
 
-        // this.updateAST()
-        // this.restoreCaret()
-        // this.emitChange()
+        this.engine.ast.blocks.splice(blockIndex, 1, newBlock)
 
-        // console.log('newBlocks', JSON.stringify(this.engine.ast.blocks, null, 2))
+        const prevBlock = this.engine.ast.blocks[blockIndex - 1]
+        if (prevBlock) {
+            renderBlock(newBlock, this.syntheticEl!, null, prevBlock)
+        } else {
+            renderBlock(newBlock, this.syntheticEl!)
+        }
+
+        this.updateAST()
+        this.restoreCaret()
+        this.emitChange()
+
+        this.isEditing = false
     }
 
     private detectBlockType(text: string) {
