@@ -14,12 +14,10 @@ export class SyntheticText extends HTMLElement {
     private engine = new Engine()
     private caret = new Caret()
     private connected = false
-    private isRendered = false
     private isEditing = false
     private focusedInlineId: string | null = null
     private hasInitialized = false
     private isExternalUpdate = false
-
 
     constructor() {
         super()
@@ -65,7 +63,6 @@ export class SyntheticText extends HTMLElement {
         if (this.connected && this.isExternalUpdate && !this.hasInitialized) {
             this.engine.ast = buildAst(value)
             this.render()
-            this.isRendered = true
         }
     }
 
