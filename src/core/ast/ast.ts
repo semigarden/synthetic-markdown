@@ -1041,6 +1041,16 @@ export function parseInlineContent(text: string, blockId: string, offset: number
 
     processEmphasis(delimiterStack, result, blockId);
 
+    if (result.length === 0) {
+        result.push({
+            id: uuid(),
+            type: 'text',
+            blockId,
+            text: { symbolic: '', semantic: '' },
+            position: { start: offset, end: offset },
+        });
+    }
+
     return result;
 }
 

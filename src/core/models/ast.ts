@@ -172,24 +172,21 @@ class AST {
     }
 
     private deleteEmptyBlock(block: Block) {
-        if (block.inlines.length > 0) return // block still has content, nothing to do
+        if (block.inlines.length > 0) return
     
-        const parent = this.getParentBlock(block)
-        if (!parent) {
-            // top-level empty block
+        const parentBlock = this.getParentBlock(block)
+        if (!parentBlock) {
             const index = this.ast.blocks.findIndex(b => b.id === block.id)
             if (index !== -1) this.ast.blocks.splice(index, 1)
             return
         }
     
-        // remove block from parent's children if applicable
-        if ('blocks' in parent) { // e.g., listItem has blocks array
-            const index = parent.blocks.findIndex(b => b.id === block.id)
-            if (index !== -1) parent.blocks.splice(index, 1)
+        if ('blocks' in parentBlock) {
+            const index = parentBlock.blocks.findIndex(b => b.id === block.id)
+            if (index !== -1) parentBlock.blocks.splice(index, 1)
         }
     
-        // recursively check parent
-        this.deleteEmptyBlock(parent)
+        this.deleteEmptyBlock(parentBlock)
     }
 
     public mergeInline(inlineAId: string, inlineBId: string): { targetBlocks: Block[], targetInline: Inline, targetPosition: number } | null {
@@ -234,13 +231,9 @@ class AST {
         currentBlock.text = mergedText
         currentBlock.position = { start: currentBlock.position.start, end: currentBlock.position.end - leftInline.text.symbolic.length + mergedText.length }
 
-        console.log('merged', JSON.stringify(currentBlock, null, 2))
-
-        const targetInline = mergedInlines.length > 0 ? mergedInlines[0] : leftInline
-
         return {
             targetBlocks: targetBlocks,
-            targetInline: targetInline,
+            targetInline: mergedInlines[0],
             targetPosition: leftInline.position.end,
         }
     }
