@@ -73,7 +73,7 @@ class Editor {
         console.log('enter')
         const caretPosition = this.caret.getPositionInInline(context.inlineElement)
         const blocks = this.ast.ast.blocks
-        const flattenedBlocks = this.flattenBlocks(blocks)
+        const flattenedBlocks = this.ast.flattenBlocks(blocks)
         const blockIndex = flattenedBlocks.findIndex(b => b.id === context.block.id)
 
         console.log('blockIndex', blockIndex, 'context.block.id', context.block.id, 'blocks', JSON.stringify(blocks, null, 2))
@@ -84,13 +84,13 @@ class Editor {
         if (context.inlineIndex === 0 && caretPosition === 0) {
             console.log('enter at start of block')
 
-            const parentBlock = this.getParentBlock(context.block)
+            const parentBlock = this.ast.getParentBlock(context.block)
             if (parentBlock) {
                 if (parentBlock.type === 'listItem') {
                     console.log('list item block', JSON.stringify(parentBlock, null, 2))
 
                     const listItemBlock = parentBlock
-                    const listBlock = this.getParentBlock(parentBlock)
+                    const listBlock = this.ast.getParentBlock(parentBlock)
                     if (listBlock && listBlock.type === 'list') {
                         const newListItemBlock = {
                             id: uuid(),
@@ -200,13 +200,13 @@ class Editor {
             return { preventDefault: true }
         }
 
-        const parentBlock = this.getParentBlock(context.block)
+        const parentBlock = this.ast.getParentBlock(context.block)
         if (parentBlock) {
             if (parentBlock.type === 'listItem') {
                 console.log('list item block', JSON.stringify(parentBlock, null, 2))
 
                 const listItem = parentBlock
-                const list = this.getParentBlock(parentBlock)
+                const list = this.ast.getParentBlock(parentBlock)
                 if (list && list.type === 'list') {
                     const text = context.inline.text.symbolic
 
@@ -1034,7 +1034,7 @@ class Editor {
     }
 
     private transformBlock(block: Block, text: string, type: Block["type"]) {
-        const flattenedBlocks = this.flattenBlocks(this.ast.ast.blocks)
+        const flattenedBlocks = this.ast.flattenBlocks(this.ast.ast.blocks)
         const blockIndex = flattenedBlocks.findIndex(b => b.id === block.id)
 
         const newBlock = buildBlocks(text, this.ast.ast)[0]
@@ -1045,7 +1045,7 @@ class Editor {
         }
 
         if (newBlock.type === 'list') {
-            const nestedBlocks = this.flattenBlocks(newBlock.blocks)
+            const nestedBlocks = this.ast.flattenBlocks(newBlock.blocks)
             const lastNestedBlock = nestedBlocks.at(-1)
 
             if (lastNestedBlock) {
@@ -1086,20 +1086,6 @@ class Editor {
         this.ast.updateAST()
         this.caret?.restoreCaret()
         this.emitChange()
-    }
-
-    private getParentBlock(block: Block): Block | null {
-        const flattenedBlocks = this.flattenBlocks(this.ast.ast.blocks)
-        const parentBlock = flattenedBlocks.find(b => b.type === 'list' && b.blocks?.some(b => b.id === block.id)) ?? flattenedBlocks.find(b => b.type === 'listItem' && b.blocks?.some(b => b.id === block.id))
-        return parentBlock ?? null
-    }
-
-    private flattenBlocks(blocks: Block[], acc: Block[] = []): Block[] {
-        for (const b of blocks) {
-          acc.push(b)
-          if ('blocks' in b && b.blocks) this.flattenBlocks(b.blocks, acc)
-        }
-        return acc
     }
 
     public apply(effect: EditEffect) {

@@ -72,6 +72,20 @@ class AST {
         return null
     }
 
+    public getParentBlock(block: Block): Block | null {
+        const flattenedBlocks = this.flattenBlocks(this.ast.blocks)
+        const parentBlock = flattenedBlocks.find(b => b.type === 'list' && b.blocks?.some(b => b.id === block.id)) ?? flattenedBlocks.find(b => b.type === 'listItem' && b.blocks?.some(b => b.id === block.id))
+        return parentBlock ?? null
+    }
+
+    public flattenBlocks(blocks: Block[], acc: Block[] = []): Block[] {
+        for (const b of blocks) {
+          acc.push(b)
+          if ('blocks' in b && b.blocks) this.flattenBlocks(b.blocks, acc)
+        }
+        return acc
+    }
+
     public flattenInlines(blocks: Block[]): Inline[] {
         const inlines: Inline[] = []
         for (const b of blocks) {
@@ -157,6 +171,27 @@ class AST {
         // console.log('ast', JSON.stringify(ast, null, 2))
     }
 
+    private deleteEmptyBlock(block: Block) {
+        if (block.inlines.length > 0) return // block still has content, nothing to do
+    
+        const parent = this.getParentBlock(block)
+        if (!parent) {
+            // top-level empty block
+            const index = this.ast.blocks.findIndex(b => b.id === block.id)
+            if (index !== -1) this.ast.blocks.splice(index, 1)
+            return
+        }
+    
+        // remove block from parent's children if applicable
+        if ('blocks' in parent) { // e.g., listItem has blocks array
+            const index = parent.blocks.findIndex(b => b.id === block.id)
+            if (index !== -1) parent.blocks.splice(index, 1)
+        }
+    
+        // recursively check parent
+        this.deleteEmptyBlock(parent)
+    }
+
     public mergeInline(inlineAId: string, inlineBId: string): { targetBlocks: Block[], targetInline: Inline, targetPosition: number } | null {
         const inlineA = this.getInlineById(inlineAId)
         const inlineB = this.getInlineById(inlineBId)
@@ -190,12 +225,10 @@ class AST {
             previousBlock.inlines.splice(rightInlineIndex, 1)
             previousBlock.text = previousBlock.inlines.map((i: Inline) => i.text.symbolic).join('')
             previousBlock.position = { start: previousBlock.position.start, end: previousBlock.position.end - rightInline.text.symbolic.length }
+            
             targetBlocks.push(previousBlock)
 
-            if (previousBlock.inlines.length === 0) {
-                const previousBlockIndex = this.ast.blocks.findIndex(b => b.id === previousBlock.id)
-                this.ast.blocks.splice(previousBlockIndex, 1)
-            }
+            this.deleteEmptyBlock(previousBlock)
         }
 
         currentBlock.text = mergedText
