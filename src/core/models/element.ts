@@ -14,9 +14,8 @@ class Element extends HTMLElement {
     private ast = new AST()
     private caret: Caret | null = null
     private selection: Selection | null = null
-    private focusedInlineId: string | null = null
-    private hasAcceptedExternalValue = false
     private editor: Editor | null = null
+    private hasAcceptedExternalValue = false
 
     constructor() {
         super()
@@ -82,79 +81,6 @@ class Element extends HTMLElement {
         const div = document.createElement('div')
         div.classList.add('element')
 
-        div.addEventListener('focusin', (e: FocusEvent) => {
-            const target = e.target as HTMLElement;
-            if (!target.dataset?.inlineId) return;
-          
-            const inline = this.ast.getInlineById(target.dataset.inlineId!);
-            if (!inline) return;
-
-            const selection = window.getSelection();
-            if (!selection || selection.rangeCount === 0) return;
-
-            const range = selection.getRangeAt(0);
-
-            let syntheticOffset = 0;
-            if (target.contains(range.startContainer)) {
-                const preRange = document.createRange();
-                preRange.selectNodeContents(target);
-                preRange.setEnd(range.startContainer, range.startOffset);
-                syntheticOffset = preRange.toString().length;
-            }
-
-            const syntheticVisibleLength = target.textContent?.length ?? 1;
-
-            target.innerHTML = '';
-            const newTextNode = document.createTextNode(inline.text.symbolic);
-            target.appendChild(newTextNode);
-
-            const symbolicOffset = this.mapSyntheticOffsetToSymbolic(
-                syntheticVisibleLength,
-                inline.text.symbolic.length,
-                syntheticOffset
-            );
-
-            const clampedOffset = Math.max(0, Math.min(symbolicOffset, inline.text.symbolic.length));
-            const newRange = document.createRange();
-            newRange.setStart(newTextNode, clampedOffset);
-            newRange.collapse(true);
-            selection.removeAllRanges();
-            selection.addRange(newRange);
-
-            this.focusedInlineId = inline.id;
-        });
-
-        div.addEventListener('focusout', (e) => {
-            if (this.focusedInlineId !== null) {
-                const inlineEl = this.rootElement?.querySelector(`[data-inline-id="${this.focusedInlineId}"]`) as HTMLElement;
-                if (!inlineEl) return;
-
-                const inline = this.ast.getInlineById(this.focusedInlineId);
-                if (inline) {
-                    inlineEl.innerHTML = '';
-                    const newTextNode = document.createTextNode(inline.text.semantic);
-                    inlineEl.appendChild(newTextNode);
-                }
-            }
-
-            // console.log('focusout')
-            if (!this.rootElement?.contains(e.relatedTarget as Node)) {
-                const target = e.target as HTMLElement
-                if (!target.dataset?.inlineId) return;
-
-                const inlineId = target.dataset.inlineId!;
-                const inline = this.ast.getInlineById(inlineId);
-                if (!inline) return;
-
-                target.innerHTML = '';
-                const newTextNode = document.createTextNode(inline.text.semantic);
-                target.appendChild(newTextNode);
-
-                this.caret?.clear();
-                this.focusedInlineId = null;
-            }
-        })
-
         div.addEventListener('input', (e: Event) => {
             this.editor?.onInput(e)
         })
@@ -202,19 +128,6 @@ class Element extends HTMLElement {
     
         this.shadowRootElement.appendChild(div)
         this.rootElement = div
-    }
-
-    private mapSyntheticOffsetToSymbolic(
-        syntheticLength: number,
-        symbolicLength: number,
-        syntheticOffset: number
-    ) {
-        if (syntheticOffset === 0) return 0;
-        let ratio = symbolicLength / syntheticLength;
-        ratio = Math.max(0.5, Math.min(2.0, ratio));
-        let offset = Math.round(syntheticOffset * ratio);
-
-        return Math.max(0, Math.min(offset, symbolicLength));
     }
 
     private emitChange() {
