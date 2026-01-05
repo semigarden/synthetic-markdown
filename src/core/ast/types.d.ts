@@ -5,6 +5,11 @@ export type EditorContext = {
     inlineElement: HTMLElement
 }
 
+export type EditorActionResult =
+    | { preventDefault: true }
+    | { preventDefault: false }
+    | null
+
 interface BlockType<T extends string = string> {
     id: string
     type: T

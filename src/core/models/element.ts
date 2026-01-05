@@ -94,7 +94,7 @@ class Element extends HTMLElement {
 
             const context = this.selection?.resolveInlineContext()
             if (!context) return
-            this.editor?.onIntent(intent, event, context)
+            this.editor?.onIntent(intent, context)
         })
 
         this.shadowRootElement.appendChild(div)

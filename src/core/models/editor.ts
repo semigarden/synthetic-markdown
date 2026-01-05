@@ -1,6 +1,6 @@
 import AST from "./ast"
 import Caret from "./caret"
-import { EditorContext, Block, Inline, ListItem } from "../ast/types"
+import { EditorContext, EditorActionResult, Block, Inline, ListItem } from "../ast/types"
 import { parseInlineContent, detectType, buildBlocks } from "../ast/ast"
 import { uuid } from "../utils/utils"
 import { renderBlock } from "../render/renderBlock"
@@ -18,12 +18,13 @@ class Editor {
         this.emitChange = emitChange
     }
 
-    public onIntent(intent: Intent, event: KeyboardEvent, context: EditorContext) {
+    public onIntent(intent: Intent, context: EditorContext): EditorActionResult {
         if (intent === 'enter') {
-            this.onEnter(event, context)
+            return this.onEnter(context)
         } else if (intent === 'backspace') {
-            this.onBackspace(event, context)
+            return this.onBackspace(context)
         }
+        return null
     }
 
     public onInput(context: EditorContext) {
@@ -68,16 +69,15 @@ class Editor {
 
     }
 
-    public onEnter(event: KeyboardEvent, context: EditorContext) {
+    public onEnter(context: EditorContext): EditorActionResult {
         console.log('enter')
-        event.preventDefault()
         const caretPosition = this.caret.getPositionInInline(context.inlineElement)
         const blocks = this.ast.ast.blocks
         const flattenedBlocks = this.flattenBlocks(blocks)
         const blockIndex = flattenedBlocks.findIndex(b => b.id === context.block.id)
 
         console.log('blockIndex', blockIndex, 'context.block.id', context.block.id, 'blocks', JSON.stringify(blocks, null, 2))
-        if (blockIndex === -1) return
+        if (blockIndex === -1) return { preventDefault: true }
 
         console.log('caretPosition', caretPosition)
 
@@ -140,7 +140,7 @@ class Editor {
                         this.caret?.restoreCaret()
                         this.emitChange()
 
-                        return
+                        return { preventDefault: true }
                         
                     }
                 }
@@ -197,7 +197,7 @@ class Editor {
 
             // console.log('ast', JSON.stringify(this.engine.ast, null, 2))
 
-            return
+            return { preventDefault: true }
         }
 
         const parentBlock = this.getParentBlock(context.block)
@@ -297,7 +297,7 @@ class Editor {
                     this.caret?.restoreCaret()
                     this.emitChange()
 
-                    return
+                    return { preventDefault: true }
                 }
             }
         }
@@ -382,15 +382,14 @@ class Editor {
 
         // console.log(`inline ${ctx.inline.id} split: ${ctx.inline.text.symbolic} > ${ctx.inlineEl.textContent ?? ''}`)
 
+        return { preventDefault: true }
     }
 
-    public onBackspace(event: KeyboardEvent, context: EditorContext) {
+    public onBackspace(context: EditorContext): EditorActionResult {
         console.log('backspace')
         const caretPosition = this.caret.getPositionInInline(context.inlineElement)
 
-        if (caretPosition !== 0) return
-
-        event.preventDefault()
+        if (caretPosition !== 0) return { preventDefault: false }
 
         const flattenedBlocks = this.flattenBlocks(this.ast.ast.blocks)
 
@@ -398,7 +397,7 @@ class Editor {
             console.log('backspace at start of block')
             
             const blockIndex = flattenedBlocks.findIndex(b => b.id === context.block.id)
-            if (blockIndex === -1 || blockIndex === 0) return
+            if (blockIndex === -1 || blockIndex === 0) return { preventDefault: true }
 
             const parentBlock = this.getParentBlock(context.block)
             if (parentBlock) {
@@ -450,7 +449,7 @@ class Editor {
                                     this.caret?.restoreCaret()
                                     this.emitChange()
 
-                                    return
+                                    return { preventDefault: true }
                                 }
                             }
                         }
@@ -523,7 +522,7 @@ class Editor {
 
                             this.emitChange()
 
-                            return
+                            return { preventDefault: true }
                         }
                     }
                 }
@@ -598,7 +597,7 @@ class Editor {
 
             this.emitChange()
 
-            return
+            return { preventDefault: true }
         }
 
         console.log('context.block.inlines', JSON.stringify(context.block.inlines, null, 2))
@@ -629,7 +628,8 @@ class Editor {
         this.updateAST()
         this.caret?.restoreCaret()
         this.emitChange()
-        
+
+        return { preventDefault: true }
     }
 
     private detectBlockType(text: string) {
