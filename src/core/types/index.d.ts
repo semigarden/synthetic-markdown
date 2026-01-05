@@ -5,10 +5,9 @@ export type EditContext = {
     inlineElement: HTMLElement
 }
 
-export type EditorActionResult =
-    | { preventDefault: true }
-    | { preventDefault: false }
-    | null
+export type EditEffect = {
+    preventDefault?: boolean
+}
 
 interface BlockType<T extends string = string> {
     id: string
