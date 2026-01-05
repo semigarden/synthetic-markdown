@@ -7,15 +7,14 @@ import { renderBlock } from "../render/renderBlock"
 import { Intent } from "../utils/key"
 
 class Editor {
-    private rootElement: HTMLElement
-    private ast: AST
-    private caret: Caret
     private emitChange: () => void
 
-    constructor(rootElement: HTMLElement, ast: AST, caret: Caret, emitChange: () => void ) {
-        this.rootElement = rootElement
-        this.ast = ast
-        this.caret = caret
+    constructor(
+        private rootElement: HTMLElement,
+        private ast: AST,
+        private caret: Caret,
+        emitChange: () => void
+    ) {
         this.emitChange = emitChange
     }
 
@@ -842,28 +841,28 @@ class Editor {
     private resolveInlineContext() {
         const blockId = this.caret.getBlockId()
         const inlineId = this.caret.getInlineId()
-        // console.log('resolve 0')
+        console.log('resolve 0')
     
         if (!blockId || !inlineId) return null
     
         // console.log('engine.ast', JSON.stringify(this.engine.ast, null, 2))
-        // console.log('resolve 1', blockId, inlineId)
+        console.log('resolve 1', blockId, inlineId)
         const block = this.ast.getBlockById(blockId)
         if (!block) return null
     
-        // console.log('resolve 2', inlineId)
+        console.log('resolve 2', inlineId)
         const inlineIndex = block.inlines.findIndex(i => i.id === inlineId)
         if (inlineIndex === -1) return null
     
-        // console.log('resolve 3')
+        console.log('resolve 3')
         const inline = block.inlines[inlineIndex]
     
-        // console.log('resolve 4')
+        console.log('resolve 4')
         const inlineEl = this.rootElement.querySelector(
             `[data-inline-id="${inlineId}"]`
         ) as HTMLElement | null
     
-        // console.log('resolve 5')
+        console.log('resolve 5')
         if (!inlineEl) return null
     
         return {

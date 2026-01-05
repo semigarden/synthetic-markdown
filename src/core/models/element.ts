@@ -204,13 +204,6 @@ class Element extends HTMLElement {
         this.rootElement = div
     }
 
-    private emitChange() {
-        this.dispatchEvent(new Event('change', {
-            bubbles: true,
-            composed: true,
-        }))
-    }
-
     private mapSyntheticOffsetToSymbolic(
         syntheticLength: number,
         symbolicLength: number,
@@ -222,6 +215,14 @@ class Element extends HTMLElement {
         let offset = Math.round(syntheticOffset * ratio);
 
         return Math.max(0, Math.min(offset, symbolicLength));
+    }
+
+    private emitChange() {
+        console.log('emitChange')
+        this.dispatchEvent(new Event('change', {
+            bubbles: true,
+            composed: true,
+        }))
     }
 }
 

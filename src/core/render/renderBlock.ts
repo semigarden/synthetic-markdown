@@ -37,6 +37,7 @@ export function renderBlock(block: Block, container: HTMLElement, focusedInlineI
     
       el.dataset.blockId = block.id
       el.id = block.id
+      el.classList.add('block')
     }
 
     if (block.type === 'codeBlock') {
