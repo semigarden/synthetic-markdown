@@ -72,7 +72,6 @@ class Editor {
 
     public onEnter(e: KeyboardEvent) {
         console.log('enter')
-        // const ctx = this.resolveInlineContext(e)
         const ctx = this.resolveInlineContext()
         if (!ctx) return
 
@@ -393,7 +392,6 @@ class Editor {
 
     public onBackspace(e: KeyboardEvent) {
         console.log('backspace')
-        // const ctx = this.resolveInlineContext(e)
         const ctx = this.resolveInlineContext()
         if (!ctx) return
 
