@@ -1,4 +1,4 @@
-export type EditorContext = {
+export type EditContext = {
     block: Block
     inline: Inline
     inlineIndex: number

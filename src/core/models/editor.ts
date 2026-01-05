@@ -1,6 +1,6 @@
 import AST from "./ast"
 import Caret from "./caret"
-import { EditorContext, EditorActionResult, Block, Inline, ListItem } from "../types"
+import { EditContext, EditorActionResult, Block, Inline, ListItem } from "../types"
 import { parseInlineContent, detectType, buildBlocks } from "../ast/ast"
 import { uuid } from "../utils/utils"
 import { renderBlock } from "../render/renderBlock"
@@ -18,7 +18,7 @@ class Editor {
         this.emitChange = emitChange
     }
 
-    public onIntent(intent: Intent, context: EditorContext): EditorActionResult {
+    public onIntent(intent: Intent, context: EditContext): EditorActionResult {
         if (intent === 'enter') {
             return this.onEnter(context)
         } else if (intent === 'backspace') {
@@ -27,7 +27,7 @@ class Editor {
         return null
     }
 
-    public onInput(context: EditorContext) {
+    public onInput(context: EditContext) {
         console.log('onInput')
 
         console.log('ctx', context.inlineElement.textContent)
@@ -69,7 +69,7 @@ class Editor {
 
     }
 
-    public onEnter(context: EditorContext): EditorActionResult {
+    public onEnter(context: EditContext): EditorActionResult {
         console.log('enter')
         const caretPosition = this.caret.getPositionInInline(context.inlineElement)
         const blocks = this.ast.ast.blocks
@@ -385,7 +385,7 @@ class Editor {
         return { preventDefault: true }
     }
 
-    public onBackspace(context: EditorContext): EditorActionResult {
+    public onBackspace(context: EditContext): EditorActionResult {
         console.log('backspace')
         const caretPosition = this.caret.getPositionInInline(context.inlineElement)
 
