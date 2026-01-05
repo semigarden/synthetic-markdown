@@ -1,7 +1,6 @@
 import { Inline } from "../ast/types"
 
 class Caret {
-    private rootElement: HTMLElement
     private inlineId: string | null = null
     private blockId: string | null = null
     private position: number | null = null
@@ -9,8 +8,13 @@ class Caret {
 
     public pendingTextRestore: { blockId: string; offset: number } | null = null
 
-    constructor(rootElement: HTMLElement, inlineId?: string, blockId?: string, position?: number, affinity?: 'start' | 'end') {
-        this.rootElement = rootElement
+    constructor(
+      private rootElement: HTMLElement,
+      inlineId?: string,
+      blockId?: string,
+      position?: number,
+      affinity?: 'start' | 'end'
+    ) {
         this.inlineId = inlineId ?? null
         this.blockId = blockId ?? null
         this.position = position ?? null
