@@ -9,13 +9,13 @@ import { onKey } from '../utils/key'
 
 class Element extends HTMLElement {
     private shadowRootElement: ShadowRoot
-    private styled = false
     private rootElement?: HTMLElement
     private ast = new AST()
     private caret: Caret | null = null
     private selection: Selection | null = null
     private editor: Editor | null = null
     private hasAcceptedExternalValue = false
+    private styled = false
 
     constructor() {
         super()
