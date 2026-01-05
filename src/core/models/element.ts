@@ -7,7 +7,7 @@ import { renderAST } from '../render/render'
 import { onKey } from '../utils/key'
 
 class Element extends HTMLElement {
-    private root: ShadowRoot
+    private shadowRootElement: ShadowRoot
     private styled = false
     private syntheticEl?: HTMLElement
     private ast = new AST()
@@ -18,7 +18,7 @@ class Element extends HTMLElement {
 
     constructor() {
         super()
-        this.root = this.attachShadow({ mode: 'open' })
+        this.shadowRootElement = this.attachShadow({ mode: 'open' })
     }
 
     connectedCallback() {
@@ -63,7 +63,7 @@ class Element extends HTMLElement {
     
         const style = document.createElement('style')
         style.textContent = scss
-        this.root.appendChild(style)
+        this.shadowRootElement.appendChild(style)
     
         this.styled = true
     }
@@ -237,7 +237,7 @@ class Element extends HTMLElement {
             }
         })
     
-        this.root.appendChild(div)
+        this.shadowRootElement.appendChild(div)
         this.syntheticEl = div
     }
 
