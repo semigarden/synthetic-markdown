@@ -1,5 +1,6 @@
 import AST from './ast'
 import Caret from './caret'
+import Selection from './selection'
 import Editor from './editor'
 import scss from '../styles/element.scss?inline'
 import { buildAst } from '../ast/ast'
@@ -12,6 +13,7 @@ class Element extends HTMLElement {
     private rootElement?: HTMLElement
     private ast = new AST()
     private caret: Caret | null = null
+    private selection: Selection | null = null
     private focusedInlineId: string | null = null
     private hasAcceptedExternalValue = false
     private editor: Editor | null = null
@@ -32,7 +34,13 @@ class Element extends HTMLElement {
         this.render()
 
         this.caret = new Caret(this.rootElement!)
-        this.editor = new Editor(this.ast, this.caret, this.rootElement!, this.emitChange.bind(this))
+        this.editor = new Editor(this.rootElement!, this.ast, this.caret, this.emitChange.bind(this))
+        this.selection = new Selection(this.rootElement!, this.ast, this.caret)
+        this.selection.attach()
+    }
+
+    disconnectedCallback() {
+        this.selection?.detach()
     }
 
     set value(value: string) {
@@ -73,51 +81,6 @@ class Element extends HTMLElement {
     
         const div = document.createElement('div')
         div.classList.add('element')
-
-        document.addEventListener('selectionchange', () => {
-            // console.log('selectionchange')
-            if (!this.rootElement) return;
-        
-            requestAnimationFrame(() => {
-                const selection = window.getSelection();
-                if (!selection?.rangeCount) return;
-            
-                const range = selection.getRangeAt(0);
-                const container = range.commonAncestorContainer;
-            
-                let inlineEl: HTMLElement | null = null;
-            
-                if (container instanceof HTMLElement) {
-                inlineEl = container.closest('[data-inline-id]') ?? null;
-                } else if (container instanceof Text) {
-                inlineEl = container.parentElement?.closest('[data-inline-id]') ?? null;
-                }
-            
-                if (!inlineEl || !this.rootElement?.contains(inlineEl)) {
-                this.caret?.clear();
-                return;
-                }
-            
-                const inlineId = inlineEl.dataset.inlineId!;
-                const inline = this.ast.getInlineById(inlineId);
-                if (!inline) return;
-
-                const block = this.ast.getBlockById(inline.blockId);
-                if (!block) return;
-
-                this.caret?.setInlineId(inlineId);
-                this.caret?.setBlockId(inline.blockId);
-            
-                const preRange = range.cloneRange();
-                preRange.selectNodeContents(inlineEl);
-                preRange.setEnd(range.startContainer, range.startOffset);
-                let position = preRange.toString().length + inline.position.start + block.position.start;
-            
-                this.caret?.setPosition(position);
-            
-                // console.log('Caret moved to:', inlineId, 'position:', position);
-            })
-        });
 
         div.addEventListener('focusin', (e: FocusEvent) => {
             const target = e.target as HTMLElement;

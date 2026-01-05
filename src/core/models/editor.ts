@@ -7,15 +7,15 @@ import { renderBlock } from "../render/renderBlock"
 import { Intent } from "../utils/key"
 
 class Editor {
+    private rootElement: HTMLElement
     private ast: AST
     private caret: Caret
-    private rootElement: HTMLElement
     private emitChange: () => void
 
-    constructor(ast: AST, caret: Caret, rootElement: HTMLElement, emitChange: () => void ) {
+    constructor(rootElement: HTMLElement, ast: AST, caret: Caret, emitChange: () => void ) {
+        this.rootElement = rootElement
         this.ast = ast
         this.caret = caret
-        this.rootElement = rootElement
         this.emitChange = emitChange
     }
 
