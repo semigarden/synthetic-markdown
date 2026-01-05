@@ -93,39 +93,6 @@ class Element extends HTMLElement {
             this.editor?.onIntent(intent, event)
         })
 
-        div.addEventListener('click', (e: MouseEvent) => {
-            const target = e.target as HTMLElement
-            if (target.dataset?.inlineId) {
-                // console.log('click on inline', target.dataset.inlineId)
-            }
-            if (target.dataset?.blockId) {
-                // console.log('click on block', target.dataset.blockId)
-                const block = this.ast.getBlockById(target.dataset.blockId)
-                if (block) {
-                    const lastInline = block.inlines.at(-1)
-                    if (lastInline) {
-                        this.caret?.setInlineId(lastInline.id)
-                        this.caret?.setBlockId(block.id)
-                        this.caret?.setPosition(lastInline.text.symbolic.length)
-                        this.caret?.restoreCaret()
-                    }
-                }
-            }
-            if (target.classList.contains('element')) {
-                // console.log('click on syntheticText')
-                const lastBlock = this.ast.ast.blocks.at(-1)
-                if (lastBlock) {
-                    const lastInline = lastBlock.inlines.at(-1)
-                    if (lastInline) {
-                        this.caret?.setInlineId(lastInline.id)
-                        this.caret?.setBlockId(lastBlock.id)
-                        this.caret?.setPosition(lastInline.text.symbolic.length)
-                        this.caret?.restoreCaret()
-                    }
-                }
-            }
-        })
-    
         this.shadowRootElement.appendChild(div)
         this.rootElement = div
     }

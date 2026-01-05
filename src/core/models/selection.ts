@@ -15,12 +15,14 @@ class Selection {
         document.addEventListener('selectionchange', this.onSelectionChange)
         this.rootElement.addEventListener('focusin', this.onFocusIn)
         this.rootElement.addEventListener('focusout', this.onFocusOut)
+        this.rootElement.addEventListener('click', this.onClick)
     }
 
     detach() {
         document.removeEventListener('selectionchange', this.onSelectionChange)
         this.rootElement.removeEventListener('focusin', this.onFocusIn)
         this.rootElement.removeEventListener('focusout', this.onFocusOut)
+        this.rootElement.removeEventListener('click', this.onClick)
     }
 
     private onSelectionChange = () => {
@@ -113,6 +115,39 @@ class Selection {
 
             this.caret?.clear()
             this.focusedInlineId = null
+        }
+    }
+
+    private onClick = (e: MouseEvent) => {
+        const target = e.target as HTMLElement
+        if (target.dataset?.inlineId) {
+            // console.log('click on inline', target.dataset.inlineId)
+        }
+        if (target.dataset?.blockId) {
+            // console.log('click on block', target.dataset.blockId)
+            const block = this.ast.getBlockById(target.dataset.blockId)
+            if (block) {
+                const lastInline = block.inlines.at(-1)
+                if (lastInline) {
+                    this.caret?.setInlineId(lastInline.id)
+                    this.caret?.setBlockId(block.id)
+                    this.caret?.setPosition(lastInline.text.symbolic.length)
+                    this.caret?.restoreCaret()
+                }
+            }
+        }
+        if (target.classList.contains('element')) {
+            // console.log('click on syntheticText')
+            const lastBlock = this.ast.ast.blocks.at(-1)
+            if (lastBlock) {
+                const lastInline = lastBlock.inlines.at(-1)
+                if (lastInline) {
+                    this.caret?.setInlineId(lastInline.id)
+                    this.caret?.setBlockId(lastBlock.id)
+                    this.caret?.setPosition(lastInline.text.symbolic.length)
+                    this.caret?.restoreCaret()
+                }
+            }
         }
     }
 
