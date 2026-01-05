@@ -1,10 +1,9 @@
 import AST from "./ast"
 import Caret from "./caret"
-import { EditContext, EditEffect, Block, Inline, ListItem } from "../types"
+import { EditContext, EditEffect, Intent, Block, Inline, ListItem } from "../types"
 import { parseInlineContent, detectType, buildBlocks } from "../ast/ast"
 import { uuid } from "../utils/utils"
 import { renderBlock } from "../render/renderBlock"
-import { Intent } from "../utils/key"
 
 class Editor {
     private emitChange: () => void
@@ -21,8 +20,8 @@ class Editor {
     public onIntent(intent: Intent, context: EditContext): EditEffect {
         if (intent === 'enter') {
             return this.onEnter(context)
-        } else if (intent === 'backspace') {
-            return this.onBackspace(context)
+        } else if (intent === 'merge') {
+            return this.merge(context)
         }
 
         return { preventDefault: false }
@@ -386,8 +385,8 @@ class Editor {
         return { preventDefault: true }
     }
 
-    public onBackspace(context: EditContext): EditEffect {
-        console.log('backspace')
+    private merge(context: EditContext): EditEffect {
+        console.log('merge')
         const caretPosition = this.caret.getPositionInInline(context.inlineElement)
 
         if (caretPosition !== 0) return { preventDefault: false }
@@ -395,210 +394,219 @@ class Editor {
         const flattenedBlocks = this.flattenBlocks(this.ast.ast.blocks)
 
         if (context.inlineIndex === 0 && caretPosition === 0) {
-            console.log('backspace at start of block')
-            
-            const blockIndex = flattenedBlocks.findIndex(b => b.id === context.block.id)
-            if (blockIndex === -1 || blockIndex === 0) return { preventDefault: true }
+            console.log('merge at start of block')
 
-            const parentBlock = this.getParentBlock(context.block)
-            if (parentBlock) {
-                if (parentBlock.type === 'listItem') {
-                    const listItemBlock = parentBlock
-                    const list = this.getParentBlock(parentBlock)
-                    if (list && list.type === 'list') {
-                        // console.log('list', JSON.stringify(listBlock, null, 2))
-                        const listBlockIndex = this.ast.ast.blocks.findIndex(b => b.id === list.id)
-                        const listItemBlockIndex = flattenedBlocks.findIndex(b => b.id === listItemBlock.id)
-                        const listItemIndex = list.blocks.findIndex(b => b.id === listItemBlock.id)
-
-                        if (listItemIndex === 0) {
-                            const newText = listItemBlock.text.slice(0, 1) + listItemBlock.text.slice(2, -1)
-                            console.log('newText', JSON.stringify(newText, null, 2))
-                            const detectedBlockType = this.detectBlockType(newText)
-                            if (detectedBlockType.type !== listItemBlock.type) {
-                                
-                                if (list.blocks.length === 1) {
-                                    const listBlockEl = this.rootElement.querySelector(`[data-block-id="${list.id}"]`)
-                                    if (listBlockEl) {
-                                        listBlockEl.remove()
-                                    }
-    
-                                    const newBlock = {
-                                        id: uuid(),
-                                        type: detectedBlockType.type,
-                                        text: newText,
-                                        inlines: [],
-                                        position: { start: listItemBlock.position.start, end: listItemBlock.position.start + newText.length }
-                                    } as Block
-    
-                                    const newBlockInlines = parseInlineContent(newText, newBlock.id, newBlock.position.start)
-    
-                                    newBlock.inlines = newBlockInlines
-
-                                    this.ast.ast.blocks.splice(listBlockIndex, 1, newBlock)
-
-                                    const prevBlock = this.ast.ast.blocks[listBlockIndex - 1]
-
-                                    console.log('list', JSON.stringify(newBlock, null, 2))
-                                    renderBlock(newBlock, this.rootElement, null, prevBlock)
-
-                                    this.caret.setInlineId(newBlockInlines[0].id)
-                                    this.caret.setBlockId(newBlock.id)
-                                    this.caret.setPosition(1)
-
-                                    this.ast.updateAST()
-                                    this.caret?.restoreCaret()
-                                    this.emitChange()
-
-                                    return { preventDefault: true }
-                                }
-                            }
-                        }
-
-                        if (listItemIndex > 0) {
-                            const prevListItem = list.blocks[listItemIndex - 1] as ListItem
-                            const prevListItemParagraph = prevListItem.blocks[0]
-
-                            const prevLastInlineIndex = prevListItemParagraph.inlines.length - 1
-                            const targetPosition = prevListItemParagraph.inlines[prevLastInlineIndex].position.end
-
-                            const prevText = prevListItemParagraph.inlines
-                                .map((i: Inline) => i.text.symbolic)
-                                .join('')
-
-                            const currText = context.block.inlines
-                                .map((i: Inline) => i.text.symbolic)
-                                .join('')
-
-                            const mergedText = prevText + currText
-
-                            const newInlines = parseInlineContent(
-                                mergedText,
-                                prevListItemParagraph.id,
-                                prevListItemParagraph.position.start
-                            )
-
-                            if (newInlines.length === 0) {
-                                newInlines.push({
-                                    id: uuid(),
-                                    type: 'text',
-                                    blockId: prevListItemParagraph.id,
-                                    text: { symbolic: '', semantic: '' },
-                                    position: { start: 0, end: 0 }
-                                })
-                            }
-
-                            prevListItemParagraph.text = mergedText
-                            prevListItemParagraph.inlines = newInlines
-
-
-                            const index = list.blocks.findIndex(b => b.id === listItemBlock.id)
-
-                            list.blocks.splice(index, 1)
-
-                            let targetInlineIndex: number
-                            if (context.inline.type === prevListItemParagraph.inlines[prevLastInlineIndex].type && context.inline.type === 'text') {
-                                targetInlineIndex = prevLastInlineIndex
-                            } else {
-                                targetInlineIndex = prevLastInlineIndex + 1
-                            }
-                            const targetInline = newInlines[targetInlineIndex]
-
-                            this.caret.setInlineId(targetInline.id)
-                            this.caret.setBlockId(targetInline.blockId)
-                            this.caret.setPosition(targetPosition)
-
-                            renderBlock(prevListItemParagraph, this.rootElement)
-
-                            const blockEl = this.rootElement.querySelector(`[data-block-id="${listItemBlock.id}"]`)
-                            if (blockEl) {
-                                blockEl.remove()
-                            }
-
-                            this.ast.updateAST()
-
-                            requestAnimationFrame(() => {
-                                this.caret?.restoreCaret()
-                            })
-
-                            this.emitChange()
-
-                            return { preventDefault: true }
-                        }
-                    }
+            return {
+                preventDefault: true,
+                ast: [{
+                    type: 'mergeInlineWithPrevious',
+                    inlineId: context.inline.id,
+                }],
+                caret: {
+                    moveToEndOfPreviousInline: true,
                 }
             }
+            
+        //     const blockIndex = flattenedBlocks.findIndex(b => b.id === context.block.id)
+        //     if (blockIndex === -1 || blockIndex === 0) return { preventDefault: true }
 
-            const prevBlock = flattenedBlocks[blockIndex - 1]
+        //     const parentBlock = this.getParentBlock(context.block)
+        //     if (parentBlock) {
+        //         if (parentBlock.type === 'listItem') {
+        //             const listItemBlock = parentBlock
+        //             const list = this.getParentBlock(parentBlock)
+        //             if (list && list.type === 'list') {
+        //                 // console.log('list', JSON.stringify(listBlock, null, 2))
+        //                 const listBlockIndex = this.ast.ast.blocks.findIndex(b => b.id === list.id)
+        //                 const listItemBlockIndex = flattenedBlocks.findIndex(b => b.id === listItemBlock.id)
+        //                 const listItemIndex = list.blocks.findIndex(b => b.id === listItemBlock.id)
 
-            const prevLastInlineIndex = prevBlock.inlines.length - 1
-            const targetPosition = prevBlock.inlines[prevLastInlineIndex].position.end
-            console.log('targetPosition', targetPosition)
+        //                 if (listItemIndex === 0) {
+        //                     const newText = listItemBlock.text.slice(0, 1) + listItemBlock.text.slice(2, -1)
+        //                     console.log('newText', JSON.stringify(newText, null, 2))
+        //                     const detectedBlockType = this.detectBlockType(newText)
+        //                     if (detectedBlockType.type !== listItemBlock.type) {
+                                
+        //                         if (list.blocks.length === 1) {
+        //                             const listBlockEl = this.rootElement.querySelector(`[data-block-id="${list.id}"]`)
+        //                             if (listBlockEl) {
+        //                                 listBlockEl.remove()
+        //                             }
+    
+        //                             const newBlock = {
+        //                                 id: uuid(),
+        //                                 type: detectedBlockType.type,
+        //                                 text: newText,
+        //                                 inlines: [],
+        //                                 position: { start: listItemBlock.position.start, end: listItemBlock.position.start + newText.length }
+        //                             } as Block
+    
+        //                             const newBlockInlines = parseInlineContent(newText, newBlock.id, newBlock.position.start)
+    
+        //                             newBlock.inlines = newBlockInlines
 
-            const prevText = prevBlock.inlines
-                .map((i: Inline) => i.text.symbolic)
-                .join('')
+        //                             this.ast.ast.blocks.splice(listBlockIndex, 1, newBlock)
 
-            const currText = context.block.inlines
-                .map((i: Inline) => i.text.symbolic)
-                .join('')
+        //                             const prevBlock = this.ast.ast.blocks[listBlockIndex - 1]
 
-            const mergedText = prevText + currText
+        //                             console.log('list', JSON.stringify(newBlock, null, 2))
+        //                             renderBlock(newBlock, this.rootElement, null, prevBlock)
 
-            const newInlines = parseInlineContent(
-                mergedText,
-                prevBlock.id,
-                prevBlock.position.start
-            )
+        //                             this.caret.setInlineId(newBlockInlines[0].id)
+        //                             this.caret.setBlockId(newBlock.id)
+        //                             this.caret.setPosition(1)
 
-            if (newInlines.length === 0) {
-                newInlines.push({
-                    id: uuid(),
-                    type: 'text',
-                    blockId: prevBlock.id,
-                    text: { symbolic: '', semantic: '' },
-                    position: { start: 0, end: 0 }
-                })
-            }
+        //                             this.ast.updateAST()
+        //                             this.caret?.restoreCaret()
+        //                             this.emitChange()
 
-            prevBlock.text = mergedText
-            prevBlock.inlines = newInlines
+        //                             return { preventDefault: true }
+        //                         }
+        //                     }
+        //                 }
+
+        //                 if (listItemIndex > 0) {
+        //                     const prevListItem = list.blocks[listItemIndex - 1] as ListItem
+        //                     const prevListItemParagraph = prevListItem.blocks[0]
+
+        //                     const prevLastInlineIndex = prevListItemParagraph.inlines.length - 1
+        //                     const targetPosition = prevListItemParagraph.inlines[prevLastInlineIndex].position.end
+
+        //                     const prevText = prevListItemParagraph.inlines
+        //                         .map((i: Inline) => i.text.symbolic)
+        //                         .join('')
+
+        //                     const currText = context.block.inlines
+        //                         .map((i: Inline) => i.text.symbolic)
+        //                         .join('')
+
+        //                     const mergedText = prevText + currText
+
+        //                     const newInlines = parseInlineContent(
+        //                         mergedText,
+        //                         prevListItemParagraph.id,
+        //                         prevListItemParagraph.position.start
+        //                     )
+
+        //                     if (newInlines.length === 0) {
+        //                         newInlines.push({
+        //                             id: uuid(),
+        //                             type: 'text',
+        //                             blockId: prevListItemParagraph.id,
+        //                             text: { symbolic: '', semantic: '' },
+        //                             position: { start: 0, end: 0 }
+        //                         })
+        //                     }
+
+        //                     prevListItemParagraph.text = mergedText
+        //                     prevListItemParagraph.inlines = newInlines
 
 
-            const index = this.ast.ast.blocks.findIndex(b => b.id === context.block.id)
+        //                     const index = list.blocks.findIndex(b => b.id === listItemBlock.id)
 
-            this.ast.ast.blocks.splice(index, 1)
+        //                     list.blocks.splice(index, 1)
 
-            let targetInlineIndex: number
-            if (context.inline.type === prevBlock.inlines[prevLastInlineIndex].type && context.inline.type === 'text') {
-                targetInlineIndex = prevLastInlineIndex
-            } else {
-                targetInlineIndex = prevLastInlineIndex + 1
-            }
-            const targetInline = newInlines[targetInlineIndex]
+        //                     let targetInlineIndex: number
+        //                     if (context.inline.type === prevListItemParagraph.inlines[prevLastInlineIndex].type && context.inline.type === 'text') {
+        //                         targetInlineIndex = prevLastInlineIndex
+        //                     } else {
+        //                         targetInlineIndex = prevLastInlineIndex + 1
+        //                     }
+        //                     const targetInline = newInlines[targetInlineIndex]
 
-            this.caret.setInlineId(targetInline.id)
-            this.caret.setBlockId(targetInline.blockId)
-            this.caret.setPosition(targetPosition)
+        //                     this.caret.setInlineId(targetInline.id)
+        //                     this.caret.setBlockId(targetInline.blockId)
+        //                     this.caret.setPosition(targetPosition)
 
-            renderBlock(prevBlock, this.rootElement)
+        //                     renderBlock(prevListItemParagraph, this.rootElement)
 
-            const blockEl = this.rootElement.querySelector(`[data-block-id="${context.block.id}"]`)
-            if (blockEl) {
-                blockEl.remove()
-            }
+        //                     const blockEl = this.rootElement.querySelector(`[data-block-id="${listItemBlock.id}"]`)
+        //                     if (blockEl) {
+        //                         blockEl.remove()
+        //                     }
 
-            this.ast.updateAST()
+        //                     this.ast.updateAST()
 
-            console.log('ast', JSON.stringify(this.ast.ast, null, 2))
+        //                     requestAnimationFrame(() => {
+        //                         this.caret?.restoreCaret()
+        //                     })
 
-            requestAnimationFrame(() => {
-                this.caret?.restoreCaret()
-            })
+        //                     this.emitChange()
 
-            this.emitChange()
+        //                     return { preventDefault: true }
+        //                 }
+        //             }
+        //         }
+        //     }
 
-            return { preventDefault: true }
+        //     const prevBlock = flattenedBlocks[blockIndex - 1]
+
+        //     const prevLastInlineIndex = prevBlock.inlines.length - 1
+        //     const targetPosition = prevBlock.inlines[prevLastInlineIndex].position.end
+        //     console.log('targetPosition', targetPosition)
+
+        //     const prevText = prevBlock.inlines
+        //         .map((i: Inline) => i.text.symbolic)
+        //         .join('')
+
+        //     const currText = context.block.inlines
+        //         .map((i: Inline) => i.text.symbolic)
+        //         .join('')
+
+        //     const mergedText = prevText + currText
+
+        //     const newInlines = parseInlineContent(
+        //         mergedText,
+        //         prevBlock.id,
+        //         prevBlock.position.start
+        //     )
+
+        //     if (newInlines.length === 0) {
+        //         newInlines.push({
+        //             id: uuid(),
+        //             type: 'text',
+        //             blockId: prevBlock.id,
+        //             text: { symbolic: '', semantic: '' },
+        //             position: { start: 0, end: 0 }
+        //         })
+        //     }
+
+        //     prevBlock.text = mergedText
+        //     prevBlock.inlines = newInlines
+
+
+        //     const index = this.ast.ast.blocks.findIndex(b => b.id === context.block.id)
+
+        //     this.ast.ast.blocks.splice(index, 1)
+
+        //     let targetInlineIndex: number
+        //     if (context.inline.type === prevBlock.inlines[prevLastInlineIndex].type && context.inline.type === 'text') {
+        //         targetInlineIndex = prevLastInlineIndex
+        //     } else {
+        //         targetInlineIndex = prevLastInlineIndex + 1
+        //     }
+        //     const targetInline = newInlines[targetInlineIndex]
+
+        //     this.caret.setInlineId(targetInline.id)
+        //     this.caret.setBlockId(targetInline.blockId)
+        //     this.caret.setPosition(targetPosition)
+
+        //     renderBlock(prevBlock, this.rootElement)
+
+        //     const blockEl = this.rootElement.querySelector(`[data-block-id="${context.block.id}"]`)
+        //     if (blockEl) {
+        //         blockEl.remove()
+        //     }
+
+        //     this.ast.updateAST()
+
+        //     requestAnimationFrame(() => {
+        //         this.caret?.restoreCaret()
+        //     })
+
+        //     this.emitChange()
+
+        //     return { preventDefault: true }
         }
 
         console.log('context.block.inlines', JSON.stringify(context.block.inlines, null, 2))
@@ -809,7 +817,6 @@ class Editor {
         this.ast.updateAST()
         this.caret?.restoreCaret()
         this.emitChange()
-
     }
 
     private getParentBlock(block: Block): Block | null {
@@ -824,6 +831,11 @@ class Editor {
           if ('blocks' in b && b.blocks) this.flattenBlocks(b.blocks, acc)
         }
         return acc
+    }
+
+    public apply(effect: EditEffect) {
+        if (effect.ast) effect.ast.forEach(e => this.ast.apply(e))
+        if (effect.caret) this.caret.apply(effect.caret)
     }
 }
 

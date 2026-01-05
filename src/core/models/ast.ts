@@ -1,5 +1,5 @@
 import { buildAst } from '../ast/ast'
-import { Block, Document, Inline } from '../types'
+import { AstEffect, Block, Document, Inline } from '../types'
 import { uuid } from '../utils/utils'
 
 class AST {
@@ -73,7 +73,6 @@ class AST {
     }
 
     public updateAST() {
-        console.log('updateAST', JSON.stringify(this.ast, null, 2))
         let globalPos = 0
 
         const updateBlock = (block: Block): string => {
@@ -147,6 +146,10 @@ class AST {
 
 
         // console.log('ast', JSON.stringify(ast, null, 2))
+    }
+
+    public apply(effect: AstEffect) {
+      
     }
 }
 

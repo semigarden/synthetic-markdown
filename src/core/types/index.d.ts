@@ -5,9 +5,24 @@ export type EditContext = {
     inlineElement: HTMLElement
 }
 
+type AstEffect = {
+    type: 'mergeInlineWithPrevious'
+    inlineId: string
+}
+
+type CaretEffect = {
+    moveToEndOfPreviousInline?: boolean
+}
+
 export type EditEffect = {
     preventDefault?: boolean
+    ast?: AstEffect[]
+    caret?: CaretEffect
 }
+
+export type Intent =
+    | 'enter'
+    | 'merge'
 
 interface BlockType<T extends string = string> {
     id: string

@@ -1,4 +1,4 @@
-import { Inline } from "../types"
+import { CaretEffect, Inline } from "../types"
 
 class Caret {
     private inlineId: string | null = null
@@ -183,6 +183,10 @@ class Caret {
           console.warn('Failed to restore caret:', err);
           inlineEl.focus();
         }
+    }
+
+    public apply(effect: CaretEffect) {
+      
     }
 }
 

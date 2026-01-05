@@ -85,7 +85,9 @@ class Element extends HTMLElement {
         div.addEventListener('input', () => {
             const context = this.selection?.resolveInlineContext()
             if (!context) return
-            this.editor?.onInput(context)
+
+            const effect = this.editor?.onInput(context)
+            if (effect) this.editor?.apply(effect)
         })
 
         div.addEventListener('keydown', (event: KeyboardEvent) => {
@@ -94,7 +96,9 @@ class Element extends HTMLElement {
 
             const context = this.selection?.resolveInlineContext()
             if (!context) return
-            this.editor?.onIntent(intent, context)
+            
+            const effect = this.editor?.onIntent(intent, context)
+            if (effect) this.editor?.apply(effect)
         })
 
         this.shadowRootElement.appendChild(div)

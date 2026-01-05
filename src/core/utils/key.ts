@@ -1,10 +1,8 @@
-type Intent =
-    | 'enter'
-    | 'backspace'
+import { Intent } from "../types"
 
 const onKey: Record<string, Intent> = {
     'Enter': 'enter',
-    'Backspace': 'backspace',
+    'Backspace': 'merge',
 }
 
-export { onKey, Intent }
+export { onKey }
