@@ -112,7 +112,6 @@ class Element extends HTMLElement {
     }
 
     private emitChange() {
-        console.log('emitChange')
         this.dispatchEvent(new Event('change', {
             bubbles: true,
             composed: true,
