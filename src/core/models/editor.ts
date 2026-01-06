@@ -1,8 +1,6 @@
 import AST from "./ast"
 import Caret from "./caret"
-import { EditContext, EditEffect, Intent, Block, Inline, ListItem, AstApplyEffect } from "../types"
-import { parseInlineContent, detectType, buildBlocks } from "../ast/ast"
-import { uuid } from "../utils/utils"
+import { EditContext, EditEffect, AstApplyEffect, Intent, Block } from "../types"
 import { renderBlock } from "../render/renderBlock"
 
 class Editor {
@@ -28,39 +26,7 @@ class Editor {
     }
 
     public resolveInput(context: EditContext): EditEffect {
-        console.log('onInput')
-
         const caretPosition = this.caret.getPositionInInline(context.inlineElement)
-
-        // const newText = context.inlineElement.textContent ?? ''
-        // const detectedBlockType = detectType(newText)
-
-        // const blockTypeChanged =
-        //     detectedBlockType.type !== context.block.type ||
-        //     (detectedBlockType.type === 'heading' && context.block.type === 'heading' && detectedBlockType.level !== context.block.level)
-        
-        // const ignoreTypes = ['blankLine', 'heading', 'thematicBreak', 'codeBlock']
-        // if (blockTypeChanged && !ignoreTypes.includes(detectedBlockType.type)) {
-        //     console.log('block type changed', detectedBlockType.type, context.block.type)
-        //     this.transformBlock(context.block, newText, detectedBlockType.type)
-        //     return
-        // }
-
-        // const result = this.normalizeTextContext({
-        //     inline: context.inline,
-        //     block: context.block,
-        //     inlineIndex: context.inlineIndex,
-        //     value: context.inlineElement.textContent ?? '',
-        //     caretPosition
-        // })
-
-        // this.applyInlineNormalization(context.block, result)
-    
-        // renderBlock(context.block, this.rootElement, result.caretInline?.id ?? null)
-
-        // this.ast.updateAST()
-        // this.caret?.restoreCaret()
-        // this.emitChange()
 
         return {
             preventDefault: false,
@@ -75,7 +41,6 @@ class Editor {
     }
 
     public resolveSplit(context: EditContext): EditEffect {
-        console.log('split')
         const caretPosition = this.caret.getPositionInInline(context.inlineElement)
         
         const parentBlock = this.ast.getParentBlock(context.block)
