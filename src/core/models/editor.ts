@@ -403,6 +403,7 @@ class Editor {
                     }
                     return parentBlock
                 }
+
                 const rootParentBlock = getRootParentBlock(context.block)
                 if (rootParentBlock?.type === 'list') {
                     return {
@@ -410,18 +411,19 @@ class Editor {
                         ast: [{ type: 'mergeMarker', blockId: rootParentBlock.id }],
                     }
                 }
+
                 return { preventDefault: false }
 
             case 'inline':
                 const previousInline = this.findPreviousInline(context)!
-            return {
-                preventDefault: true,
-                ast: [{
-                    type: 'mergeInline',
-                    leftInlineId: previousInline.id,
-                    rightInlineId: context.inline.id,
-                }],
-            }
+                return {
+                    preventDefault: true,
+                    ast: [{
+                        type: 'mergeInline',
+                        leftInlineId: previousInline.id,
+                        rightInlineId: context.inline.id,
+                    }],
+                }
 
             default:
                 return { preventDefault: false }
