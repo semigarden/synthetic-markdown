@@ -99,6 +99,33 @@ class Editor {
         }
     }
 
+
+    private resolveMerge(context: EditContext): EditEffect {
+        if (this.caret.getPositionInInline(context.inlineElement) !== 0) return { preventDefault: false }
+
+        const list = this.getListForMarkerMerge(context.block)
+        if (list) {
+            return {
+                preventDefault: true,
+                ast: [{ type: 'mergeMarker', blockId: list.id }],
+            }
+        }
+
+        const previousInline = this.findPreviousInline(context)
+        if (previousInline) {
+            return {
+                preventDefault: true,
+                ast: [{
+                    type: 'mergeInline',
+                    leftInlineId: previousInline.id,
+                    rightInlineId: context.inline.id,
+                }],
+            }
+        }
+
+        return { preventDefault: false }
+    }
+
     private findPreviousInline(context: EditContext): Inline | null {
         const flattenedInlines = this.ast.flattenInlines(this.ast.ast.blocks)
         const inlineIndex = flattenedInlines.findIndex(i => i.id === context.inline.id)
@@ -107,58 +134,24 @@ class Editor {
         return flattenedInlines[inlineIndex - 1]
     }
 
-    private resolveMerge(context: EditContext): EditEffect {
-        switch (this.getMergeType(context)) {
-            case 'marker':
-                const getRootParentBlock = (block: Block) => {
-                    let parentBlock = this.ast.getParentBlock(block)
-                    if (parentBlock?.type === 'listItem') {
-                        return getRootParentBlock(parentBlock)
-                    }
-                    return parentBlock
-                }
-
-                const rootParentBlock = getRootParentBlock(context.block)
-                if (rootParentBlock?.type === 'list') {
-                    return {
-                        preventDefault: true,
-                        ast: [{ type: 'mergeMarker', blockId: rootParentBlock.id }],
-                    }
-                }
-
-                return { preventDefault: false }
-
-            case 'inline':
-                const previousInline = this.findPreviousInline(context)!
-                return {
-                    preventDefault: true,
-                    ast: [{
-                        type: 'mergeInline',
-                        leftInlineId: previousInline.id,
-                        rightInlineId: context.inline.id,
-                    }],
-                }
-
-            default:
-                return { preventDefault: false }
-        }
-    }
-
-    private getMergeType(context: EditContext): 'marker' | 'inline' | 'none' {
-        if (this.caret.getPositionInInline(context.inlineElement) !== 0) return 'none'
+    private getListForMarkerMerge(block: Block): Block | null {
+        let current: Block | null = block
     
-        const block = this.ast.getBlockById(context.block.id)
-        if (!block) return 'none'
+        while (true) {
+            const parent = this.ast.getParentBlock(current)
+            if (!parent) return null
     
-        const parent = this.ast.getParentBlock(block)
-        if (parent?.type === 'listItem') {
-            const list = this.ast.getParentBlock(parent)
-            if (list?.type === 'list' && list.blocks[0]?.id === parent.id) {
-                return 'marker'
+            if (parent.type === 'listItem') {
+                current = parent
+                continue
             }
-        }
     
-        return this.findPreviousInline(context) ? 'inline' : 'none'
+            if (parent.type === 'list' && parent.blocks[0]?.id === current.id) {
+                return parent
+            }
+    
+            return null
+        }
     }
 
     private detectBlockType(text: string) {
