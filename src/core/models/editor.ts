@@ -704,18 +704,23 @@ class Editor {
                     const result = this.ast.mergeInline(effect.leftInlineId, effect.rightInlineId)
                     if (!result) return
 
-                    const { targetBlocks, targetInline, targetPosition } = result
+                    const { render, caret } = result
 
-                    for (const block of targetBlocks) {
-                        renderBlock(block, this.rootElement)
-                    }
+                    render.remove.forEach(block => {
+                        const removeBlockElement = this.rootElement.querySelector(`[data-block-id="${block.id}"]`)
+                        if (removeBlockElement) removeBlockElement.remove()
+                    })
+            
+                    render.insert.forEach(render => {
+                        renderBlock(render.current, this.rootElement, null, render.at, render.target)
+                    })
 
-                    this.removeEmptyBlocks(targetBlocks)
+                    this.removeEmptyBlocks(render.insert.map(render => render.current))
                     this.ast.updateAST()
 
-                    this.caret.setInlineId(targetInline.id)
-                    this.caret.setBlockId(targetInline.blockId)
-                    this.caret.setPosition(targetPosition)
+                    this.caret.setInlineId(caret.inlineId)
+                    this.caret.setBlockId(caret.blockId)
+                    this.caret.setPosition(caret.position)
                     this.caret.restoreCaret()
 
                     this.emitChange()

@@ -233,7 +233,7 @@ class AST {
         }
     }
 
-    public mergeInline(inlineAId: string, inlineBId: string): { targetBlocks: Block[], targetInline: Inline, targetPosition: number } | null {
+    public mergeInline(inlineAId: string, inlineBId: string): AstApplyEffect | null {
         const inlineA = this.getInlineById(inlineAId)
         const inlineB = this.getInlineById(inlineBId)
         if (!inlineA || !inlineB) return null
@@ -273,10 +273,27 @@ class AST {
         currentBlock.text = mergedText
         currentBlock.position = { start: currentBlock.position.start, end: currentBlock.position.end - leftInline.text.symbolic.length + mergedText.length }
 
+        // return {
+        //     targetBlocks: targetBlocks,
+        //     targetInline: mergedInlines[0],
+        //     targetPosition: leftInline.position.end,
+        // }
+
         return {
-            targetBlocks: targetBlocks,
-            targetInline: mergedInlines[0],
-            targetPosition: leftInline.position.end,
+            render: {
+                remove: [],
+                insert: targetBlocks.map(block => ({
+                    at: 'current',
+                    target: block,
+                    current: block,
+                })),
+            },
+            caret: {
+                blockId: currentBlock.id,
+                inlineId: mergedInlines[0].id,
+                position: leftInline.position.end,
+                affinity: 'start'
+            },
         }
     }
 
@@ -310,11 +327,13 @@ class AST {
                 return {
                     render: {
                         remove: [list],
-                        insert: [{
-                            at: 'current',
-                            target: paragraph,
-                            current: paragraph,
-                        }]
+                        insert: [
+                            {
+                                at: 'current',
+                                target: paragraph,
+                                current: paragraph,
+                            },
+                        ],
                     },
                     caret: {
                         blockId: paragraph.id,
@@ -331,11 +350,13 @@ class AST {
                 return {
                     render: {
                         remove: [listItem],
-                        insert: [{
-                            at: 'previous',
-                            target: list,
-                            current: paragraph,
-                        }]
+                        insert: [
+                            {
+                                at: 'previous',
+                                target: list,
+                                current: paragraph,
+                            },
+                        ],
                     },
                     caret: {
                         blockId: paragraph.id,
