@@ -273,12 +273,6 @@ class AST {
         currentBlock.text = mergedText
         currentBlock.position = { start: currentBlock.position.start, end: currentBlock.position.end - leftInline.text.symbolic.length + mergedText.length }
 
-        // return {
-        //     targetBlocks: targetBlocks,
-        //     targetInline: mergedInlines[0],
-        //     targetPosition: leftInline.position.end,
-        // }
-
         return {
             render: {
                 remove: [],
