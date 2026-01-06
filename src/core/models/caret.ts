@@ -10,16 +10,7 @@ class Caret {
 
     constructor(
         private rootElement: HTMLElement,
-        inlineId?: string,
-        blockId?: string,
-        position?: number,
-        affinity?: 'start' | 'end'
-    ) {
-        this.inlineId = inlineId ?? null
-        this.blockId = blockId ?? null
-        this.position = position ?? null
-        this.affinity = affinity ?? undefined
-    }
+    ) {}
 
     clear() {
         this.inlineId = null
