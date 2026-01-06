@@ -25,7 +25,7 @@ class Element extends HTMLElement {
     connectedCallback() {
         const attrValue = this.getAttribute('value') ?? ''
 
-        this.ast.setText(attrValue)
+        this.ast.text = attrValue
         this.ast.ast = buildAst(attrValue)
 
         this.addStyles()
@@ -44,10 +44,10 @@ class Element extends HTMLElement {
     }
 
     set value(value: string) {
-        if (value === this.ast.getText()) return
+        if (value === this.ast.text) return
 
         if (!this.hasAcceptedExternalValue && value !== '') {
-            this.ast.setText(value)
+            this.ast.text = value
             this.ast.ast = buildAst(value)
             this.render()
             this.hasAcceptedExternalValue = true
@@ -55,12 +55,12 @@ class Element extends HTMLElement {
     }
 
     get value() {
-        return this.ast.getText()
+        return this.ast.text
     }
 
     private render() {
         if (!this.rootElement) return
-        const ast = this.ast.getAst()
+        const ast = this.ast.ast
         if (!ast) return
 
         renderAST(ast, this.rootElement)

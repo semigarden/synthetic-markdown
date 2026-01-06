@@ -6,24 +6,6 @@ class AST {
     public text = ''
     public ast: Document = buildAst('')
 
-    constructor(text = '') {
-        this.text = text
-    }
-  
-    setText(text: string) {
-        this.text = text
-
-        // console.log('init ast', JSON.stringify(this.ast, null, 2))
-    }
-
-    getText() {
-        return this.text
-    }
-
-    getAst() {
-        return this.ast
-    }
-
     createBlock(type: any, text: string, position: { start: number, end: number }, inlines: Inline[]): Block {
         const block: Block = {
             id: uuid(),
