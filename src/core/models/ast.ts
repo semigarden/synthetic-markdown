@@ -1,5 +1,5 @@
 import { buildAst, parseInlineContent } from '../ast/ast'
-import { AstApplyEffect, Block, Document, Inline, ListItem } from '../types'
+import { AstApplyEffect, Block, Document, Inline, List, ListItem } from '../types'
 import { uuid } from '../utils/utils'
 
 class AST {
@@ -227,6 +227,61 @@ class AST {
             caret: {
                 blockId: newBlock.id,
                 inlineId: newBlock.inlines[0].id,
+                position: 0,
+                affinity: 'start'
+            },
+        }
+    }
+
+    public splitListItem(listItemId: string, blockId: string, inlineId: string, caretPosition: number): AstApplyEffect | null {
+        const listItem = this.getBlockById(listItemId) as ListItem
+        if (!listItem) return null
+
+        const list = this.getParentBlock(listItem) as List
+        if (!list) return null
+
+        const split = this.split(blockId, inlineId, caretPosition)
+        if (!split) return null
+
+        const [previousBlock, nextBlock] = [split.render.insert[1].target, split.render.insert[1].current]
+        const previousBlockIndex = this.ast.blocks.findIndex(b => b.id === previousBlock.id)
+
+        const marker = listItem.text.match(/^[-*+]\s/)
+        const newListItemText = marker?.[0] + nextBlock.text
+        const newListItem = {
+            id: uuid(),
+            type: 'listItem',
+            text: newListItemText,
+            position: { start: listItem.position.end, end: listItem.position.end + newListItemText.length },
+            blocks: [nextBlock],
+            inlines: [],
+        } as ListItem
+
+        listItem.text = listItem.text.slice(0, -previousBlock.text.length)
+        listItem.blocks = [previousBlock]
+        list.blocks.splice(list.blocks.findIndex(b => b.id === listItem.id), 1, listItem, newListItem)
+
+        this.ast.blocks.splice(previousBlockIndex, 2, list)
+
+        return {
+            render: {
+                remove: [],
+                insert: [
+                    {
+                        at: 'current',
+                        target: listItem,
+                        current: listItem,
+                    },
+                    {
+                        at: 'next',
+                        target: listItem,
+                        current: newListItem,
+                    },
+                ],
+            },
+            caret: {
+                blockId: nextBlock.id,
+                inlineId: nextBlock.inlines[0].id,
                 position: 0,
                 affinity: 'start'
             },
