@@ -9,6 +9,23 @@ type AstEffect =
  | { type: 'mergeInline'; leftInlineId: string; rightInlineId: string }
  | { type: 'mergeMarker'; blockId: string }
 
+export type AstApplyEffect = {
+    render: {
+        remove: Block
+        insert: {
+            at: 'current' | 'previous' | 'next'
+            target: Block
+            current: Block
+        }
+    }
+    caret: {
+        blockId: string
+        inlineId: string
+        position: number
+        affinity?: 'start' | 'end'
+    }
+}
+
 type CaretEffect = { moveToEndOfPreviousInline?: boolean }
 
 export type EditEffect = {

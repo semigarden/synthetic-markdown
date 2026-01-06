@@ -679,22 +679,20 @@ class Editor {
                     const result = this.ast.mergeMarker(effect.blockId)
                     if (!result) return
 
-                    const { renderAt, renderTargetBlock, removeBlock, targetBlock, targetInline, targetPosition } = result
+                    const { render, caret } = result
 
-                    if (removeBlock) {
-                        const removeBlockElement = this.rootElement.querySelector(`[data-block-id="${removeBlock.id}"]`)
-                        if (removeBlockElement) {
-                            removeBlockElement.remove()
-                        }
+                    if (render.remove) {
+                        const removeBlockElement = this.rootElement.querySelector(`[data-block-id="${render.remove.id}"]`)
+                        if (removeBlockElement) removeBlockElement.remove()
                     }
             
-                    renderBlock(targetBlock, this.rootElement, null, renderAt, renderTargetBlock)
+                    renderBlock(render.insert.current, this.rootElement, null, render.insert.at, render.insert.target)
 
                     this.ast.updateAST()
 
-                    this.caret.setInlineId(targetInline.id)
-                    this.caret.setBlockId(targetInline.blockId)
-                    this.caret.setPosition(targetPosition)
+                    this.caret.setInlineId(caret.inlineId)
+                    this.caret.setBlockId(caret.blockId)
+                    this.caret.setPosition(caret.position)
 
                     this.caret.restoreCaret()
 

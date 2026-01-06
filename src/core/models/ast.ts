@@ -1,5 +1,5 @@
 import { buildAst, parseInlineContent } from '../ast/ast'
-import {  Block, Document, Inline, ListItem } from '../types'
+import { AstApplyEffect, Block, Document, Inline, ListItem } from '../types'
 import { uuid } from '../utils/utils'
 
 class AST {
@@ -236,9 +236,9 @@ class AST {
         }
     }
 
-    public mergeMarker(blockId: string) {
+    public mergeMarker(blockId: string): AstApplyEffect | null {
         const block = this.getBlockById(blockId)
-        if (!block) return
+        if (!block) return null
 
         if (block.type === 'list') {
             const list = block
@@ -264,12 +264,20 @@ class AST {
                 this.ast.blocks.splice(listIndex, 1, paragraph)
 
                 return {
-                    renderAt: 'current',
-                    renderTargetBlock: list,
-                    removeBlock: list,
-                    targetBlock: paragraph,
-                    targetInline: paragraph.inlines[0],
-                    targetPosition: 1
+                    render: {
+                        remove: list,
+                        insert: {
+                            at: 'current',
+                            target: paragraph,
+                            current: paragraph,
+                        }
+                    },
+                    caret: {
+                        blockId: paragraph.id,
+                        inlineId: paragraph.inlines[0].id,
+                        position: 1,
+                        affinity: 'start'
+                    },
                 }
             } else {
                 list.blocks.splice(0, 1)
@@ -280,15 +288,25 @@ class AST {
                 console.log('ast', JSON.stringify(this.ast, null, 2))
 
                 return {
-                    renderAt: 'previous',
-                    renderTargetBlock: list,
-                    removeBlock: listItem,
-                    targetBlock: paragraph,
-                    targetInline: paragraph.inlines[0],
-                    targetPosition: 1
+                    render: {
+                        remove: listItem,
+                        insert: {
+                            at: 'previous',
+                            target: list,
+                            current: paragraph,
+                        }
+                    },
+                    caret: {
+                        blockId: paragraph.id,
+                        inlineId: paragraph.inlines[0].id,
+                        position: 1,
+                        affinity: 'start'
+                    },
                 }
             }
         }
+
+        return null
     }
 }
 
