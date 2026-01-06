@@ -116,7 +116,7 @@ class Editor {
             }
         }
 
-        const previousInline = this.ast.findPreviousInline(context.inline.id)
+        const previousInline = this.ast.getPreviousInline(context.inline.id)
         if (previousInline) {
             return {
                 preventDefault: true,
