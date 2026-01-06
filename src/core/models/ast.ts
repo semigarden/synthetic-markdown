@@ -1,4 +1,4 @@
-import { buildAst, detectType, parseInlineContent } from '../ast/ast'
+import { buildAst, buildBlocks, detectType, parseInlineContent } from '../ast/ast'
 import { AstApplyEffect, Block, Document, Inline, List, ListItem } from '../types'
 import { uuid } from '../utils/utils'
 
@@ -199,62 +199,24 @@ class AST {
         // console.log('ast', JSON.stringify(ast, null, 2))
     }
 
-    private transformBlock(block: Block, text: string, type: Block["type"]) {
-        const flattenedBlocks = this.ast.flattenBlocks(this.ast.ast.blocks)
-        const blockIndex = flattenedBlocks.findIndex(b => b.id === block.id)
-
-        const newBlock = buildBlocks(text, this.ast.ast)[0]
-
-        const oldBlockEl = this.rootElement.querySelector(`[data-block-id="${block.id}"]`)
-        if (oldBlockEl) {
-            oldBlockEl.remove()
-        }
-
-        if (newBlock.type === 'list') {
-            const nestedBlocks = this.ast.flattenBlocks(newBlock.blocks)
-            const lastNestedBlock = nestedBlocks.at(-1)
-
-            if (lastNestedBlock) {
-                const lastNestedInline = lastNestedBlock?.inlines.at(-1)
-                if (lastNestedInline) {
-                    this.caret.setInlineId(lastNestedInline.id)
-                    this.caret.setBlockId(lastNestedBlock.id)
-                    this.caret.setPosition(lastNestedInline.text.symbolic.length + 1)
-                    this.caret?.restoreCaret()
-                }
-
-                this.ast.ast.blocks.splice(blockIndex, 1, newBlock)
-
-                const prevBlock = this.ast.ast.blocks[blockIndex - 1]
-                if (prevBlock) {
-                    renderBlock(newBlock, this.rootElement, null, 'next', prevBlock)
-                } else {
-                    renderBlock(newBlock, this.rootElement)
-                }
-
-                this.ast.updateAST()
-                this.caret?.restoreCaret()
-                this.emitChange()
-            
-                return
+    private findFirstInline(
+        blocks: Block[]
+    ): Inline | null {
+        for (const block of blocks) {
+            if (block.inlines && block.inlines.length > 0) {
+                const inline = block.inlines[0]
+                return inline
+            }
+    
+            if ('blocks' in block && block.blocks.length > 0) {
+                const found = this.findFirstInline(block.blocks)
+                if (found) return found
             }
         }
-
-        this.ast.ast.blocks.splice(blockIndex, 1, newBlock)
-
-        const prevBlock = this.ast.ast.blocks[blockIndex - 1]
-        if (prevBlock) {
-            renderBlock(newBlock, this.rootElement, null, 'next', prevBlock)
-        } else {
-            renderBlock(newBlock, this.rootElement)
-        }
-
-        this.ast.updateAST()
-        this.caret?.restoreCaret()
-        this.emitChange()
+        return null
     }
 
-    private findInlineByCaretPosition(
+    private findInlineAtPosition(
         inlines: Inline[],
         caretPosition: number
     ): { inline: Inline; position: number } | null {
@@ -281,6 +243,41 @@ class AST {
             position: last.text.symbolic.length,
         }
     }
+    
+
+    private transformBlock(
+        block: Block,
+        text: string,
+    ): AstApplyEffect | null {
+        const flat = this.flattenBlocks(this.ast.blocks)
+        const index = flat.findIndex(b => b.id === block.id)
+    
+        const newBlocks = buildBlocks(text, this.ast)
+    
+        const inline = this.findFirstInline(newBlocks)
+        if (!inline) {
+            return null
+        }
+    
+        this.ast.blocks.splice(index, 1, ...newBlocks)
+    
+        return {
+            render: {
+                remove: [block],
+                insert: [{
+                    at: index > 0 ? 'next' : 'current',
+                    target: index > 0 ? this.ast.blocks[index - 1] : newBlocks[0],
+                    current: newBlocks[0],
+                }],
+            },
+            caret: {
+                blockId: inline.blockId,
+                inlineId: inline.id,
+                position: inline.position.start,
+                affinity: 'start',
+            },
+        }
+    }
 
     public input(blockId: string, inlineId: string, text: string, caretPosition: number): AstApplyEffect | null {
         const block = this.getBlockById(blockId)
@@ -296,24 +293,21 @@ class AST {
                 .reduce((sum, i) => sum + i.text.symbolic.length, 0)
             + caretPosition
 
-        // const newText = text
-        // const detectedBlockType = detectType(newText)
-
-        // const blockTypeChanged =
-        //     detectedBlockType.type !== block.type ||
-        //     (detectedBlockType.type === 'heading' && block.type === 'heading' && detectedBlockType.level !== block.level)
-        
-        // const ignoreTypes = ['blankLine', 'heading', 'thematicBreak', 'codeBlock']
-        // if (blockTypeChanged && !ignoreTypes.includes(detectedBlockType.type)) {
-        //     console.log('block type changed', detectedBlockType.type, block.type)
-        //     this.transformBlock(block, newText, detectedBlockType.type)
-        //     return null
-        // }
-
         const newText = block.inlines.slice(0, inlineIndex).map(i => i.text.symbolic).join('') + text + block.inlines.slice(inlineIndex + 1).map(i => i.text.symbolic).join('')
+        const detectedBlockType = detectType(newText)
+
+        const blockTypeChanged =
+            detectedBlockType.type !== block.type ||
+            (detectedBlockType.type === 'heading' && block.type === 'heading' && detectedBlockType.level !== block.level)
+        
+        const ignoreTypes = ['blankLine', 'heading', 'thematicBreak', 'codeBlock']
+        if (blockTypeChanged && !ignoreTypes.includes(detectedBlockType.type)) {
+            return this.transformBlock(block, newText)
+        }
+        
         const newInlines = parseInlineContent(newText, block.id, block.position.start)
-        const result = this.findInlineByCaretPosition(newInlines, absoluteCaretPosition)
-        if (!result) return null
+        const { inline: newInline, position } = this.findInlineAtPosition(newInlines, absoluteCaretPosition) ?? { inline: null, position: 0 }
+        if (!newInline) return null
 
         block.text = newInlines.map(i => i.text.symbolic).join('')
         block.position = { start: block.position.start, end: block.position.start + block.text.length }
@@ -322,7 +316,7 @@ class AST {
 
         return {
             render: {
-                remove: [block],
+                remove: [],
                 insert: [
                     {
                         at: 'current',
@@ -333,8 +327,8 @@ class AST {
             },
             caret: {
                 blockId: block.id,
-                inlineId: result.inline.id,
-                position: result.position,
+                inlineId: newInline.id,
+                position: position,
                 affinity: 'start'
             },
         }
