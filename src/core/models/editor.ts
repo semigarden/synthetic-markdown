@@ -135,10 +135,7 @@ class Editor {
 
                     this.ast.updateAST()
 
-                    this.caret.inlineId = caret.inlineId
-                    this.caret.blockId = caret.blockId
-                    this.caret.position = caret.position
-                    this.caret.restoreCaret()
+                    this.caret.restoreCaret(caret.inlineId, caret.position)
 
                     this.emitChange()
                 }

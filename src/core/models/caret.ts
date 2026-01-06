@@ -1,20 +1,18 @@
 import { CaretEffect } from "../types"
 
 class Caret {
-    public inlineId: string | null = null
     public blockId: string | null = null
+    public inlineId: string | null = null
     public position: number | null = null
     public affinity?: 'start' | 'end'
-
-    public pendingTextRestore: { blockId: string; offset: number } | null = null
 
     constructor(
         private rootElement: HTMLElement,
     ) {}
 
     clear() {
-        this.inlineId = null
         this.blockId = null
+        this.inlineId = null
         this.position = null
         this.affinity = undefined
     }
@@ -33,13 +31,7 @@ class Caret {
         return caretPositionInInline
     }
 
-    public restoreCaret() {
-        if (!this.inlineId || this.position === null) {
-            return
-        }
-      
-        const inlineId = this.inlineId
-        const position = this.position
+    public restoreCaret(inlineId: string, position: number) {
       
         const inlineEl = this.rootElement.querySelector(`[data-inline-id="${inlineId}"]`) as HTMLElement
         if (!inlineEl) {

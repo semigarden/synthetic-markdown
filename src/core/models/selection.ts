@@ -1,6 +1,6 @@
-import AST from "./ast"
-import Caret from "./caret"
-import { EditorContext } from "../types"
+import AST from './ast'
+import Caret from './caret'
+import { EditContext } from '../types'
 
 class Selection {
     private rafId: number | null = null
@@ -101,7 +101,6 @@ class Selection {
             }
         }
 
-        // console.log('focusout')
         if (!this.rootElement?.contains(e.relatedTarget as Node)) {
             const target = e.target as HTMLElement
             if (!target.dataset?.inlineId) return
@@ -122,31 +121,24 @@ class Selection {
     private onClick = (e: MouseEvent) => {
         const target = e.target as HTMLElement
         if (target.dataset?.inlineId) {
-            // console.log('click on inline', target.dataset.inlineId)
         }
+
         if (target.dataset?.blockId) {
-            // console.log('click on block', target.dataset.blockId)
             const block = this.ast.getBlockById(target.dataset.blockId)
             if (block) {
                 const lastInline = block.inlines.at(-1)
                 if (lastInline) {
-                    this.caret?.setInlineId(lastInline.id)
-                    this.caret?.setBlockId(block.id)
-                    this.caret?.setPosition(lastInline.text.symbolic.length)
-                    this.caret?.restoreCaret()
+                    this.caret.restoreCaret(lastInline.id, lastInline.text.symbolic.length)
                 }
             }
         }
+
         if (target.classList.contains('element')) {
-            // console.log('click on syntheticText')
             const lastBlock = this.ast.ast.blocks.at(-1)
             if (lastBlock) {
                 const lastInline = lastBlock.inlines.at(-1)
                 if (lastInline) {
-                    this.caret?.setInlineId(lastInline.id)
-                    this.caret?.setBlockId(lastBlock.id)
-                    this.caret?.setPosition(lastInline.text.symbolic.length)
-                    this.caret?.restoreCaret()
+                    this.caret.restoreCaret(lastInline.id, lastInline.text.symbolic.length)
                 }
             }
         }
@@ -175,42 +167,35 @@ class Selection {
         const block = this.ast.getBlockById(inline.blockId)
         if (!block) return
 
-        this.caret?.setInlineId(inlineId)
-        this.caret?.setBlockId(inline.blockId)
-    
+        this.caret.blockId = block.id
+        this.caret.inlineId = inlineId
+
         const preRange = range.cloneRange()
         preRange.selectNodeContents(inlineEl)
         preRange.setEnd(range.startContainer, range.startOffset)
         let position = preRange.toString().length + inline.position.start + block.position.start
     
-        this.caret?.setPosition(position)
+        this.caret.position = position
     }
 
-    public resolveInlineContext(): EditorContext | null {
-        const blockId = this.caret.getBlockId()
-        const inlineId = this.caret.getInlineId()
-        console.log('resolve 0')
-    
+    public resolveInlineContext(): EditContext | null {
+        const blockId = this.caret.blockId
+        const inlineId = this.caret.inlineId
+
         if (!blockId || !inlineId) return null
     
-        // console.log('engine.ast', JSON.stringify(this.engine.ast, null, 2))
-        console.log('resolve 1', blockId, inlineId)
         const block = this.ast.getBlockById(blockId)
         if (!block) return null
     
-        console.log('resolve 2', inlineId)
         const inlineIndex = block.inlines.findIndex(i => i.id === inlineId)
         if (inlineIndex === -1) return null
     
-        console.log('resolve 3')
         const inline = block.inlines[inlineIndex]
     
-        console.log('resolve 4')
         const inlineElement = this.rootElement.querySelector(
             `[data-inline-id="${inlineId}"]`
         ) as HTMLElement | null
     
-        console.log('resolve 5')
         if (!inlineElement) return null
     
         return {

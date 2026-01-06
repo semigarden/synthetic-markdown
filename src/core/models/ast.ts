@@ -38,10 +38,6 @@ class AST {
         }
     }
 
-    private getBlockById(id: string): Block | null {
-        return this.getBlockByIdRecursive(id, this.ast?.blocks ?? [])
-    }
-
     private getBlockByIdRecursive(targetId: string, blocks: Block[]): Block | null {
         for (const block of blocks) {
             if (block.id === targetId) {
@@ -53,10 +49,6 @@ class AST {
             }
         }
         return null
-    }
-
-    private getInlineById(id: string): Inline | null {
-        return this.getInlineByIdRecursive(id, this.ast?.blocks ?? [])
     }
 
     private getInlineByIdRecursive(targetId: string, blocks: Block[]): Inline | null {
@@ -118,6 +110,14 @@ class AST {
             }
         }
         return null
+    }
+
+    public getBlockById(id: string): Block | null {
+        return this.getBlockByIdRecursive(id, this.ast?.blocks ?? [])
+    }
+
+    public getInlineById(id: string): Inline | null {
+        return this.getInlineByIdRecursive(id, this.ast?.blocks ?? [])
     }
 
     public getPreviousInline(inlineId: string): Inline | null {
