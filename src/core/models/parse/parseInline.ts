@@ -75,9 +75,8 @@ class ParseInline {
         const stream = new InlineStream(text)
         const result: Inline[] = []
         const delimiterStack: Delimiter[] = []
-
         let textStart = 0
-
+    
         const flushText = () => {
             const end = stream.position()
             if (end > textStart) {
@@ -92,10 +91,10 @@ class ParseInline {
             }
             textStart = stream.position()
         }
-
+    
         while (!stream.end()) {
             const ch = stream.peek()!
-
+    
             // Backslash escapes
             const escape = this.backslashEscapeResolver.tryParse(stream, blockId, position)
             if (escape) {
@@ -104,7 +103,7 @@ class ParseInline {
                 textStart = stream.position()
                 continue
             }
-
+    
             // HTML entities
             if (ch === '&') {
                 const entity = this.entityResolver.tryParse(stream, text, blockId, position)
@@ -115,7 +114,7 @@ class ParseInline {
                     continue
                 }
             }
-
+    
             // Code spans
             if (ch === '`') {
                 const code = this.codeSpanResolver.tryParse(stream, text, blockId, position)
@@ -126,7 +125,7 @@ class ParseInline {
                     continue
                 }
             }
-
+    
             // Images
             if (ch === '!' && stream.peek(1) === '[') {
                 const img = this.imageResolver.tryParse(stream, blockId, position)
@@ -137,7 +136,7 @@ class ParseInline {
                     continue
                 }
             }
-
+    
             // Links
             if (ch === '[') {
                 const link = this.linkResolver.tryParse(stream, blockId, position)
@@ -148,28 +147,34 @@ class ParseInline {
                     continue
                 }
             }
-
+    
             // Delimiters (*, _)
-            if (this.delimiterLexer.tryLex(stream, blockId, position, result, delimiterStack)) {
-                textStart = stream.position()
-                continue
+            if (ch === '*' || ch === '_') {
+                flushText()
+                if (this.delimiterLexer.tryLex(stream, blockId, position, result, delimiterStack)) {
+                    textStart = stream.position()
+                    continue
+                }
             }
-
+    
             stream.next()
         }
-
+    
         flushText()
-        this.emphasisResolver.apply(result, delimiterStack, blockId)
 
-        return result.length
-            ? result
-            : [{
+        if (result.length === 0) {
+            result.push({
                 id: uuid(),
                 type: 'text',
                 blockId,
                 text: { symbolic: '', semantic: '' },
                 position: { start: position, end: position }
-            }]
+            })
+        }
+
+        this.emphasisResolver.apply(result, delimiterStack, blockId)
+    
+        return result
     }
 
     private extractFencedCodeContent(text: string, fence: string): string {
