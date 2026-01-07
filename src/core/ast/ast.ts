@@ -1,25 +1,6 @@
 import { uuid, decodeHTMLEntity } from "../utils/utils";
 import { ParseState, Delimiter, DetectedBlock, Block, Inline } from '../types';
-import { CodeBlock, ListItem, List, Paragraph, Table, TableRow, TableCell, Document } from '../types';
-
-function levenshteinDistance(a: string, b: string): number {
-    const matrix = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(0));
-
-    for (let i = 0; i <= a.length; i++) matrix[0][i] = i;
-    for (let j = 0; j <= b.length; j++) matrix[j][0] = j;
-
-    for (let j = 1; j <= b.length; j++) {
-        for (let i = 1; i <= a.length; i++) {
-            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-            matrix[j][i] = Math.min(
-                matrix[j][i - 1] + 1,
-                matrix[j - 1][i] + 1,
-                matrix[j - 1][i - 1] + cost
-            );
-        }
-    }
-    return matrix[b.length][a.length];
-}
+import { CodeBlock, Paragraph, TableCell, Document } from '../types';
 
 function buildAst(text: string, previousAst: Document | null = null): Document {
     const blocks = buildBlocks(text, previousAst);
@@ -49,8 +30,6 @@ export function buildBlocks(text: string, previousAst: Document | null = null): 
         codeBlockFence: "",
         codeBlockId: "",
     };
-
-    const tempUuid = () => uuid();
 
     parseLinkReferenceDefinitions(text);
 
@@ -89,7 +68,7 @@ export function buildBlocks(text: string, previousAst: Document | null = null): 
         switch (detectedBlock.type) {
             case "heading": {
                 block = {
-                    id: tempUuid(),
+                    id: uuid(),
                     type: "heading",
                     level: detectedBlock.level!,
                     text: line,
@@ -103,7 +82,7 @@ export function buildBlocks(text: string, previousAst: Document | null = null): 
             case "blockQuote": {
                 const quoteContent = line.replace(/^>\s?/, "");
                 block = {
-                    id: tempUuid(),
+                    id: uuid(),
                     type: "blockQuote",
                     text: quoteContent,
                     position: { start, end },
@@ -120,7 +99,7 @@ export function buildBlocks(text: string, previousAst: Document | null = null): 
                 const listItemText = line.slice(markerLength);
 
                 const paragraph: Block = {
-                    id: tempUuid(),
+                    id: uuid(),
                     type: "paragraph",
                     text: listItemText,
                     position: { start: start + markerLength, end },
@@ -128,7 +107,7 @@ export function buildBlocks(text: string, previousAst: Document | null = null): 
                 };
 
                 const listItem: Block = {
-                    id: tempUuid(),
+                    id: uuid(),
                     type: "listItem",
                     text: markerMatch ? markerMatch[0] + listItemText : listItemText,
                     position: { start, end },
@@ -142,7 +121,7 @@ export function buildBlocks(text: string, previousAst: Document | null = null): 
                     lastBlock.position.end = end;
                 } else {
                     const newList: Block = {
-                        id: tempUuid(),
+                        id: uuid(),
                         type: "list",
                         text: "",
                         position: { start, end },
@@ -160,7 +139,7 @@ export function buildBlocks(text: string, previousAst: Document | null = null): 
             case "codeBlock": {
                 const fenceMatch = line.match(/^(\s{0,3})(```+|~~~+)(.*)$/);
                 if (fenceMatch) {
-                    const newTempId = tempUuid();
+                    const newTempId = uuid();
                     state.inFencedCodeBlock = true;
                     state.codeBlockFence = fenceMatch[2];
                     state.codeBlockId = newTempId;
@@ -178,7 +157,7 @@ export function buildBlocks(text: string, previousAst: Document | null = null): 
                     blocks.push(block);
                 } else {
                     block = {
-                        id: tempUuid(),
+                        id: uuid(),
                         type: "codeBlock",
                         text: line.replace(/^ {4}/, ""),
                         isFenced: false,
@@ -193,7 +172,7 @@ export function buildBlocks(text: string, previousAst: Document | null = null): 
             case "paragraph":
             default: {
                 block = {
-                    id: tempUuid(),
+                    id: uuid(),
                     type: "paragraph",
                     text: line,
                     position: { start, end },
@@ -218,91 +197,6 @@ export function buildBlocks(text: string, previousAst: Document | null = null): 
 
         offset = end;
     }
-
-    const prevBlocks = previousAst?.blocks || [];
-    const usedPrevIds = new Set<string>();
-
-    const prevByType = new Map<string, Block[]>();
-    prevBlocks.forEach(b => {
-        const list = prevByType.get(b.type) || [];
-        list.push(b);
-        prevByType.set(b.type, list);
-    });
-
-    const simpleSimilarity = (a: string, b: string): number => {
-        if (a === b) return 1;
-        a = a.trim();
-        b = b.trim();
-        if (a === "" && b === "") return 1;
-        if (a === "" || b === "") return 0;
-    
-        const longer = a.length > b.length ? a : b;
-        const shorter = a.length > b.length ? b : a;
-    
-        let matches = 0;
-        for (let i = 0; i < shorter.length; i++) {
-            if (shorter[i] === longer[i]) matches++;
-        }
-        return matches / longer.length;
-    };
-
-    for (let i = 0; i < blocks.length; i++) {
-        const newBlock = blocks[i];
-        const candidates = prevByType.get(newBlock.type) || [];
-    
-        let bestMatch: Block | null = null;
-        let bestScore = 0;
-    
-        for (const prev of candidates) {
-            if (usedPrevIds.has(prev.id)) continue;
-    
-            let score = 0;
-    
-            const posDiff = Math.abs(prev.position.start - newBlock.position.start);
-            if (posDiff <= 50) {
-                score += 1.0;
-            }
-    
-            const similarity = simpleSimilarity(prev.text, newBlock.text);
-            score += similarity;
-    
-            const lenDiff = Math.abs(prev.text.length - newBlock.text.length);
-            if (lenDiff <= 10) {
-                score += 0.5;
-            }
-    
-            const minLen = Math.min(prev.text.length, newBlock.text.length);
-            if (minLen > 0) {
-                const shorter = prev.text.length <= newBlock.text.length ? prev.text : newBlock.text;
-                const longer = prev.text.length > newBlock.text.length ? prev.text : newBlock.text;
-                if (longer.startsWith(shorter)) {
-                    score += 1.0;
-                }
-                if (longer.endsWith(shorter)) {
-                    score += 0.8;
-                }
-            }
-    
-            if (score > bestScore) {
-                bestScore = score;
-                bestMatch = prev;
-            }
-        }
-    
-        if (bestMatch && bestScore > 1.5) {
-            newBlock.id = bestMatch.id;
-            usedPrevIds.add(bestMatch.id);
-        }
-    }
-
-    const reconcileNested = (blockList: Block[]) => {
-        for (const b of blockList) {
-            if ('blocks' in b && (b as any).blocks.length > 0) {
-                reconcileNested(b.blocks);
-            }
-        }
-    };
-    reconcileNested(blocks);
 
     const prevBlockMap = new Map<string, Block>();
     previousAst?.blocks.forEach(b => {
@@ -403,63 +297,8 @@ function parseInlines(block: Block, previousInlines: Inline[] = []): Inline[] {
 
     const newFragments = parseInlineContent(parseText, blockId, textOffset);
 
-    const prevByKey = new Map<string, Inline>();
-    const usedIds = new Set<string>();
-
-    for (const prev of previousInlines) {
-        const key = `${prev.type}|${prev.text.symbolic}`;
-        prevByKey.set(key, prev);
-    }
-
     for (const frag of newFragments) {
-        const symbolic = frag.text.symbolic;
-
-        let reusedId: string | null = null;
-
-        if (frag.type === "text") {
-            for (const prev of previousInlines) {
-                if (usedIds.has(prev.id) || prev.type !== "text") continue;
-
-                const oldText = prev.text.symbolic;
-
-                if (symbolic.startsWith(oldText) && symbolic.length > oldText.length) {
-                    reusedId = prev.id;
-                    break;
-                }
-
-                if (symbolic.endsWith(oldText) && symbolic.length > oldText.length) {
-                    reusedId = prev.id;
-                    break;
-                }
-
-                if (oldText.startsWith(symbolic) && oldText.length > symbolic.length) {
-                    reusedId = prev.id;
-                    break;
-                }
-
-                if (oldText.endsWith(symbolic) && oldText.length > symbolic.length) {
-                    reusedId = prev.id;
-                    break;
-                }
-
-                if (Math.abs(symbolic.length - oldText.length) <= 5) {
-                    const distance = levenshteinDistance(symbolic, oldText);
-                    if (distance <= 3) {
-                        reusedId = prev.id;
-                        break;
-                    }
-                }
-            }
-        } else {
-            const key = `${frag.type}|${symbolic}`;
-            const match = prevByKey.get(key);
-            if (match && !usedIds.has(match.id)) {
-                reusedId = match.id;
-            }
-        }
-
-        const inlineId = reusedId || uuid();
-        if (reusedId) usedIds.add(reusedId);
+        const inlineId = uuid();
 
         next.push({
             ...frag,
