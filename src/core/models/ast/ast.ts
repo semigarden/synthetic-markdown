@@ -1,4 +1,5 @@
 import AstNormalizer from './AstNormalizer'
+import AstMutation from './AstMutation'
 import ParseAst from '../parse/parseAst'
 import { AstApplyEffect, Block, Inline, List, ListItem } from '../../types'
 import { uuid } from '../../utils/utils'
@@ -7,8 +8,9 @@ class AST {
     public text = ''
     public blocks: Block[] = []
 
-    private normalizer = new AstNormalizer()
     private parser = new ParseAst()
+    private normalizer = new AstNormalizer()
+    private mutation = new AstMutation(this, this.parser)
 
     constructor(text = '') {
         this.text = text
@@ -129,185 +131,6 @@ class AST {
             }
         }
         return null
-    }
-
-    private getListItemText(item: ListItem): string {
-        const marker = '- '
-        return marker + item.blocks
-            .map(b => b.inlines.map(i => i.text.symbolic).join(''))
-            .join('')
-    }
-
-    private listItemToParagraph(listItem: ListItem): Block {
-        const block = listItem.blocks[0]
-    
-        const paragraph: Block = {
-            id: uuid(),
-            type: 'paragraph',
-            inlines: block.inlines,
-            text: block.inlines.map(i => i.text.symbolic).join(''),
-            position: { ...block.position },
-        }
-
-        paragraph.inlines.forEach(i => (i.blockId = paragraph.id))
-    
-        return paragraph
-    }
-
-    private isBlockEmpty(block: Block): boolean {
-        if ('inlines' in block && block.inlines.length > 0) return false
-        if ('blocks' in block && block.blocks.length > 0) return false
-        return true
-    }
-
-    private removeBlockCascade(block: Block) {
-        const removed: Block[] = []
-        let current: Block | null = block
-    
-        while (current) {
-            removed.push(current)
-            const parent = this.getParentBlock(current)
-    
-            if (!parent) {
-                const i = this.blocks.findIndex(b => b.id === current!.id)
-                if (i !== -1) this.blocks.splice(i, 1)
-                break
-            }
-    
-            if ('blocks' in parent) {
-                const i = parent.blocks.findIndex(b => b.id === current!.id)
-                if (i !== -1) parent.blocks.splice(i, 1)
-            }
-    
-            if (!this.isBlockEmpty(parent)) break
-
-            current = parent
-        }
-
-        return removed
-    }
-
-    private mergeInlinePure(
-        leftInline: Inline,
-        rightInline: Inline
-    ): {
-        leftBlock: Block
-        removedBlock?: Block
-    } | null {
-        const leftBlock = this.getBlockById(leftInline.blockId)
-        const rightBlock = this.getBlockById(rightInline.blockId)
-        if (!leftBlock || !rightBlock) return null
-    
-        const mergedText =
-            leftInline.text.symbolic + rightInline.text.symbolic
-    
-        const mergedInlines = this.parser.inline.parseInlineContent(
-            mergedText,
-            leftBlock.id,
-            leftBlock.position.start
-        )
-    
-        const sameBlock = leftBlock.id === rightBlock.id
-    
-        if (sameBlock) {
-            const leftIndex = leftBlock.inlines.findIndex(i => i.id === leftInline.id)
-            const rightIndex = leftBlock.inlines.findIndex(i => i.id === rightInline.id)
-            if (leftIndex === -1 || rightIndex === -1) return null
-    
-            leftBlock.inlines.splice(
-                leftIndex,
-                rightIndex === leftIndex + 1 ? 2 : 1,
-                ...mergedInlines
-            )
-    
-            leftBlock.text = leftBlock.inlines.map(i => i.text.symbolic).join('')
-            leftBlock.position.end =
-                leftBlock.position.start + leftBlock.text.length
-    
-            return { leftBlock }
-        }
-
-        const leftIndex = leftBlock.inlines.findIndex(i => i.id === leftInline.id)
-        const rightIndex = rightBlock.inlines.findIndex(i => i.id === rightInline.id)
-        if (leftIndex === -1 || rightIndex === -1) return null
-    
-        const tailInlines = rightBlock.inlines.slice(rightIndex + 1)
-    
-        tailInlines.forEach(i => (i.blockId = leftBlock.id))
-    
-        leftBlock.inlines.splice(
-            leftIndex,
-            1,
-            ...mergedInlines,
-            ...tailInlines
-        )
-    
-        leftBlock.text = leftBlock.inlines.map(i => i.text.symbolic).join('')
-        leftBlock.position.end =
-            leftBlock.position.start + leftBlock.text.length
-    
-        return {
-            leftBlock,
-            removedBlock: rightBlock,
-        }
-    }
-
-    private splitBlockPure(
-        block: Block,
-        inlineId: string,
-        caretPosition: number
-    ): { left: Block; right: Block } | null {
-        const inlineIndex = block.inlines.findIndex(i => i.id === inlineId)
-        if (inlineIndex === -1) return null
-    
-        const inline = block.inlines[inlineIndex]
-    
-        const leftText = inline.text.symbolic.slice(0, caretPosition)
-        const rightText = inline.text.symbolic.slice(caretPosition)
-    
-        const beforeInlines = block.inlines.slice(0, inlineIndex)
-        const afterInlines = block.inlines.slice(inlineIndex + 1)
-    
-        const leftInlines = this.parser.inline.parseInlineContent(
-            leftText,
-            block.id,
-            block.position.start
-        )
-    
-        const rightBlockId = uuid()
-    
-        const rightInlines = this.parser.inline.parseInlineContent(
-            rightText,
-            rightBlockId,
-            0
-        ).concat(afterInlines)
-    
-        rightInlines.forEach((i: Inline) => (i.blockId = rightBlockId))
-    
-        const leftBlock: Block = {
-            ...block,
-            inlines: [...beforeInlines, ...leftInlines],
-        }
-    
-        leftBlock.text = leftBlock.inlines.map(i => i.text.symbolic).join('')
-        leftBlock.position = {
-            start: block.position.start,
-            end: block.position.start + leftBlock.text.length,
-        }
-    
-        const rightBlock = {
-            id: rightBlockId,
-            type: block.type,
-            inlines: rightInlines,
-            text: rightInlines.map((i: Inline) => i.text.symbolic).join(''),
-            position: {
-                start: leftBlock.position.end,
-                end: leftBlock.position.end +
-                    rightInlines.map((i: Inline) => i.text.symbolic).join('').length,
-            },
-        } as Block
-    
-        return { left: leftBlock, right: rightBlock }
     }
 
     public getBlockById(id: string): Block | null {
@@ -439,7 +262,7 @@ class AST {
         const block = this.getBlockById(blockId)
         if (!block) return null
 
-        const result = this.splitBlockPure(block, inlineId, caretPosition)
+        const result = this.mutation.splitBlockPure(block, inlineId, caretPosition)
         if (!result) return null
 
         const { left, right } = result
@@ -480,7 +303,7 @@ class AST {
         const block = listItem.blocks.find(b => b.id === blockId)
         if (!block) return null
 
-        const result = this.splitBlockPure(block, inlineId, caretPosition)
+        const result = this.mutation.splitBlockPure(block, inlineId, caretPosition)
         if (!result) return null
 
         const { left, right } = result
@@ -502,8 +325,8 @@ class AST {
         const index = list.blocks.findIndex(b => b.id === listItem.id)
         list.blocks.splice(index + 1, 0, newListItem)
 
-        listItem.text = this.getListItemText(listItem)
-        newListItem.text = this.getListItemText(newListItem)
+        listItem.text = this.mutation.getListItemText(listItem)
+        newListItem.text = this.mutation.getListItemText(newListItem)
 
         return {
             renderEffect: {
@@ -541,14 +364,14 @@ class AST {
         const [leftInline, rightInline] =
             iA < iB ? [inlineA, inlineB] : [inlineB, inlineA]
 
-        const result = this.mergeInlinePure(leftInline, rightInline)
+        const result = this.mutation.mergeInlinePure(leftInline, rightInline)
         if (!result) return null
 
         const { leftBlock, removedBlock } = result
 
         let removedBlocks: Block[] = []
         if (removedBlock) {
-            removedBlocks = this.removeBlockCascade(removedBlock)
+            removedBlocks = this.mutation.removeBlockCascade(removedBlock)
         }
 
         return {
@@ -587,7 +410,7 @@ class AST {
         const listItem = list.blocks[0] as ListItem
         if (!listItem || listItem.blocks.length === 0) return null
 
-        const paragraph = this.listItemToParagraph(listItem)
+        const paragraph = this.mutation.listItemToParagraph(listItem)
 
         if (list.blocks.length === 1) {
             this.blocks.splice(listIndex, 1, paragraph)
