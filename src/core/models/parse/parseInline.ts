@@ -2,6 +2,7 @@ import InlineStream from './inlineStream'
 import LinkResolver from './linkResolver'
 import ImageResolver from './imageResolver'
 import CodeSpanResolver from './codeSpanResolver'
+import EntityResolver from './entityResolver'
 import EmphasisResolver from './emphasisResolver'
 import { Block, Inline, CodeBlock, TableCell, Paragraph, Delimiter } from '../../types'
 import { uuid, decodeHTMLEntity } from '../../utils/utils'
@@ -10,6 +11,7 @@ class ParseInline {
     private linkResolver = new LinkResolver()
     private imageResolver = new ImageResolver()
     private codeSpanResolver = new CodeSpanResolver()
+    private entityResolver = new EntityResolver()
     private emphasisResolver = new EmphasisResolver()
 
     public apply(block: Block): Inline[] {
@@ -155,36 +157,20 @@ class ParseInline {
 
             /* ---------------- entity ---------------- */
             if (ch === '&') {
-                const checkpoint = stream.checkpoint()
-                const remaining = stream.remaining()
-                const match = remaining.match(
-                    /^&(?:#[xX][0-9a-fA-F]{1,6};|#\d{1,7};|[a-zA-Z][a-zA-Z0-9]{1,31};)/
+                const entity = this.entityResolver.tryParse(
+                    stream,
+                    text,
+                    blockId,
+                    position
                 )
-
-                if (match) {
+            
+                if (entity) {
                     flushText()
-                    stream.consumeString(match[0])
-
-                    result.push({
-                        id: uuid(),
-                        type: 'entity',
-                        blockId,
-                        text: {
-                            symbolic: match[0],
-                            semantic: decodeHTMLEntity(match[0]),
-                        },
-                        position: {
-                            start: position + checkpoint,
-                            end: position + stream.position(),
-                        },
-                    } as Inline)
-
+                    result.push(entity)
                     textStart = stream.position()
                     continue
                 }
-
-                stream.restore(checkpoint)
-            }
+            }            
 
             /* ---------------- code span ---------------- */
             if (ch === '`') {
