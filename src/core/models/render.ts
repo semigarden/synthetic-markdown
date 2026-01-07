@@ -1,10 +1,21 @@
 import { renderBlock } from "../render/renderBlock"
-import { RenderEffect } from "../types"
+import { Block, RenderEffect } from "../types"
 
 class Render {
     constructor(
         private rootElement: HTMLElement,
     ) {}
+
+    public render(
+        blocks: Block[],
+        container: HTMLElement,
+        focusedInlineId: string | null = null
+    ) {
+        container.replaceChildren()
+        for (const block of blocks) {
+            container.appendChild(renderBlock(block, container, focusedInlineId))
+        }
+    }
 
     public apply(effect: RenderEffect) {
         switch (effect.type) {

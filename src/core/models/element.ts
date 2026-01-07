@@ -5,7 +5,6 @@ import Editor from './editor'
 import Render from './render'
 import scss from '../styles/element.scss?inline'
 import { buildAst } from '../ast/ast'
-import { renderAST } from '../render/render'
 import { onKey } from '../utils/key'
 
 class Element extends HTMLElement {
@@ -64,9 +63,9 @@ class Element extends HTMLElement {
     private renderAST() {
         if (!this.rootElement) return
         const ast = this.ast.ast
-        if (!ast) return
+        if (!ast || !this.render) return
 
-        renderAST(ast, this.rootElement)
+        this.render.render(ast.blocks, this.rootElement)
     }
 
     private addStyles() {
