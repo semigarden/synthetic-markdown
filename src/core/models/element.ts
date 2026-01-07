@@ -29,13 +29,14 @@ class Element extends HTMLElement {
 
         this.addStyles()
         this.addDOM()
-        this.renderAST()
 
         this.render = new Render(this.rootElement!)
         this.caret = new Caret(this.rootElement!)
         this.editor = new Editor(this.ast, this.caret, this.render, this.emitChange.bind(this))
         this.selection = new Selection(this.ast, this.caret, this.rootElement!)
         this.selection.attach()
+
+        this.renderAST()
     }
 
     disconnectedCallback() {
