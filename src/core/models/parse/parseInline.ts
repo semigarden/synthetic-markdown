@@ -88,6 +88,282 @@ class ParseInline {
         }
     }
 
+    public parseInlineContent(text: string, blockId: string, position: number = 0): Inline[] {
+        const stream = new InlineStream(text)
+        const result: Inline[] = []
+        const delimiterStack: Delimiter[] = []
+
+        let textStart = 0
+
+        const flushText = () => {
+            const end = stream.position()
+            if (end > textStart) {
+                const raw = text.slice(textStart, end)
+                result.push({
+                    id: uuid(),
+                    type: "text",
+                    blockId,
+                    text: {
+                        symbolic: raw,
+                        semantic: decodeHTMLEntity(raw),
+                    },
+                    position: {
+                        start: position + textStart,
+                        end: position + end,
+                    },
+                })
+            }
+            textStart = stream.position()
+        }
+
+        while (!stream.end()) {
+            const ch = stream.peek()!
+
+            /* ---------------- backslash escapes ---------------- */
+            if (stream.consume("\\")) {
+                const next = stream.peek()
+                if (next) {
+                    flushText()
+                    stream.next()
+
+                    result.push({
+                        id: uuid(),
+                        type: "text",
+                        blockId,
+                        text: {
+                            symbolic: "\\" + next,
+                            semantic: next,
+                        },
+                        position: {
+                            start: position + textStart,
+                            end: position + stream.position(),
+                        },
+                    })
+                    textStart = stream.position()
+                    continue
+                }
+            }
+
+            /* ---------------- entity ---------------- */
+            if (ch === "&") {
+                const checkpoint = stream.checkpoint()
+                const remaining = stream.remaining()
+                const match = remaining.match(
+                    /^&(?:#[xX][0-9a-fA-F]{1,6};|#\d{1,7};|[a-zA-Z][a-zA-Z0-9]{1,31};)/
+                )
+
+                if (match) {
+                    flushText()
+                    stream.consumeString(match[0])
+
+                    result.push({
+                        id: uuid(),
+                        type: "entity",
+                        blockId,
+                        text: {
+                            symbolic: match[0],
+                            semantic: decodeHTMLEntity(match[0]),
+                        },
+                        position: {
+                            start: position + checkpoint,
+                            end: position + stream.position(),
+                        },
+                    } as Inline)
+
+                    textStart = stream.position()
+                    continue
+                }
+
+                stream.restore(checkpoint)
+            }
+
+            /* ---------------- code span ---------------- */
+            if (ch === "`") {
+                const start = stream.checkpoint()
+                let ticks = 0
+
+                while (stream.peek() === "`") {
+                    stream.next()
+                    ticks++
+                }
+
+                const contentStart = stream.position()
+                let found = false
+
+                while (!stream.end()) {
+                    if (stream.peek() === "`") {
+                        let count = 0
+                        const mark = stream.checkpoint()
+                        while (stream.peek() === "`") {
+                            stream.next()
+                            count++
+                        }
+
+                        if (count === ticks) {
+                            const content = text.slice(contentStart, mark)
+                                .replace(/\n/g, " ")
+                                .replace(/^ (.*) $/, "$1")
+
+                            flushText()
+
+                            result.push({
+                                id: uuid(),
+                                type: "codeSpan",
+                                blockId,
+                                text: {
+                                    symbolic: text.slice(start, stream.position()),
+                                    semantic: content,
+                                },
+                                position: {
+                                    start: position + start,
+                                    end: position + stream.position(),
+                                },
+                            })
+
+                            textStart = stream.position()
+                            found = true
+                            break
+                        }
+
+                        stream.restore(mark)
+                    }
+
+                    stream.next()
+                }
+
+                if (!found) {
+                    stream.restore(start)
+                    stream.next()
+                }
+
+                continue
+            }
+
+            /* ---------------- link ---------------- */
+            if (ch === "[") {
+                const start = stream.checkpoint()
+                const link = this.parseLink(stream, blockId, position)
+
+                if (link) {
+                    flushText()
+                    result.push(link)
+                    textStart = stream.position()
+                    continue
+                }
+
+                stream.restore(start)
+            }
+
+            /* ---------------- emphasis delimiter scan ---------------- */
+            if (ch === "*" || ch === "_") {
+                flushText()
+
+                const char = stream.next()!
+                let count = 1
+                while (stream.peek() === char) {
+                    stream.next()
+                    count++
+                }
+
+                const pos = result.length
+
+                result.push({
+                    id: uuid(),
+                    type: "text",
+                    blockId,
+                    text: {
+                        symbolic: char.repeat(count),
+                        semantic: char.repeat(count),
+                    },
+                    position: {
+                        start: position + stream.position() - count,
+                        end: position + stream.position(),
+                    },
+                })
+
+                delimiterStack.push({
+                    type: char,
+                    length: count,
+                    position: pos,
+                    canOpen: true,
+                    canClose: true,
+                    active: true,
+                } as Delimiter)
+
+                textStart = stream.position()
+                continue
+            }
+
+            stream.next()
+        }
+
+        flushText()
+        this.processEmphasis(delimiterStack, result, blockId)
+
+        return result.length
+            ? result
+            : [{
+                id: uuid(),
+                type: "text",
+                blockId,
+                text: { symbolic: "", semantic: "" },
+                position: { start: position, end: position },
+            }]
+    }
+
+    private parseLink(stream: InlineStream, blockId: string, position: number): Inline | null {
+        const start = stream.checkpoint()
+        if (!stream.consume("[")) return null
+
+        const labelStart = stream.position()
+        while (!stream.end() && stream.peek() !== "]") {
+            stream.next()
+        }
+
+        if (!stream.consume("]")) {
+            stream.restore(start)
+            return null
+        }
+
+        const label = stream.remaining().slice(
+            -(stream.position() - labelStart),
+            -1
+        )
+
+        if (!stream.consume("(")) {
+            stream.restore(start)
+            return null
+        }
+
+        while (!stream.end() && /\s/.test(stream.peek()!)) stream.next()
+
+        const urlStart = stream.position()
+        while (!stream.end() && stream.peek() !== ")") stream.next()
+        const url = stream.remaining().slice(
+            -(stream.position() - urlStart),
+            -1
+        )
+
+        if (!stream.consume(")")) {
+            stream.restore(start)
+            return null
+        }
+
+        return {
+            id: uuid(),
+            type: "link",
+            blockId,
+            text: {
+                symbolic: stream.remaining(),
+                semantic: label,
+            },
+            position: {
+                start: position + start,
+                end: position + stream.position(),
+            },
+        } as Inline
+    }
+
     private parseTableRow(line: string): TableCell[] {
         const cellTexts: string[] = []
         let current = ''
@@ -171,505 +447,6 @@ class ParseInline {
         return contentLines.join("\n");
     }
 
-    public parseInlineContent(text: string, blockId: string, position: number = 0): Inline[] {
-        const result: Inline[] = [];
-        const delimiterStack: Delimiter[] = [];
-        let currentPosition = 0;
-        let textStart = 0;
-        // console.log('parseInlineContent', text, blockId, offset)
-
-        const addText = (start: number, end: number) => {
-            if (end > start) {
-                const content = text.slice(start, end);
-                if (content.length > 0) {
-                    const semantic = decodeHTMLEntity(content);
-                    result.push({
-                        id: uuid(),
-                        type: "text",
-                        blockId,
-                        text: {
-                            symbolic: content,
-                            semantic,
-                        },
-                        position: {
-                            start: position + start,
-                            end: position + end,
-                        },
-                    });
-                }
-            }
-        };
-
-        const isLeftFlanking = (pos: number, runLength: number): boolean => {
-            const afterRun = pos + runLength;
-            if (afterRun >= text.length) return false;
-            const charAfter = text[afterRun];
-            const charBefore = pos > 0 ? text[pos - 1] : ' ';
-            
-            // Not followed by whitespace
-            if (/\s/.test(charAfter)) return false;
-            // Not followed by punctuation OR preceded by whitespace/punctuation
-            if (/[!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~]/.test(charAfter)) {
-                return /\s/.test(charBefore) || /[!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~]/.test(charBefore);
-            }
-            return true;
-        };
-
-        const isRightFlanking = (pos: number, runLength: number): boolean => {
-            if (pos === 0) return false;
-            const charBefore = text[pos - 1];
-            const charAfter = pos + runLength < text.length ? text[pos + runLength] : ' ';
-            
-            // Not preceded by whitespace
-            if (/\s/.test(charBefore)) return false;
-            // Not preceded by punctuation OR followed by whitespace/punctuation
-            if (/[!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~]/.test(charBefore)) {
-                return /\s/.test(charAfter) || /[!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~]/.test(charAfter);
-            }
-            return true;
-        };
-
-        while (currentPosition < text.length) {
-            // Backslash escapes
-            if (text[currentPosition] === "\\" && currentPosition + 1 < text.length) {
-                const escaped = text[currentPosition + 1];
-                if (/[!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~]/.test(escaped)) {
-                    addText(textStart, currentPosition);
-                    const symbolic = text.slice(currentPosition, currentPosition + 2);
-                    result.push({
-                        id: uuid(),
-                        type: "text",
-                        blockId,
-                        text: { symbolic, semantic: escaped },
-                        position: {
-                            start: position + currentPosition,
-                            end: position + currentPosition + 2,
-                        },
-                    });
-                    currentPosition += 2;
-                    textStart = currentPosition;
-                    continue;
-                }
-                if (escaped === "\n") {
-                    addText(textStart, currentPosition);
-                    result.push({
-                        id: uuid(),
-                        type: "hardBreak",
-                        blockId,
-                        text: {
-                            symbolic: "\\\n",
-                            semantic: "\n",
-                        },
-                        position: {
-                            start: position + currentPosition,
-                            end: position + currentPosition + 2,
-                        },
-                    });
-                    currentPosition += 2;
-                    textStart = currentPosition;
-                    continue;
-                }
-            }
-
-            // Entity references
-            if (text[currentPosition] === "&") {
-                const entityMatch = text.slice(currentPosition).match(/^&(?:#[xX]([0-9a-fA-F]{1,6});|#(\d{1,7});|([a-zA-Z][a-zA-Z0-9]{1,31});)/);
-                if (entityMatch) {
-                    addText(textStart, currentPosition);
-                    const entityRaw = entityMatch[0];
-                    const decoded = decodeHTMLEntity(entityRaw);
-                    result.push({
-                        id: uuid(),
-                        type: "entity",
-                        blockId,
-                        text: {
-                            symbolic: entityRaw,
-                            semantic: decoded,
-                        },
-                        position: {
-                            start: position + currentPosition,
-                            end: position + currentPosition + entityRaw.length,
-                        },
-                        decoded,
-                    });
-                    currentPosition += entityRaw.length;
-                    textStart = currentPosition;
-                    continue;
-                }
-            }
-
-            // Code spans - variable backtick counts
-            if (text[currentPosition] === "`") {
-                addText(textStart, currentPosition);
-                let backtickCount = 1;
-                while (currentPosition + backtickCount < text.length && text[currentPosition + backtickCount] === "`") {
-                    backtickCount++;
-                }
-
-                // Search for matching closing backticks
-                let searchPosition = currentPosition + backtickCount;
-                let found = false;
-                while (searchPosition < text.length) {
-                    if (text[searchPosition] === "`") {
-                        let closeCount = 1;
-                        while (searchPosition + closeCount < text.length && text[searchPosition + closeCount] === "`") {
-                            closeCount++;
-                        }
-                        if (closeCount === backtickCount) {
-                            // Extract code content, normalize line endings, collapse spaces
-                            let codeContent = text.slice(currentPosition + backtickCount, searchPosition);
-                            codeContent = codeContent.replace(/\n/g, " ");
-                            // Strip one leading/trailing space if content starts AND ends with space
-                            if (codeContent.length > 0 && codeContent[0] === " " && codeContent[codeContent.length - 1] === " " && codeContent.trim().length > 0) {
-                                codeContent = codeContent.slice(1, -1);
-                            }
-                            
-                            const symbolic = text.slice(currentPosition, searchPosition + backtickCount);
-                            result.push({
-                                id: uuid(),
-                                type: "codeSpan",
-                                blockId,
-                                text: { symbolic, semantic: codeContent },
-                                position: {
-                                    start: position + currentPosition,
-                                    end: position + searchPosition + backtickCount,
-                                },
-                            });
-                            currentPosition = searchPosition + backtickCount;
-                            textStart = currentPosition;
-                            found = true;
-                            break;
-                        }
-                        searchPosition += closeCount;
-                    } else {
-                        searchPosition++;
-                    }
-                }
-                
-                if (!found) {
-                    const backtickText = "`".repeat(backtickCount);
-                    result.push({
-                        id: uuid(),
-                        type: "text",
-                        blockId,
-                        text: {
-                            symbolic: backtickText,
-                            semantic: backtickText,
-                        },
-                        position: {
-                            start: position + currentPosition,
-                            end: position + currentPosition + backtickCount,
-                        },
-                    });
-                    currentPosition += backtickCount;
-                    textStart = currentPosition;
-                }
-                continue;
-            }
-
-            // Autolinks
-            if (text[currentPosition] === "<") {
-                const autolinkMatch = text.slice(currentPosition).match(/^<([a-zA-Z][a-zA-Z0-9+.-]{1,31}:[^\s<>]*)>/);
-                if (autolinkMatch) {
-                    addText(textStart, currentPosition);
-                    const url = autolinkMatch[1];
-                    result.push({
-                        id: uuid(),
-                        type: "autolink",
-                        blockId,
-                        text: {
-                            symbolic: autolinkMatch[0],
-                            semantic: url,
-                        },
-                        position: {
-                            start: position + currentPosition,
-                            end: position + currentPosition + autolinkMatch[0].length,
-                        },
-                        url,
-                    });
-                    currentPosition += autolinkMatch[0].length;
-                    textStart = currentPosition;
-                    continue;
-                }
-
-                const emailMatch = text.slice(currentPosition).match(/^<([a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*)>/);
-                if (emailMatch) {
-                    addText(textStart, currentPosition);
-                    const email = emailMatch[1];
-                    const url = "mailto:" + email;
-                    result.push({
-                        id: uuid(),
-                        type: "autolink",
-                        blockId,
-                        text: {
-                            symbolic: emailMatch[0],
-                            semantic: email,
-                        },
-                        position: {
-                            start: position + currentPosition,
-                            end: position + currentPosition + emailMatch[0].length,
-                        },
-                        url,
-                    });
-                    currentPosition += emailMatch[0].length;
-                    textStart = currentPosition;
-                    continue;
-                }
-
-                const htmlMatch = text.slice(currentPosition).match(/^<(\/?[a-zA-Z][a-zA-Z0-9]*\b[^>]*>|!--[\s\S]*?-->|!\[CDATA\[[\s\S]*?\]\]>|\?[^>]*\?>|![A-Z]+[^>]*>)/);
-                if (htmlMatch) {
-                    addText(textStart, currentPosition);
-                    const html = htmlMatch[0];
-                    result.push({
-                        id: uuid(),
-                        type: "rawHTML",
-                        blockId,
-                        text: {
-                            symbolic: html,
-                            semantic: html,
-                        },
-                        position: {
-                            start: position + currentPosition,
-                            end: position + currentPosition + html.length,
-                        },
-                    });
-                    currentPosition += html.length;
-                    textStart = currentPosition;
-                    continue;
-                }
-            }
-
-            if (text[currentPosition] === "!" && currentPosition + 1 < text.length && text[currentPosition + 1] === "[") {
-                const imageResult = this.parseImage(text, currentPosition, blockId, position);
-                if (imageResult) {
-                    addText(textStart, currentPosition);
-                    result.push(imageResult.inline);
-                    currentPosition = imageResult.end;
-                    textStart = currentPosition;
-                    continue;
-                }
-            }
-
-            if (text[currentPosition] === "[") {
-                const linkResult = this.parseLink(text, currentPosition, blockId, position);
-                if (linkResult) {
-                    addText(textStart, currentPosition);
-                    result.push(linkResult.inline);
-                    currentPosition = linkResult.end;
-                    textStart = currentPosition;
-                    continue;
-                }
-            }
-
-            // Footnote references [^label]
-            if (text[currentPosition] === "[" && currentPosition + 1 < text.length && text[currentPosition + 1] === "^") {
-                const footnoteMatch = text.slice(currentPosition).match(/^\[\^([^\]]+)\]/);
-                if (footnoteMatch) {
-                    addText(textStart, currentPosition);
-                    const label = footnoteMatch[1];
-                    result.push({
-                        id: uuid(),
-                        type: "footnoteRef",
-                        blockId,
-                        text: {
-                            symbolic: footnoteMatch[0],
-                            semantic: label,
-                        },
-                        position: {
-                            start: position + currentPosition,
-                            end: position + currentPosition + footnoteMatch[0].length,
-                        },
-                        label,
-                    });
-                    currentPosition += footnoteMatch[0].length;
-                    textStart = currentPosition;
-                    continue;
-                }
-            }
-
-            // Strikethrough ~~
-            if (text[currentPosition] === "~" && currentPosition + 1 < text.length && text[currentPosition + 1] === "~") {
-                let tildeCount = 2;
-                while (currentPosition + tildeCount < text.length && text[currentPosition + tildeCount] === "~") {
-                    tildeCount++;
-                }
-                
-                if (tildeCount === 2) {
-                    const closePos = text.indexOf("~~", currentPosition + 2);
-                    if (closePos !== -1) {
-                        addText(textStart, currentPosition);
-                        const innerText = text.slice(currentPosition + 2, closePos);
-                        const symbolic = text.slice(currentPosition, closePos + 2);
-                        result.push({
-                            id: uuid(),
-                            type: "strikethrough",
-                            blockId,
-                            text: {
-                                symbolic,
-                                semantic: innerText,
-                            },
-                            position: {
-                                start: position + currentPosition,
-                                end: position + closePos + 2,
-                            },
-                        });
-                        currentPosition = closePos + 2;
-                        textStart = currentPosition;
-                        continue;
-                    }
-                }
-            }
-
-            // Emphasis * and _
-            if (text[currentPosition] === "*" || text[currentPosition] === "_") {
-                const delimChar = text[currentPosition] as "*" | "_";
-                let runLength = 1;
-                while (currentPosition + runLength < text.length && text[currentPosition + runLength] === delimChar) {
-                    runLength++;
-                }
-
-                const leftFlanking = isLeftFlanking(currentPosition, runLength);
-                const rightFlanking = isRightFlanking(currentPosition, runLength);
-
-                // For *, can open if left-flanking
-                // For _, can open if left-flanking and (not right-flanking OR preceded by punctuation)
-                let canOpen = leftFlanking;
-                let canClose = rightFlanking;
-
-                if (delimChar === "_") {
-                    const charBefore = currentPosition > 0 ? text[currentPosition - 1] : ' ';
-                    const charAfter = currentPosition + runLength < text.length ? text[currentPosition + runLength] : ' ';
-                    canOpen = leftFlanking && (!rightFlanking || /[!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~]/.test(charBefore));
-                    canClose = rightFlanking && (!leftFlanking || /[!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~]/.test(charAfter));
-                }
-
-                if (canOpen || canClose) {
-                    addText(textStart, currentPosition);
-                    const delimText = delimChar.repeat(runLength);
-                    result.push({
-                        id: uuid(),
-                        type: "text",
-                        blockId,
-                        text: {
-                            symbolic: delimText,
-                            semantic: delimText,
-                        },
-                        position: {
-                            start: position + currentPosition,
-                            end: position + currentPosition + runLength,
-                        },
-                    });
-
-                    delimiterStack.push({
-                        type: delimChar,
-                        length: runLength,
-                        position: result.length - 1,
-                        canOpen,
-                        canClose,
-                        active: true,
-                    });
-
-                    textStart = currentPosition + runLength;
-                }
-
-                currentPosition += runLength;
-                continue;
-            }
-
-            // // Hard line break: two+ spaces at end of line followed by newline
-            // if (text[pos] === " ") {
-            //     let spaceCount = 1;
-            //     while (pos + spaceCount < text.length && text[pos + spaceCount] === " ") {
-            //         spaceCount++;
-            //     }
-            //     if (spaceCount >= 2 && pos + spaceCount < text.length && text[pos + spaceCount] === "\n") {
-            //         addText(textStart, pos);
-            //         const symbolic = " ".repeat(spaceCount) + "\n";
-            //         result.push({
-            //             id: uuid(),
-            //             type: "hardBreak",
-            //             blockId,
-            //             text: {
-            //                 symbolic,
-            //                 semantic: "\n",
-            //             },
-            //             position: {
-            //                 start: offset + pos,
-            //                 end: offset + pos + spaceCount + 1,
-            //             },
-            //         });
-            //         pos += spaceCount + 1;
-            //         textStart = pos;
-            //         continue;
-            //     }
-            // }
-
-            // if (text[pos] === "\n") {
-            //     addText(textStart, pos);
-            //     result.push({
-            //         id: uuid(),
-            //         type: "softBreak",
-            //         blockId,
-            //         text: {
-            //             symbolic: "\n",
-            //             semantic: "\n",
-            //         },
-            //         position: {
-            //             start: offset + pos,
-            //             end: offset + pos + 1,
-            //         },
-            //     });
-            //     pos++;
-            //     textStart = pos;
-            //     continue;
-            // }
-
-            if (text[currentPosition] === ":") {
-                const emojiMatch = text.slice(currentPosition).match(/^:([a-zA-Z0-9_+-]+):/);
-                if (emojiMatch) {
-                    addText(textStart, currentPosition);
-                    const name = emojiMatch[1];
-                    const symbolic = emojiMatch[0];
-                    result.push({
-                        id: uuid(),
-                        type: "emoji",
-                        blockId,
-                        text: {
-                            symbolic,
-                            semantic: symbolic,
-                        },
-                        position: {
-                            start: position + currentPosition,
-                            end: position + currentPosition + symbolic.length,
-                        },
-                        name,
-                    });
-                    currentPosition += symbolic.length;
-                    textStart = currentPosition;
-                    continue;
-                }
-            }
-
-            currentPosition++;
-        }
-
-        addText(textStart, currentPosition);
-
-        this.processEmphasis(delimiterStack, result, blockId);
-
-        if (result.length === 0) {
-            result.push({
-                id: uuid(),
-                type: 'text',
-                blockId,
-                text: { symbolic: '', semantic: '' },
-                position: { start: position, end: position },
-            });
-        }
-
-        return result;
-    }
-
     public parseLinkReferenceDefinitions(text: string) {
         // Match: [label]: url "optional title"
         const refRegex = /^\[([^\]]+)\]:\s*<?([^\s>]+)>?(?:\s+["'(]([^"')]+)["')])?$/gm;
@@ -682,92 +459,6 @@ class ParseInline {
             //     linkReferences.set(label, { url, title });
             // }
         }
-    }
-
-    private parseLink(text: string, start: number, blockId: string, offset: number): { inline: Inline; end: number } | null {
-        // Find matching ]
-        let bracketDepth = 1;
-        let pos = start + 1;
-        while (pos < text.length && bracketDepth > 0) {
-            if (text[pos] === "\\") {
-                pos += 2;
-                continue;
-            }
-            if (text[pos] === "[") bracketDepth++;
-            if (text[pos] === "]") bracketDepth--;
-            pos++;
-        }
-        
-        if (bracketDepth !== 0) return null;
-        
-        const linkTextEnd = pos - 1;
-        const linkText = text.slice(start + 1, linkTextEnd);
-        
-        // Inline link: [text](url "title")
-        if (pos < text.length && text[pos] === "(") {
-            const destResult = this.parseLinkDestinationAndTitle(text, pos);
-            if (destResult) {
-                const symbolic = text.slice(start, destResult.end);
-                return {
-                    inline: {
-                        id: uuid(),
-                        type: "link",
-                        blockId,
-                        text: {
-                            symbolic,
-                            semantic: linkText,
-                        },
-                        position: {
-                            start: offset + start,
-                            end: offset + destResult.end,
-                        },
-                        url: destResult.url,
-                        title: destResult.title,
-                    },
-                    end: destResult.end,
-                };
-            }
-        }
-        
-        // Reference link: [text][ref] or [text][] or [text]
-        let refLabel = "";
-        let refEnd = pos;
-        
-        if (pos < text.length && text[pos] === "[") {
-            const refClosePos = text.indexOf("]", pos + 1);
-            if (refClosePos !== -1) {
-                refLabel = text.slice(pos + 1, refClosePos).toLowerCase().trim();
-                refEnd = refClosePos + 1;
-            }
-        }
-        
-        if (refLabel === "") {
-            refLabel = linkText.toLowerCase().trim();
-        }
-        
-        // const ref = linkReferences.get(refLabel);
-        // if (ref) {
-        //     return {
-        //         inline: {
-        //             id: uuid(),
-        //             type: "link",
-        //             blockId,
-        //             text: {
-        //                 symbolic: text.slice(start, refEnd),
-        //                 semantic: linkText,
-        //             },
-        //             position: {
-        //                 start: offset + start,
-        //                 end: offset + refEnd,
-        //             },
-        //             url: ref.url,
-        //             title: ref.title,
-        //         },
-        //         end: refEnd,
-        //     };
-        // }
-        
-        return null;
     }
 
     private parseImage(text: string, start: number, blockId: string, offset: number): { inline: Inline; end: number } | null {
