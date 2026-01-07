@@ -479,39 +479,80 @@ class AST {
 
         const mergedText = leftInline.text.symbolic + rightInline.text.symbolic
         const mergedInlines = parseInlineContent(mergedText, currentBlock.id, currentBlock.position.start)
+        
+        const removeBlocks: Block[] = []
+        const targetBlocks: Block[] = [currentBlock]
 
-        const leftInlineIndex = currentBlock.inlines.findIndex(i => i.id === leftInline.id)
-        const rightInlineIndex = currentBlock.inlines.findIndex(
-            i => i.id === rightInline.id
-          )
-          
-        const deleteCount =
-            rightInlineIndex === leftInlineIndex + 1 ? 2 : 1
-          
-        currentBlock.inlines.splice(leftInlineIndex, deleteCount, ...mergedInlines)
+        const sameBlock = leftInline.blockId === rightInline.blockId
 
-        const targetBlocks: Block[] = []
-        targetBlocks.push(currentBlock)
+        if (sameBlock) {
+            const leftIndex = currentBlock.inlines.findIndex(
+                i => i.id === leftInline.id
+            )
+            const rightIndex = currentBlock.inlines.findIndex(
+                i => i.id === rightInline.id
+            )
+    
+            if (leftIndex === -1 || rightIndex === -1) return null
+    
+            const deleteCount =
+                rightIndex === leftIndex + 1 ? 2 : 1
+    
+            currentBlock.inlines.splice(
+                leftIndex,
+                deleteCount,
+                ...mergedInlines
+            )
+    
+            currentBlock.text = mergedText
+            currentBlock.position = {
+                start: currentBlock.position.start,
+                end: currentBlock.position.start + mergedText.length
+            }
+        } else {
+            const previousBlock = this.getBlockById(rightInline.blockId)
+            if (!previousBlock) return null
 
-        const previousBlock = this.getBlockById(rightInline.blockId)
-        if (previousBlock && currentBlock.id !== previousBlock.id) {
-            const rightInlineIndex = previousBlock.inlines.findIndex(i => i.id === rightInline.id)
+            const leftIndex = currentBlock.inlines.findIndex(
+                i => i.id === leftInline.id
+            )
+            const rightIndex = previousBlock.inlines.findIndex(
+                i => i.id === rightInline.id
+            )
 
-            previousBlock.inlines.splice(rightInlineIndex, 1)
-            previousBlock.text = previousBlock.inlines.map((i: Inline) => i.text.symbolic).join('')
-            previousBlock.position = { start: previousBlock.position.start, end: previousBlock.position.end - rightInline.text.symbolic.length }
-            
-            targetBlocks.push(previousBlock)
+            if (leftIndex === -1 || rightIndex === -1) return null
+
+            const tailInlines = previousBlock.inlines.slice(rightIndex + 1)
+            const tailText = tailInlines
+                .map(i => i.text.symbolic)
+                .join('')
+
+            currentBlock.inlines.splice(
+                leftIndex,
+                1,
+                ...mergedInlines,
+                ...tailInlines
+            )
+
+            currentBlock.text = mergedText + tailText
+            currentBlock.position = {
+                start: currentBlock.position.start,
+                end: currentBlock.position.start + currentBlock.text.length
+            }
+
+            this.ast.blocks.splice(
+                this.ast.blocks.findIndex(b => b.id === previousBlock.id),
+                1
+            )
+
+            removeBlocks.push(previousBlock)
         }
-
-        currentBlock.text = mergedText
-        currentBlock.position = { start: currentBlock.position.start, end: currentBlock.position.end - leftInline.text.symbolic.length + mergedText.length }
 
         return {
             renderEffect: {
                 type: 'update',
                 render: {
-                    remove: [],
+                    remove: removeBlocks,
                     insert: targetBlocks.map(block => ({
                         at: 'current',
                         target: block,
