@@ -25,6 +25,10 @@ class InlineStream {
         if (this.end()) return null
         return this.input[this.currentPosition++]
     }
+    
+    public slice(start: number = 0, end: number = this.input.length): string {
+        return this.input.slice(start, end)
+    }
 
     public consume(char: string): boolean {
         if (this.peek() === char) {

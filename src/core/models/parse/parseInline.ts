@@ -1,9 +1,11 @@
-import InlineStream from "./inlineStream"
-import EmphasisResolver from "./emphasisResolver"
-import { Block, Inline, CodeBlock, TableCell, Paragraph, Delimiter } from "../../types"
-import { uuid, decodeHTMLEntity } from "../../utils/utils"
+import InlineStream from './inlineStream'
+import LinkResolver from './linkResolver'
+import EmphasisResolver from './emphasisResolver'
+import { Block, Inline, CodeBlock, TableCell, Paragraph, Delimiter } from '../../types'
+import { uuid, decodeHTMLEntity } from '../../utils/utils'
 
 class ParseInline {
+    private linkResolver = new LinkResolver()
     private emphasisResolver = new EmphasisResolver()
 
     public apply(block: Block): Inline[] {
@@ -104,7 +106,7 @@ class ParseInline {
                 const raw = text.slice(textStart, end)
                 result.push({
                     id: uuid(),
-                    type: "text",
+                    type: 'text',
                     blockId,
                     text: {
                         symbolic: raw,
@@ -123,7 +125,7 @@ class ParseInline {
             const ch = stream.peek()!
 
             /* ---------------- backslash escapes ---------------- */
-            if (stream.consume("\\")) {
+            if (stream.consume('\\')) {
                 const next = stream.peek()
                 if (next) {
                     flushText()
@@ -131,10 +133,10 @@ class ParseInline {
 
                     result.push({
                         id: uuid(),
-                        type: "text",
+                        type: 'text',
                         blockId,
                         text: {
-                            symbolic: "\\" + next,
+                            symbolic: '\\' + next,
                             semantic: next,
                         },
                         position: {
@@ -148,7 +150,7 @@ class ParseInline {
             }
 
             /* ---------------- entity ---------------- */
-            if (ch === "&") {
+            if (ch === '&') {
                 const checkpoint = stream.checkpoint()
                 const remaining = stream.remaining()
                 const match = remaining.match(
@@ -161,7 +163,7 @@ class ParseInline {
 
                     result.push({
                         id: uuid(),
-                        type: "entity",
+                        type: 'entity',
                         blockId,
                         text: {
                             symbolic: match[0],
@@ -181,11 +183,11 @@ class ParseInline {
             }
 
             /* ---------------- code span ---------------- */
-            if (ch === "`") {
+            if (ch === '`') {
                 const start = stream.checkpoint()
                 let ticks = 0
 
-                while (stream.peek() === "`") {
+                while (stream.peek() === '`') {
                     stream.next()
                     ticks++
                 }
@@ -194,24 +196,24 @@ class ParseInline {
                 let found = false
 
                 while (!stream.end()) {
-                    if (stream.peek() === "`") {
+                    if (stream.peek() === '`') {
                         let count = 0
                         const mark = stream.checkpoint()
-                        while (stream.peek() === "`") {
+                        while (stream.peek() === '`') {
                             stream.next()
                             count++
                         }
 
                         if (count === ticks) {
                             const content = text.slice(contentStart, mark)
-                                .replace(/\n/g, " ")
-                                .replace(/^ (.*) $/, "$1")
+                                .replace(/\n/g, ' ')
+                                .replace(/^ (.*) $/, '$1')
 
                             flushText()
 
                             result.push({
                                 id: uuid(),
-                                type: "codeSpan",
+                                type: 'codeSpan',
                                 blockId,
                                 text: {
                                     symbolic: text.slice(start, stream.position()),
@@ -243,22 +245,18 @@ class ParseInline {
             }
 
             /* ---------------- link ---------------- */
-            if (ch === "[") {
-                const start = stream.checkpoint()
-                const link = this.parseLink(stream, blockId, position)
-
+            if (ch === '[') {
+                const link = this.linkResolver.tryParse(stream, blockId, position)
                 if (link) {
                     flushText()
                     result.push(link)
                     textStart = stream.position()
                     continue
                 }
-
-                stream.restore(start)
             }
 
             /* ---------------- emphasis delimiter scan ---------------- */
-            if (ch === "*" || ch === "_") {
+            if (ch === '*' || ch === '_') {
                 flushText()
 
                 const char = stream.next()!
@@ -272,7 +270,7 @@ class ParseInline {
 
                 result.push({
                     id: uuid(),
-                    type: "text",
+                    type: 'text',
                     blockId,
                     text: {
                         symbolic: char.repeat(count),
@@ -307,64 +305,11 @@ class ParseInline {
             ? result
             : [{
                 id: uuid(),
-                type: "text",
+                type: 'text',
                 blockId,
-                text: { symbolic: "", semantic: "" },
+                text: { symbolic: '', semantic: '' },
                 position: { start: position, end: position },
             }]
-    }
-
-    private parseLink(stream: InlineStream, blockId: string, position: number): Inline | null {
-        const start = stream.checkpoint()
-        if (!stream.consume("[")) return null
-
-        const labelStart = stream.position()
-        while (!stream.end() && stream.peek() !== "]") {
-            stream.next()
-        }
-
-        if (!stream.consume("]")) {
-            stream.restore(start)
-            return null
-        }
-
-        const label = stream.remaining().slice(
-            -(stream.position() - labelStart),
-            -1
-        )
-
-        if (!stream.consume("(")) {
-            stream.restore(start)
-            return null
-        }
-
-        while (!stream.end() && /\s/.test(stream.peek()!)) stream.next()
-
-        const urlStart = stream.position()
-        while (!stream.end() && stream.peek() !== ")") stream.next()
-        const url = stream.remaining().slice(
-            -(stream.position() - urlStart),
-            -1
-        )
-
-        if (!stream.consume(")")) {
-            stream.restore(start)
-            return null
-        }
-
-        return {
-            id: uuid(),
-            type: "link",
-            blockId,
-            text: {
-                symbolic: stream.remaining(),
-                semantic: label,
-            },
-            position: {
-                start: position + start,
-                end: position + stream.position(),
-            },
-        } as Inline
     }
 
     private parseTableRow(line: string): TableCell[] {
@@ -382,19 +327,19 @@ class ParseInline {
                 continue
             }
             
-            if (char === "\\") {
+            if (char === '\\') {
                 escaped = true
                 current += char
                 continue
             }
             
-            if (char === "`") {
+            if (char === '`') {
                 inCode = !inCode
                 current += char
                 continue
             }
             
-            if (char === "|" && !inCode) {
+            if (char === '|' && !inCode) {
                 cellTexts.push(current)
                 current = ''
                 continue
@@ -407,14 +352,14 @@ class ParseInline {
             cellTexts.push(current)
         }
         
-        if (cellTexts.length > 0 && cellTexts[0].trim() === "") cellTexts.shift()
-        if (cellTexts.length > 0 && cellTexts[cellTexts.length - 1].trim() === "") cellTexts.pop()
+        if (cellTexts.length > 0 && cellTexts[0].trim() === '') cellTexts.shift()
+        if (cellTexts.length > 0 && cellTexts[cellTexts.length - 1].trim() === '') cellTexts.pop()
 
         let cells: TableCell[] = []
         for (const cellText of cellTexts) {
             const paragraph: Paragraph = {
                 id: uuid(),
-                type: "paragraph",
+                type: 'paragraph',
                 text: cellText,
                 position: {
                     start: 0,
@@ -425,7 +370,7 @@ class ParseInline {
 
             cells.push({
                 id: uuid(),
-                type: "tableCell",
+                type: 'tableCell',
                 text: cellText,
                 position: {
                     start: 0,
@@ -440,14 +385,14 @@ class ParseInline {
     }
 
     private extractFencedCodeContent(text: string, fence: string): string {
-        const lines = text.split("\n");
-        if (lines.length <= 1) return "";
+        const lines = text.split('\n');
+        if (lines.length <= 1) return '';
         const contentLines = lines.slice(1);
         const closingPattern = new RegExp(`^\\s{0,3}${fence.charAt(0)}{${fence.length},}\\s*$`);
         if (contentLines.length > 0 && closingPattern.test(contentLines[contentLines.length - 1])) {
             contentLines.pop();
         }
-        return contentLines.join("\n");
+        return contentLines.join('\n');
     }
 
     public parseLinkReferenceDefinitions(text: string) {
@@ -466,18 +411,18 @@ class ParseInline {
 
     private parseImage(text: string, start: number, blockId: string, offset: number): { inline: Inline; end: number } | null {
         // start is at "!"
-        if (text[start + 1] !== "[") return null;
+        if (text[start + 1] !== '[') return null;
         
         // Find matching ]
         let bracketDepth = 1;
         let pos = start + 2;
         while (pos < text.length && bracketDepth > 0) {
-            if (text[pos] === "\\") {
+            if (text[pos] === '\\') {
                 pos += 2;
                 continue;
             }
-            if (text[pos] === "[") bracketDepth++;
-            if (text[pos] === "]") bracketDepth--;
+            if (text[pos] === '[') bracketDepth++;
+            if (text[pos] === ']') bracketDepth--;
             pos++;
         }
         
@@ -487,14 +432,14 @@ class ParseInline {
         const altText = text.slice(start + 2, altTextEnd);
         
         // Inline image: ![alt](url "title")
-        if (pos < text.length && text[pos] === "(") {
+        if (pos < text.length && text[pos] === '(') {
             const destResult = this.parseLinkDestinationAndTitle(text, pos);
             if (destResult) {
                 const symbolic = text.slice(start, destResult.end);
                 return {
                     inline: {
                         id: uuid(),
-                        type: "image",
+                        type: 'image',
                         blockId,
                         text: {
                             symbolic,
@@ -514,18 +459,18 @@ class ParseInline {
         }
         
         // Reference image: ![alt][ref] or ![alt][] or ![alt]
-        let refLabel = "";
+        let refLabel = '';
         let refEnd = pos;
         
-        if (pos < text.length && text[pos] === "[") {
-            const refClosePos = text.indexOf("]", pos + 1);
+        if (pos < text.length && text[pos] === '[') {
+            const refClosePos = text.indexOf(']', pos + 1);
             if (refClosePos !== -1) {
                 refLabel = text.slice(pos + 1, refClosePos).toLowerCase().trim();
                 refEnd = refClosePos + 1;
             }
         }
         
-        if (refLabel === "") {
+        if (refLabel === '') {
             refLabel = altText.toLowerCase().trim();
         }
         
@@ -557,24 +502,24 @@ class ParseInline {
 
     private parseLinkDestinationAndTitle(text: string, start: number): { url: string; title?: string; end: number } | null {
         let pos = start;
-        if (pos >= text.length || text[pos] !== "(") return null;
+        if (pos >= text.length || text[pos] !== '(') return null;
         pos++;
 
         // Skip whitespace
         while (pos < text.length && /[ \t\n]/.test(text[pos])) pos++;
         if (pos >= text.length) return null;
 
-        let url = "";
+        let url = '';
         
         // Angle-bracketed destination
-        if (text[pos] === "<") {
+        if (text[pos] === '<') {
             pos++;
             const urlStart = pos;
-            while (pos < text.length && text[pos] !== ">" && text[pos] !== "\n") {
-                if (text[pos] === "\\") pos++;
+            while (pos < text.length && text[pos] !== '>' && text[pos] !== '\n') {
+                if (text[pos] === '\\') pos++;
                 pos++;
             }
-            if (pos >= text.length || text[pos] !== ">") return null;
+            if (pos >= text.length || text[pos] !== '>') return null;
             url = text.slice(urlStart, pos);
             pos++;
         } else {
@@ -583,14 +528,14 @@ class ParseInline {
             let parenDepth = 0;
             while (pos < text.length) {
                 const ch = text[pos];
-                if (ch === "\\") {
+                if (ch === '\\') {
                     pos += 2;
                     continue;
                 }
                 if (/[ \t\n]/.test(ch) && parenDepth === 0) break;
-                if (ch === "(") {
+                if (ch === '(') {
                     parenDepth++;
-                } else if (ch === ")") {
+                } else if (ch === ')') {
                     if (parenDepth === 0) break;
                     parenDepth--;
                 }
@@ -606,11 +551,11 @@ class ParseInline {
         let title: string | undefined;
         if (pos < text.length && (text[pos] === '"' || text[pos] === "'" || text[pos] === "(")) {
             const quoteChar = text[pos];
-            const closeChar = quoteChar === "(" ? ")" : quoteChar;
+            const closeChar = quoteChar === '(' ? ')' : quoteChar;
             pos++;
             const titleStart = pos;
             while (pos < text.length && text[pos] !== closeChar) {
-                if (text[pos] === "\\") pos++;
+                if (text[pos] === '\\') pos++;
                 pos++;
             }
             if (pos >= text.length) return null;
