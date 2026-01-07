@@ -29,11 +29,14 @@ class AST {
                     current: newBlocks[0],
                 }],
             },
-            caret: {
-                blockId: inline.blockId,
-                inlineId: inline.id,
-                position: inline.position.start,
-                affinity: 'start',
+            caretEffect: {
+                type: 'restore',
+                caret: {
+                    blockId: inline.blockId,
+                    inlineId: inline.id,
+                    position: inline.position.start,
+                    affinity: 'start',
+                },
             },
         }
     }
@@ -289,11 +292,14 @@ class AST {
                     },
                 ],
             },
-            caret: {
-                blockId: block.id,
-                inlineId: newInline.id,
-                position: position,
-                affinity: 'start'
+            caretEffect: {
+                type: 'restore',
+                caret: {
+                    blockId: block.id,
+                    inlineId: newInline.id,
+                    position: position,
+                    affinity: 'start'
+                },
             },
         }
     }
@@ -351,11 +357,14 @@ class AST {
                     },
                 ],
             },
-            caret: {
-                blockId: newBlock.id,
-                inlineId: newBlock.inlines[0].id,
-                position: 0,
-                affinity: 'start'
+            caretEffect: {
+                type: 'restore',
+                caret: {
+                    blockId: newBlock.id,
+                    inlineId: newBlock.inlines[0].id,
+                    position: 0,
+                    affinity: 'start'
+                },
             },
         }
     }
@@ -406,11 +415,14 @@ class AST {
                     },
                 ],
             },
-            caret: {
-                blockId: nextBlock.id,
-                inlineId: nextBlock.inlines[0].id,
-                position: 0,
-                affinity: 'start'
+            caretEffect: {
+                type: 'restore',
+                caret: {
+                    blockId: nextBlock.id,
+                    inlineId: nextBlock.inlines[0].id,
+                    position: 0,
+                    affinity: 'start'
+                },
             },
         }
     }
@@ -469,11 +481,14 @@ class AST {
                     current: block,
                 })),
             },
-            caret: {
-                blockId: currentBlock.id,
-                inlineId: mergedInlines[0].id,
-                position: leftInline.position.end,
-                affinity: 'start'
+            caretEffect: {
+                type: 'restore',
+                caret: {
+                    blockId: currentBlock.id,
+                    inlineId: mergedInlines[0].id,
+                    position: leftInline.position.end,
+                    affinity: 'start'
+                },
             },
         }
     }
@@ -516,11 +531,14 @@ class AST {
                             },
                         ],
                     },
-                    caret: {
-                        blockId: paragraph.id,
-                        inlineId: paragraph.inlines[0].id,
-                        position: 1,
-                        affinity: 'start'
+                    caretEffect: {
+                        type: 'restore',
+                        caret: {
+                            blockId: paragraph.id,
+                            inlineId: paragraph.inlines[0].id,
+                            position: 1,
+                            affinity: 'start'
+                        },
                     },
                 }
             } else {
@@ -539,11 +557,14 @@ class AST {
                             },
                         ],
                     },
-                    caret: {
-                        blockId: paragraph.id,
-                        inlineId: paragraph.inlines[0].id,
-                        position: 1,
-                        affinity: 'start'
+                    caretEffect: {
+                        type: 'restore',
+                        caret: {
+                            blockId: paragraph.id,
+                            inlineId: paragraph.inlines[0].id,
+                            position: 1,
+                            affinity: 'start'
+                        },
                     },
                 }
             }

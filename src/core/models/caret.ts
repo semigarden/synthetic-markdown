@@ -102,7 +102,12 @@ class Caret {
     }
 
     public apply(effect: CaretEffect) {
-      
+        switch (effect.type) {
+            case 'restore':
+                console.log('restore caret', effect.caret)
+                this.restoreCaret(effect.caret.inlineId, effect.caret.position)
+                break
+        }
     }
 }
 

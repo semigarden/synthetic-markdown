@@ -21,20 +21,24 @@ export type AstApplyEffect = {
             current: Block
         }[]
     }
-    caret: {
-        blockId: string
-        inlineId: string
-        position: number
-        affinity?: 'start' | 'end'
-    }
+    caretEffect: CaretEffect
 }
 
-type CaretEffect = { moveToEndOfPreviousInline?: boolean }
+type CaretEffect = { 
+    type: 'restore'
+    caret: Caret
+}
 
 export type EditEffect = {
     preventDefault?: boolean
     ast?: AstEffect[]
-    caret?: CaretEffect
+}
+
+type Caret = {
+    blockId: string
+    inlineId: string
+    position: number
+    affinity?: 'start' | 'end'
 }
 
 export type Intent =

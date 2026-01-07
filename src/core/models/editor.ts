@@ -120,7 +120,7 @@ class Editor {
                     }
                     if (!result) return
 
-                    const { render, caret } = result
+                    const { render, caretEffect } = result
 
                     render.remove.forEach(block => {
                         const removeBlockElement = this.rootElement.querySelector(`[data-block-id="${block.id}"]`)
@@ -135,13 +135,12 @@ class Editor {
 
                     this.ast.updateAST()
 
-                    this.caret.restoreCaret(caret.inlineId, caret.position)
+                    this.caret.apply(caretEffect)
 
                     this.emitChange()
                 }
             })
         }
-        if (effect.caret) this.caret.apply(effect.caret)
     }
 
     private removeEmptyBlocks(blocks: Block[]) {
