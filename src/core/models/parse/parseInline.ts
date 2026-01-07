@@ -1,8 +1,11 @@
 import InlineStream from "./inlineStream"
+import EmphasisResolver from "./emphasisResolver"
 import { Block, Inline, CodeBlock, TableCell, Paragraph, Delimiter } from "../../types"
 import { uuid, decodeHTMLEntity } from "../../utils/utils"
 
 class ParseInline {
+    private emphasisResolver = new EmphasisResolver()
+
     public apply(block: Block): Inline[] {
         const inlines: Inline[] = []
         const text = block.text ?? ''
@@ -298,7 +301,7 @@ class ParseInline {
         }
 
         flushText()
-        this.processEmphasis(delimiterStack, result, blockId)
+        this.emphasisResolver.apply(result, delimiterStack, blockId)
 
         return result.length
             ? result
@@ -623,90 +626,6 @@ class ParseInline {
         pos++;
 
         return { url, title, end: pos };
-    }
-
-    private processEmphasis(stack: Delimiter[], nodes: Inline[], blockId: string) {
-        if (stack.length === 0) return;
-
-        let current = 0;
-
-        while (current < stack.length) {
-            const closer = stack[current];
-            if (!closer.canClose || !closer.active) {
-                current++;
-                continue;
-            }
-
-            let openerIndex = -1;
-            for (let i = current - 1; i >= 0; i--) {
-                const opener = stack[i];
-                if (opener.type !== closer.type || !opener.canOpen || !opener.active) continue;
-
-                if ((opener.length + closer.length) % 3 === 0 &&
-                    opener.length !== 1 && closer.length !== 1) {
-                    continue;
-                }
-
-                openerIndex = i;
-                break;
-            }
-
-            if (openerIndex === -1) {
-                current++;
-                continue;
-            }
-
-            const opener = stack[openerIndex];
-            const useLength = Math.min(opener.length, closer.length, 2);
-            const isStrong = useLength === 2;
-            const emphType = isStrong ? "strong" : "emphasis";
-            const delimChar = opener.type;
-            const delimStr = delimChar.repeat(useLength);
-
-            const openerNodeIndex = opener.position;
-            const closerNodeIndex = closer.position;
-
-            const startIdx = openerNodeIndex;
-            const endIdx = closerNodeIndex + 1;
-            const affectedNodes = nodes.slice(startIdx, endIdx);
-
-            let symbolic = delimStr;
-            let semantic = '';
-            for (const node of affectedNodes.slice(1, -1)) {
-                symbolic += node.text.symbolic;
-                semantic += node.text.semantic;
-            }
-            symbolic += delimStr;
-
-            const emphNode: Inline = {
-                id: uuid(),
-                type: emphType,
-                blockId,
-                text: {
-                    symbolic,
-                    semantic,
-                },
-                position: {
-                    start: nodes[openerNodeIndex].position.start,
-                    end: nodes[closerNodeIndex].position.end
-                },
-            };
-
-            const deleteCount = endIdx - startIdx;
-            nodes.splice(startIdx, deleteCount, emphNode);
-
-            stack.splice(current, 1);
-            stack.splice(openerIndex, 1);
-
-            const removedCount = deleteCount - 1;
-            for (let i = 0; i < stack.length; i++) {
-                if (stack[i].position >= startIdx + 1) {
-                    stack[i].position -= removedCount;
-                }
-            }
-
-            current = startIdx;
-        }
     }
 }
 
