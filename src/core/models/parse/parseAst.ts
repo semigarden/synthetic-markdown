@@ -7,7 +7,11 @@ class ParseAst {
     public linkReferences = new LinkReferenceState()
 
     public block = new ParseBlock()
-    public inline = new ParseInline(this.linkReferences)
+    public inline: ParseInline
+
+    constructor() {
+        this.inline = new ParseInline(this.linkReferences)
+    }
 
     public parse(text: string): Block[] {
         this.linkReferences.reset()
