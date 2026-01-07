@@ -341,34 +341,51 @@ class AST {
         if (!inline) return null
 
         const inlineIndex = block.inlines.findIndex(i => i.id === inlineId)
+        if (inlineIndex === -1) return null
 
-        const previousText = inline.text.symbolic.slice(0, caretPosition)
-        const nextText = inline.text.symbolic.slice(caretPosition)
+        const leftText = inline.text.symbolic.slice(0, caretPosition)
+        const rightText = inline.text.symbolic.slice(caretPosition)
 
         const beforeInlines = block.inlines.slice(0, inlineIndex)
         const afterInlines = block.inlines.slice(inlineIndex + 1)
 
-        const previousInlines = parseInlineContent(previousText, block.id, block.position.start)
-        const nextInlines = parseInlineContent(nextText, block.id, block.position.start + previousText.length).concat(afterInlines)
+        const leftInlines = parseInlineContent(
+            leftText,
+            block.id,
+            block.position.start
+        )
 
-        block.text = previousText + beforeInlines.map(i => i.text.symbolic).join('')
-        block.position = { start: block.position.start, end: block.position.start + previousText.length + beforeInlines.map(i => i.text.symbolic).join('').length }
+        const newBlockId = uuid()
+
+        const rightInlines = parseInlineContent(
+            rightText,
+            newBlockId,
+            0
+        ).concat(afterInlines)
+
+        rightInlines.forEach(i => (i.blockId = newBlockId))
+
+        block.inlines = [...beforeInlines, ...leftInlines]
+        block.text = block.inlines.map(i => i.text.symbolic).join('')
+        block.position = {
+            start: block.position.start,
+            end: block.position.start + block.text.length,
+        }
 
         const newBlock = {
-            id: uuid(),
+            id: newBlockId,
             type: block.type,
-            text: nextText + afterInlines.map(i => i.text.symbolic).join(''),
-            inlines: [],
-            position: { start: block.position.end, end: block.position.end + nextText.length + afterInlines.map(i => i.text.symbolic).join('').length }
+            inlines: rightInlines,
+            text: rightInlines.map(i => i.text.symbolic).join(''),
+            position: {
+                start: block.position.end,
+                end: block.position.end +
+                    rightInlines.map(i => i.text.symbolic).join('').length,
+            },
         } as Block
 
-        nextInlines.forEach(i => i.blockId = newBlock.id)
-        newBlock.inlines.push(...nextInlines)
-
-        block.inlines.splice(inlineIndex, 1)
-        block.inlines.splice(inlineIndex, 0, ...previousInlines)
-        
-        this.ast.blocks.splice(this.ast.blocks.findIndex(b => b.id === block.id), 1, block, newBlock)
+        const blockIndex = this.ast.blocks.findIndex(b => b.id === block.id)
+        this.ast.blocks.splice(blockIndex, 1, block, newBlock)
 
         return {
             renderEffect: {
