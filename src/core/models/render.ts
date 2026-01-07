@@ -1,5 +1,4 @@
-import { renderInlines } from "../render/renderInline"
-import { Block, RenderEffect } from "../types"
+import { Block, Inline, RenderEffect } from "../types"
 
 class Render {
     constructor(
@@ -8,16 +7,15 @@ class Render {
 
     public render(
         blocks: Block[],
-        container: HTMLElement,
-        focusedInlineId: string | null = null
+        container: HTMLElement
     ) {
         container.replaceChildren()
         for (const block of blocks) {
-            container.appendChild(this.renderBlock(block, container, focusedInlineId))
+            container.appendChild(this.renderBlock(block, container))
         }
     }
 
-    public renderBlock(block: Block, rootElement: HTMLElement, focusedInlineId: string | null = null, renderAt: string = 'current', targetBlock: Block | null = null): HTMLElement {
+    public renderBlock(block: Block, rootElement: HTMLElement, renderAt: string = 'current', targetBlock: Block | null = null): HTMLElement {
         let element: HTMLElement = rootElement.querySelector(`[data-block-id="${block.id}"]`) as HTMLElement
 
         const isNew = !element
@@ -39,7 +37,7 @@ class Render {
                     element = document.createElement('pre')
                     const code = document.createElement('code')
                     element.appendChild(code)
-                    renderInlines(block.inlines, code, focusedInlineId)
+                    this.renderInlines(block.inlines, code)
                     break
 
                 case 'list':
@@ -64,16 +62,16 @@ class Render {
         if (block.type === 'codeBlock') {
             const code = element.querySelector('code') as HTMLElement || document.createElement('code')
             code.innerHTML = ''
-            renderInlines(block.inlines, code, focusedInlineId)
+            this.renderInlines(block.inlines, code)
             if (!element.querySelector('code')) element.appendChild(code)
         }
 
         if (block.type === 'list' || block.type === 'listItem') {
             for (const child of block.blocks) {
-                this.renderBlock(child, element, focusedInlineId)
+                this.renderBlock(child, element)
             }
         } else {
-            renderInlines(block.inlines, element, focusedInlineId)
+            this.renderInlines(block.inlines, element)
         }
 
         if (isNew) {
@@ -106,6 +104,42 @@ class Render {
         return element
     }
 
+    public renderInlines(
+        inlines: Inline[],
+        parent: HTMLElement,
+    ) {
+        parent.replaceChildren()
+    
+        for (const inline of inlines) {
+            parent.appendChild(this.renderInline(inline))
+        }
+    }
+    
+    private renderInline(inline: Inline): Node {
+        const tag = this.getInlineTag(inline)
+        const inlineEl = document.createElement(tag)
+        inlineEl.id = inline.id
+        inlineEl.dataset.inlineId = inline.id
+        inlineEl.textContent = inline.text.semantic
+        inlineEl.contentEditable = 'true'
+        inlineEl.classList.add('inline')
+    
+        return inlineEl
+    }
+    
+    private getInlineTag(inline: Inline): string {
+        switch (inline.type) {
+            case 'text':
+                return 'span'
+            case 'emphasis':
+                return 'em'
+            case 'strong':
+                return 'strong'
+            default:
+                return 'span'
+        }
+    }
+
     public apply(effect: RenderEffect) {
         switch (effect.type) {
             case 'update':
@@ -115,7 +149,7 @@ class Render {
                 })
 
                 effect.render.insert.forEach(render => {
-                    this.renderBlock(render.current, this.rootElement, null, render.at, render.target)
+                    this.renderBlock(render.current, this.rootElement, render.at, render.target)
                 })
                 break
         }
