@@ -134,7 +134,7 @@ class ParseInline {
         while (!stream.end()) {
             const ch = stream.peek()!
 
-            /* ---------------- backslash escape ---------------- */
+            // backslash escape
             const escape = this.backslashEscapeResolver.tryParse(
                 stream,
                 blockId,
@@ -148,7 +148,7 @@ class ParseInline {
                 continue
             }
 
-            /* ---------------- entity ---------------- */
+            // entity
             if (ch === '&') {
                 const entity = this.entityResolver.tryParse(
                     stream,
@@ -165,7 +165,7 @@ class ParseInline {
                 }
             }            
 
-            /* ---------------- code span ---------------- */
+            // code span
             if (ch === '`') {
                 const codeSpan = this.codeSpanResolver.tryParse(
                     stream,
@@ -182,7 +182,7 @@ class ParseInline {
                 }
             }            
 
-            /* ---------------- image ---------------- */
+            // image
             if (ch === '!' && stream.peek(1) === '[') {
                 const image = this.imageResolver.tryParse(stream, blockId, position)
                 if (image) {
@@ -193,7 +193,7 @@ class ParseInline {
                 }
             }
 
-            /* ---------------- link ---------------- */
+            // link
             if (ch === '[') {
                 const link = this.linkResolver.tryParse(stream, blockId, position)
                 if (link) {
@@ -204,7 +204,7 @@ class ParseInline {
                 }
             }
 
-            /* ---------------- delimiter lexer ---------------- */
+            // delimiter lexer
             if (this.delimiterLexer.tryLex(
                 stream,
                 blockId,
