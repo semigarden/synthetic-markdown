@@ -1,6 +1,5 @@
 import ParseBlock from './parse/parseBlock'
 import ParseInline from './parse/parseInline'
-import { parseInlineContent, parseLinkReferenceDefinitions } from '../ast/ast'
 import { AstApplyEffect, Block, Inline, List, ListItem } from '../types'
 import { uuid } from '../utils/utils'
 
@@ -21,7 +20,7 @@ class AST {
     }
 
     private parse(text: string): Block[] {
-        parseLinkReferenceDefinitions(text)
+        this.parseInline.parseLinkReferenceDefinitions(text)
 
         const blocks: Block[] = []
         let offset = 0
@@ -242,7 +241,7 @@ class AST {
         const mergedText =
             leftInline.text.symbolic + rightInline.text.symbolic
     
-        const mergedInlines = parseInlineContent(
+        const mergedInlines = this.parseInline.parseInlineContent(
             mergedText,
             leftBlock.id,
             leftBlock.position.start
@@ -309,7 +308,7 @@ class AST {
         const beforeInlines = block.inlines.slice(0, inlineIndex)
         const afterInlines = block.inlines.slice(inlineIndex + 1)
     
-        const leftInlines = parseInlineContent(
+        const leftInlines = this.parseInline.parseInlineContent(
             leftText,
             block.id,
             block.position.start
@@ -317,13 +316,13 @@ class AST {
     
         const rightBlockId = uuid()
     
-        const rightInlines = parseInlineContent(
+        const rightInlines = this.parseInline.parseInlineContent(
             rightText,
             rightBlockId,
             0
         ).concat(afterInlines)
     
-        rightInlines.forEach(i => (i.blockId = rightBlockId))
+        rightInlines.forEach((i: Inline) => (i.blockId = rightBlockId))
     
         const leftBlock: Block = {
             ...block,
@@ -340,11 +339,11 @@ class AST {
             id: rightBlockId,
             type: block.type,
             inlines: rightInlines,
-            text: rightInlines.map(i => i.text.symbolic).join(''),
+            text: rightInlines.map((i: Inline) => i.text.symbolic).join(''),
             position: {
                 start: leftBlock.position.end,
                 end: leftBlock.position.end +
-                    rightInlines.map(i => i.text.symbolic).join('').length,
+                    rightInlines.map((i: Inline) => i.text.symbolic).join('').length,
             },
         } as Block
     
@@ -508,14 +507,14 @@ class AST {
             return this.transformBlock(block, newText)
         }
         
-        const newInlines = parseInlineContent(newText, block.id, block.position.start)
+        const newInlines = this.parseInline.parseInlineContent(newText, block.id, block.position.start)
         const { inline: newInline, position } = this.getInlineAtPosition(newInlines, absoluteCaretPosition) ?? { inline: null, position: 0 }
         if (!newInline) return null
 
-        block.text = newInlines.map(i => i.text.symbolic).join('')
+        block.text = newInlines.map((i: Inline) => i.text.symbolic).join('')
         block.position = { start: block.position.start, end: block.position.start + block.text.length }
         block.inlines = newInlines
-        newInlines.forEach(i => i.blockId = block.id)
+        newInlines.forEach((i: Inline) => i.blockId = block.id)
 
         return {
             renderEffect: {
