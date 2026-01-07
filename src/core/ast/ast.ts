@@ -2,64 +2,6 @@ import { uuid, decodeHTMLEntity } from "../utils/utils";
 import { Delimiter, DetectedBlock, Block, Inline } from '../types';
 import { CodeBlock, Paragraph, TableCell } from '../types';
 
-function parseInlines(block: Block): Inline[] {
-    const next: Inline[] = [];
-    const text = block.text;
-    const blockId = block.id;
-
-    if (text === "") {
-        next.push({
-            id: uuid(),
-            type: "text",
-            blockId,
-            text: { symbolic: "", semantic: "" },
-            position: { start: 0, end: 0 },
-        });
-        return next;
-    }
-
-    if (block.type === "codeBlock") {
-        const codeBlock = block as CodeBlock;
-        const codeContent = codeBlock.isFenced
-            ? extractFencedCodeContent(text, codeBlock.fence!)
-            : text;
-
-        next.push({
-            id: uuid(),
-            type: "text",
-            blockId,
-            text: { symbolic: text, semantic: codeContent },
-            position: { start: 0, end: text.length },
-        });
-        return next;
-    }
-
-    let parseText = text;
-    let textOffset = 0;
-    if (block.type === "heading") {
-        const match = text.match(/^(#{1,6})\s+/);
-        if (match) {
-            textOffset = match[0].length;
-            parseText = text.slice(textOffset);
-        }
-    }
-
-    const newFragments = parseInlineContent(parseText, blockId, textOffset);
-
-    for (const frag of newFragments) {
-        const inlineId = uuid();
-
-        next.push({
-            ...frag,
-            id: inlineId,
-            blockId,
-        });
-    }
-
-    return next;
-}
-
-
 function parseTableRow(line: string): TableCell[] {
     const cellTexts: string[] = [];
     let current = "";
@@ -132,7 +74,7 @@ function parseTableRow(line: string): TableCell[] {
     return cells;
 }
 
-function extractFencedCodeContent(text: string, fence: string): string {
+export function extractFencedCodeContent(text: string, fence: string): string {
     const lines = text.split("\n");
     if (lines.length <= 1) return "";
     const contentLines = lines.slice(1);

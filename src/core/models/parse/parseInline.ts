@@ -1,22 +1,73 @@
-import { Block, Inline } from "../../types"
-import { parseInlineContent } from '../../ast/ast'
+import { Block, Inline, CodeBlock } from "../../types"
+import { parseInlineContent, extractFencedCodeContent } from '../../ast/ast'
+import { uuid } from "../../utils/utils"
 
 class ParseInline {
     public apply(block: Block): Inline[] {
+        const inlines: Inline[] = []
         const text = block.text ?? ''
-        const offset = block.position?.start ?? 0
+        const blockId = block.id
 
-        if (text.length === 0) {
-            return [{
-                id: block.id + ':0',
+        if (text === '') {
+            inlines.push({
+                id: uuid(),
                 type: 'text',
-                blockId: block.id,
+                blockId,
                 text: { symbolic: '', semantic: '' },
-                position: { start: offset, end: offset },
-            }]
+                position: { start: 0, end: 0 },
+            })
+            return inlines
         }
 
-        return parseInlineContent(text, block.id, 0)
+        if (block.type === 'codeBlock') {
+            const codeBlock = block as CodeBlock
+            const semantic = codeBlock.isFenced
+                ? extractFencedCodeContent(text, codeBlock.fence!)
+                : text
+
+            inlines.push({
+                id: uuid(),
+                type: 'text',
+                blockId,
+                text: {
+                    symbolic: text,
+                    semantic,
+                },
+                position: {
+                    start: 0,
+                    end: text.length,
+                },
+            })
+
+            return inlines
+        }
+
+        let parseText = text
+        let textOffset = 0
+
+        if (block.type === 'heading') {
+            const match = text.match(/^(#{1,6})\s+/)
+            if (match) {
+                textOffset = match[0].length
+                parseText = text.slice(textOffset)
+            }
+        }
+
+        const newInlines = parseInlineContent(
+            parseText,
+            blockId,
+            textOffset
+        )
+
+        for (const inline of newInlines) {
+            inlines.push({
+                ...inline,
+                id: uuid(),
+                blockId,
+            })
+        }
+
+        return inlines
     }
 
     public applyRecursive(block: Block) {
