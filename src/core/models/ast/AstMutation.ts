@@ -30,7 +30,7 @@ class AstMutation {
         const beforeInlines = block.inlines.slice(0, inlineIndex)
         const afterInlines = block.inlines.slice(inlineIndex + 1)
     
-        const leftInlines = this.parser.inline.parseInlineContent(
+        const leftInlines = this.parser.inline.lexInline(
             leftText,
             block.id,
             block.position.start
@@ -38,7 +38,7 @@ class AstMutation {
     
         const rightBlockId = uuid()
     
-        const rightInlines = this.parser.inline.parseInlineContent(
+        const rightInlines = this.parser.inline.lexInline(
             rightText,
             rightBlockId,
             0
@@ -86,7 +86,7 @@ class AstMutation {
         const mergedText =
             leftInline.text.symbolic + rightInline.text.symbolic
     
-        const mergedInlines = this.parser.inline.parseInlineContent(
+        const mergedInlines = this.parser.inline.lexInline(
             mergedText,
             leftBlock.id,
             leftBlock.position.start

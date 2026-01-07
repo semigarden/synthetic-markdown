@@ -53,7 +53,7 @@ class ParseInline {
             }
         }
 
-        const newInlines = this.parseInlineContent(
+        const newInlines = this.lexInline(
             parseText,
             blockId,
             textOffset
@@ -88,7 +88,7 @@ class ParseInline {
         }
     }
 
-    public parseInlineContent(text: string, blockId: string, position: number = 0): Inline[] {
+    public lexInline(text: string, blockId: string, position: number = 0): Inline[] {
         const stream = new InlineStream(text)
         const result: Inline[] = []
         const delimiterStack: Delimiter[] = []

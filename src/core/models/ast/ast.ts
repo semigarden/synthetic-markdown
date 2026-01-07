@@ -95,7 +95,7 @@ class AST {
             return this.transformBlock(block, newText)
         }
         
-        const newInlines = this.parser.inline.parseInlineContent(newText, block.id, block.position.start)
+        const newInlines = this.parser.inline.lexInline(newText, block.id, block.position.start)
         const { inline: newInline, position } = this.query.getInlineAtPosition(newInlines, absoluteCaretPosition) ?? { inline: null, position: 0 }
         if (!newInline) return null
 
