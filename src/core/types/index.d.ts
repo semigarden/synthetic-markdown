@@ -233,19 +233,11 @@ interface DetectedBlock {
     label?: string;
 }
 
-interface ParseState {
-    inFencedCodeBlock: boolean;
-    codeBlockFence: string;
-    codeBlockId: string;
-}
-
-// Link reference definitions for reference-style links
 interface LinkReference {
     url: string;
     title?: string;
 }
 
-// Delimiter for emphasis processing
 interface Delimiter {
     type: '*' | '_' | '~';
     length: number;

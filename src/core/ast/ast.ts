@@ -1,16 +1,15 @@
 import { uuid, decodeHTMLEntity } from "../utils/utils";
-import { ParseState, Delimiter, DetectedBlock, Block, Inline } from '../types';
+import { Delimiter, DetectedBlock, Block, Inline } from '../types';
 import { CodeBlock, Paragraph, TableCell } from '../types';
 
 export function buildBlocks(text: string): Block[] {
     const lines = text.split("\n");
     let offset = 0;
     const blocks: Block[] = [];
-    const state: ParseState = {
-        inFencedCodeBlock: false,
-        codeBlockFence: "",
-        codeBlockId: "",
-    };
+
+    let inFencedCodeBlock = false;
+    let codeBlockFence = "";
+    let currentCodeBlock: Block | null = null;
 
     parseLinkReferenceDefinitions(text);
 
@@ -19,26 +18,20 @@ export function buildBlocks(text: string): Block[] {
         const start = offset;
         const end = offset + line.length;
 
-        if (state.inFencedCodeBlock) {
+        if (inFencedCodeBlock && currentCodeBlock) {
             const closeMatch = line.match(
-                new RegExp(`^\\s{0,3}${state.codeBlockFence.charAt(0)}{${state.codeBlockFence.length},}\\s*$`)
+                new RegExp(`^\\s{0,3}${codeBlockFence.charAt(0)}{${codeBlockFence.length},}\\s*$`)
             );
-            const currentBlock = blocks.find(b => b.id === state.codeBlockId) as Block;
+
+            currentCodeBlock.text += "\n" + line;
+            currentCodeBlock.position.end = end + 1;
 
             if (closeMatch) {
-                if (currentBlock) {
-                    currentBlock.text += "\n" + line;
-                    currentBlock.position.end = end + 1;
-                }
-                state.inFencedCodeBlock = false;
-                state.codeBlockFence = "";
-                state.codeBlockId = "";
-            } else {
-                if (currentBlock) {
-                    currentBlock.text += "\n" + line;
-                    currentBlock.position.end = end + 1;
-                }
+                inFencedCodeBlock = false;
+                codeBlockFence = "";
+                currentCodeBlock = null;
             }
+
             offset = end + 1;
             continue;
         }
@@ -119,14 +112,10 @@ export function buildBlocks(text: string): Block[] {
 
             case "codeBlock": {
                 const fenceMatch = line.match(/^(\s{0,3})(```+|~~~+)(.*)$/);
-                if (fenceMatch) {
-                    const newTempId = uuid();
-                    state.inFencedCodeBlock = true;
-                    state.codeBlockFence = fenceMatch[2];
-                    state.codeBlockId = newTempId;
 
+                if (fenceMatch) {
                     block = {
-                        id: newTempId,
+                        id: uuid(),
                         type: "codeBlock",
                         text: line,
                         language: fenceMatch[3].trim() || undefined,
@@ -135,7 +124,12 @@ export function buildBlocks(text: string): Block[] {
                         position: { start, end },
                         inlines: [],
                     };
+
                     blocks.push(block);
+
+                    inFencedCodeBlock = true;
+                    codeBlockFence = fenceMatch[2];
+                    currentCodeBlock = block;
                 } else {
                     block = {
                         id: uuid(),
