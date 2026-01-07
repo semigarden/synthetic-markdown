@@ -1,7 +1,7 @@
-import InlineStream from './inlineStream'
-import { parseLinkDestination } from './parseLinkDestination'
-import { Inline } from '../../types'
-import { uuid } from '../../utils/utils'
+import InlineStream from '../../inlineStream'
+import { parseLinkDestination } from '../parseLinkDestination'
+import { Inline } from '../../../../types'
+import { uuid } from '../../../../utils/utils'
 
 class ImageResolver {
     public tryParse(

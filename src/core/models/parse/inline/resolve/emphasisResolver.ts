@@ -1,5 +1,5 @@
-import { Inline, Delimiter } from '../../types'
-import { uuid } from '../../utils/utils'
+import { Inline, Delimiter } from '../../../../types'
+import { uuid } from '../../../../utils/utils'
 
 class EmphasisResolver {
     public apply(

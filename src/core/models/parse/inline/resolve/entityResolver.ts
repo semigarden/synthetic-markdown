@@ -1,6 +1,6 @@
-import InlineStream from './inlineStream'
-import { Inline } from '../../types'
-import { uuid, decodeHTMLEntity } from '../../utils/utils'
+import InlineStream from '../../inlineStream'
+import { Inline } from '../../../../types'
+import { uuid, decodeHTMLEntity } from '../../../../utils/utils'
 
 class EntityResolver {
     public tryParse(

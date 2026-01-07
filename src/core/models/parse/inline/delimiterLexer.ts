@@ -1,6 +1,6 @@
-import InlineStream from './inlineStream'
-import { Inline, Delimiter } from '../../types'
-import { uuid } from '../../utils/utils'
+import InlineStream from '../inlineStream'
+import { Inline, Delimiter } from '../../../types'
+import { uuid } from '../../../utils/utils'
 
 class DelimiterLexer {
     public tryLex(

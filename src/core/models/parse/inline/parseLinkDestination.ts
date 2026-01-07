@@ -1,4 +1,4 @@
-import InlineStream from './inlineStream'
+import InlineStream from '../inlineStream'
 
 export interface LinkDestination {
     url: string
@@ -24,7 +24,7 @@ export function parseLinkDestination(
 
     let url = ''
 
-    /* -------- angle-bracketed destination -------- */
+    // bracketed link destination
     if (stream.peek() === '<') {
         stream.next()
         const urlStart = stream.position()
@@ -41,7 +41,7 @@ export function parseLinkDestination(
 
         url = stream.slice(urlStart, stream.position() - 1)
     }
-    /* -------- unbracketed destination -------- */
+    // unbracketed link destination
     else {
         const urlStart = stream.position()
         let parenDepth = 0
@@ -74,7 +74,7 @@ export function parseLinkDestination(
         stream.next()
     }
 
-    /* -------- optional title -------- */
+    // optional title
     let title: string | undefined
 
     if (

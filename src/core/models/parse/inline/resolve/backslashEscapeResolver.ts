@@ -1,6 +1,6 @@
-import InlineStream from './inlineStream'
-import { Inline } from '../../types'
-import { uuid } from '../../utils/utils'
+import InlineStream from '../../inlineStream'
+import { Inline } from '../../../../types'
+import { uuid } from '../../../../utils/utils'
 
 class BackslashEscapeResolver {
     public tryParse(
