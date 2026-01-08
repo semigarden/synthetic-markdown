@@ -27,7 +27,6 @@ class ParseInline {
 
     public apply(block: Block): Inline[] {
         const text = block.text ?? ''
-        let inlines: Inline[] = []
         if (!text) return [{
             id: uuid(),
             type: 'text',
@@ -58,18 +57,10 @@ class ParseInline {
             if (match) {
                 textOffset = match[0].length
                 parseText = text.slice(textOffset)
-
-                inlines.push({
-                    id: uuid(),
-                    type: 'marker',
-                    blockId: block.id,
-                    text: { symbolic: match[0]!, semantic: '' },
-                    position: { start: textOffset, end: textOffset + match[0].length },
-                })
             }
         }
 
-        inlines.push(...this.lexInline(parseText, block.id, textOffset))
+        const inlines = this.lexInline(parseText, block.id, textOffset)
 
         return inlines.map(i => ({ ...i, id: uuid(), blockId: block.id }))
     }
@@ -78,7 +69,7 @@ class ParseInline {
         if ('blocks' in block && Array.isArray(block.blocks)) {
             block.blocks.forEach(b => this.applyRecursive(b))
         } else if (['paragraph', 'heading', 'codeBlock'].includes(block.type)) {
-            block.inlines = this.apply(block)
+            block.inlines.push(...this.apply(block))
         }
     }
 

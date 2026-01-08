@@ -1,4 +1,4 @@
-import { ParseBlockContext, Block, Inline, DetectedBlock } from "../../types"
+import { ParseBlockContext, Block, Inline, DetectedBlock, Marker } from "../../types"
 import { uuid } from "../../utils/utils"
 
 class ParseBlock {
@@ -55,6 +55,16 @@ class ParseBlock {
                     inlines: [],
                 }
                 blocks.push(block)
+
+                const markerText = '#'.repeat(detected.level!) + ' '
+                const marker: Marker = {
+                    id: uuid(),
+                    type: 'marker',
+                    blockId: block.id,
+                    text: { symbolic: markerText, semantic: '' },
+                    position: { start: start, end: start + markerText.length },
+                }
+                block.inlines.push(marker)
                 break
             }
 
