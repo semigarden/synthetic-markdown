@@ -1,4 +1,4 @@
-import { Block, Inline } from "../../types"
+import { Block, Inline, TableRow } from "../../types"
 import { uuid } from "../../utils/utils"
 
 class AstNormalizer {
@@ -53,6 +53,73 @@ class AstNormalizer {
                 block.position = { start, end: globalPos }
             
                 return text
+            }
+
+            if (block.type === 'table') {
+                const parts: string[] = []
+            
+                block.blocks.forEach((row, rowIndex) => {
+                    const rowText = updateBlock(row)
+                    parts.push(rowText)
+            
+                    if (rowIndex === 0) {
+                        parts.push('\n')
+                        globalPos += 1
+            
+                        const divider = (row as TableRow).blocks
+                            .map(() => '---')
+                            .join(' | ')
+            
+                        const dividerLine = `| ${divider} |`
+                        parts.push(dividerLine)
+                        globalPos += dividerLine.length
+                    }
+            
+                    if (rowIndex < block.blocks.length - 1) {
+                        parts.push('\n')
+                        globalPos += 1
+                    }
+                })
+            
+                text = parts.join('')
+                block.text = text
+                block.position = { start, end: globalPos }
+                return text
+            }
+
+            if (block.type === 'tableRow') {
+                const parts: string[] = []
+            
+                parts.push('| ')
+                globalPos += 2
+            
+                block.blocks.forEach((cell, i) => {
+                    const cellText = updateBlock(cell)
+                    parts.push(cellText)
+            
+                    if (i < block.blocks.length - 1) {
+                        parts.push(' | ')
+                        globalPos += 3
+                    }
+                })
+            
+                parts.push(' |')
+                globalPos += 2
+            
+                text = parts.join('')
+                block.text = text
+                block.position = { start, end: globalPos }
+                return text
+            }
+
+            if (block.type === 'tableCell') {
+                const paragraph = block.blocks[0]
+                const cellText = updateBlock(paragraph)
+            
+                block.text = cellText
+                block.position = { start, end: globalPos }
+            
+                return cellText
             }
 
             if (block.type === 'list') {

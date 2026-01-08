@@ -53,6 +53,9 @@ class ParseInline {
     }
 
     public applyRecursive(block: Block) {
+        if (block.type === 'tableCell') {
+            block.inlines = this.apply(block)
+        }
         if ('blocks' in block && Array.isArray(block.blocks)) {
             block.blocks.forEach(b => this.applyRecursive(b))
         } else if (['paragraph', 'heading', 'codeBlock', 'thematicBreak'].includes(block.type)) {

@@ -1,4 +1,4 @@
-import { ParseBlockContext, Block, Inline, DetectedBlock, Marker } from "../../types"
+import { ParseBlockContext, DetectedBlock, Block, Table, TableRow, TableCell } from "../../types"
 import { uuid } from "../../utils/utils"
 
 class ParseBlock {
@@ -10,6 +10,15 @@ class ParseBlock {
             codeBlockFence: '',
             currentCodeBlock: null,
         }
+    }
+
+    public flush(offset: number): Block[] | null {
+        if (this.context.table) {
+            const table = this.context.table
+            this.context.table = undefined
+            return [this.buildTableBlock(table)]
+        }
+        return null
     }
 
     public line(line: string, offset: number): Block[] | null {
@@ -39,6 +48,30 @@ class ParseBlock {
             }
 
             return null
+        }
+
+        if (this.context.table) {
+            const table = this.context.table
+        
+            if (!table.dividerLine) {
+                if (this.isTableDivider(line)) {
+                    table.dividerLine = line
+                    return null
+                }
+        
+                this.context.table = undefined
+                return this.line(table.headerLine, table.start)
+            }
+        
+            if (/\|/.test(line)) {
+                table.rows.push(line)
+                return null
+            }
+        
+            const block = this.buildTableBlock(table)
+            this.context.table = undefined
+        
+            return [block, ...(this.line(line, offset) ?? [])]
         }
 
         const detected = this.detectType(line)
@@ -126,6 +159,15 @@ class ParseBlock {
                     blocks.push(list)
                 }
                 break
+            }
+
+            case 'table': {
+                this.context.table = {
+                    start,
+                    headerLine: line,
+                    rows: []
+                }
+                return null
             }
 
             case 'codeBlock': {
@@ -271,6 +313,68 @@ class ParseBlock {
             isFencedCodeBlock: false,
             codeBlockFence: '',
             currentCodeBlock: null,
+            table: undefined,
+        }
+    }
+
+    private isTableDivider(line: string): boolean {
+        return /^\s*\|?\s*[-:]+(\s*\|\s*[-:]+)+\s*\|?\s*$/.test(line)
+    }
+    
+    private splitRow(line: string): string[] {
+        return line
+            .trim()
+            .replace(/^\||\|$/g, '')
+            .split('|')
+            .map(c => c.trim())
+    }
+
+    private buildTableBlock(context: {start: number; headerLine: string; dividerLine?: string; rows: string[]}): Table {
+        const makeCell = (text: string): TableCell => {
+            const paragraph: Block = {
+                id: uuid(),
+                type: 'paragraph',
+                text,
+                position: { start: 0, end: text.length },
+                inlines: [],
+            }
+    
+            return {
+                id: uuid(),
+                type: 'tableCell',
+                text,
+                position: { start: 0, end: text.length },
+                blocks: [paragraph],
+                inlines: [],
+            }
+        }
+    
+        const makeRow = (line: string): TableRow => {
+            const cells = this.splitRow(line).map(makeCell)
+    
+            return {
+                id: uuid(),
+                type: 'tableRow',
+                text: line,
+                position: { start: 0, end: line.length },
+                blocks: cells,
+                inlines: [],
+            }
+        }
+    
+        const header = makeRow(context.headerLine)
+        const rows = context.rows.map(makeRow)
+    
+        return {
+            id: uuid(),
+            type: 'table',
+            text: '',
+            position: {
+                start: context.start,
+                end: context.start + context.headerLine.length,
+            },
+            blocks: [header, ...rows],
+            inlines: [],
         }
     }
 }

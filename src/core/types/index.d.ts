@@ -9,6 +9,13 @@ export type ParseBlockContext = {
     isFencedCodeBlock: boolean
     codeBlockFence: string
     currentCodeBlock: Block | null
+
+    table?: {
+        start: number
+        headerLine: string
+        dividerLine?: string
+        rows: string[]
+    }
 }
 
 type AstEffect = 

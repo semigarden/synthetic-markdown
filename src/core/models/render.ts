@@ -50,6 +50,24 @@ class Render {
                     element.classList.add('listItem')
                     break
 
+                case 'table':
+                    element = document.createElement('table')
+                    element.classList.add('table')
+                    const tbody = document.createElement('tbody')
+                    element.appendChild(tbody)
+                    element = tbody
+                    break
+                
+                case 'tableRow':
+                    element = document.createElement('tr')
+                    element.classList.add('tableRow')
+                    break
+                
+                case 'tableCell':
+                    element = document.createElement('td')
+                    element.classList.add('tableCell')
+                    break
+
                 case 'thematicBreak':
                     element = document.createElement('hr')
                     element.classList.add('thematicBreak')
@@ -72,6 +90,19 @@ class Render {
                     this.renderBlock(child, element)
                 }
                 break
+
+            case 'table':
+                case 'tableRow':
+                    for (const child of block.blocks) {
+                        this.renderBlock(child, element)
+                    }
+                    break
+            
+                case 'tableCell':
+                    for (const child of block.blocks) {
+                        this.renderBlock(child, element)
+                    }
+                    break
         
             case 'codeBlock':
                 const code = element.querySelector('code') as HTMLElement || document.createElement('code')

@@ -26,6 +26,9 @@ class ParseAst {
             offset += line.length + 1
         }
 
+        const flushed = this.block.flush(offset)
+        if (flushed) blocks.push(...flushed)
+
         for (const block of blocks) {
             this.inline.applyRecursive(block)
         }
@@ -44,12 +47,13 @@ class ParseAst {
             offset += line.length + 1
         }
 
+        const flushed = this.block.flush(offset)
+        if (flushed) blocks.push(...flushed)
+
         for (const block of blocks) {
             this.inline.applyRecursive(block)
         }
 
-        console.log('blocks', JSON.stringify(blocks, null, 2))
-    
         return blocks
     }
 
