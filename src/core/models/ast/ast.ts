@@ -87,7 +87,7 @@ class AST {
             detectedBlockType.type !== block.type ||
             (detectedBlockType.type === 'heading' && block.type === 'heading' && detectedBlockType.level !== block.level)
         
-        const ignoreTypes = ['blankLine', 'heading', 'thematicBreak', 'codeBlock']
+        const ignoreTypes = ['blankLine', 'thematicBreak', 'codeBlock']
         if (blockTypeChanged && !ignoreTypes.includes(detectedBlockType.type)) {
             return this.transformBlock(block, newText)
         }
