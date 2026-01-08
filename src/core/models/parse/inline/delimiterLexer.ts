@@ -11,7 +11,7 @@ class DelimiterLexer {
         delimiterStack: Delimiter[]
     ): boolean {
         const ch = stream.peek()
-        if (ch !== '*' && ch !== '_') return false
+        if (ch !== '*' && ch !== '_' && ch !== '~') return false
 
         const start = stream.position()
         const char = stream.next()!

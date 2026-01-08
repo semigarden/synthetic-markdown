@@ -1,10 +1,10 @@
 import { Inline, Delimiter } from '../../../../types'
 import { uuid } from '../../../../utils/utils'
 
-class EmphasisResolver {
+class StrikethroughResolver {
     public apply(nodes: Inline[], delimiters: Delimiter[], blockId: string) {
         if (!delimiters.length) return
-        if (delimiters.some(d => d.type !== '*' && d.type !== '_')) return
+        if (delimiters.some(d => d.type !== '~')) return
 
         let current = 0
 
@@ -38,7 +38,7 @@ class EmphasisResolver {
 
             const opener = delimiters[openerIndex]
             const useLength = Math.min(opener.length, closer.length, 2);
-            const type = useLength === 2 ? 'strong' : 'emphasis'
+            const type = useLength === 2 ? 'strikethrough' : 'text'
 
             const startNodeIndex = opener.position
             const endNodeIndex = closer.position
@@ -57,7 +57,7 @@ class EmphasisResolver {
                 }
             }
 
-            const emphasisNode = {
+            const strikethroughNode = {
                 id: uuid(),
                 type,
                 blockId,
@@ -69,7 +69,7 @@ class EmphasisResolver {
             } as Inline
 
             const deleteCount = endNodeIndex - startNodeIndex + 1
-            nodes.splice(startNodeIndex, deleteCount, emphasisNode)
+            nodes.splice(startNodeIndex, deleteCount, strikethroughNode)
 
             delimiters.splice(current, 1)
             delimiters.splice(openerIndex, 1)
@@ -86,4 +86,4 @@ class EmphasisResolver {
     }
 }
 
-export default EmphasisResolver
+export default StrikethroughResolver

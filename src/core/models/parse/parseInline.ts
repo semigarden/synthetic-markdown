@@ -7,6 +7,7 @@ import EntityResolver from './inline/resolve/entityResolver'
 import BackslashEscapeResolver from './inline/resolve/backslashEscapeResolver'
 import EmphasisResolver from './inline/resolve/emphasisResolver'
 import DelimiterLexer from './inline/delimiterLexer'
+import StrikethroughResolver from './inline/resolve/strikethroughResolver'
 import LinkReferenceState from './linkReferenceState'
 import { Block, Inline, CodeBlock, TableCell, Paragraph, Delimiter } from '../../types'
 import { uuid, decodeHTMLEntity } from '../../utils/utils'
@@ -19,6 +20,7 @@ class ParseInline {
     private entityResolver = new EntityResolver()
     private backslashEscapeResolver = new BackslashEscapeResolver()
     private emphasisResolver = new EmphasisResolver()
+    private strikethroughResolver = new StrikethroughResolver()
     private delimiterLexer = new DelimiterLexer()
 
     constructor(private linkReferences: LinkReferenceState) {
@@ -162,8 +164,8 @@ class ParseInline {
                 }   
             }
     
-            // Delimiters (*, _)
-            if (ch === '*' || ch === '_') {
+            // Delimiters (*, _, ~)
+            if (ch === '*' || ch === '_' || ch === '~') {
                 flushText()
                 if (this.delimiterLexer.tryLex(stream, blockId, position, result, delimiterStack)) {
                     textStart = stream.position()
@@ -176,6 +178,9 @@ class ParseInline {
     
         flushText()
 
+        this.emphasisResolver.apply(result, delimiterStack, blockId)
+        this.strikethroughResolver.apply(result, delimiterStack, blockId)
+
         if (result.length === 0) {
             result.push({
                 id: uuid(),
@@ -186,8 +191,6 @@ class ParseInline {
             })
         }
 
-        this.emphasisResolver.apply(result, delimiterStack, blockId)
-    
         return result
     }
 
