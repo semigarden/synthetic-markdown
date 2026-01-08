@@ -13,8 +13,8 @@ import { Block, Inline, CodeBlock, TableCell, Paragraph, Delimiter } from '../..
 import { uuid, decodeHTMLEntity } from '../../utils/utils'
 
 class ParseInline {
-    private linkResolver: LinkResolver
-    private autoLinkResolver: AutoLinkResolver
+    private linkResolver = new LinkResolver()
+    private autoLinkResolver = new AutoLinkResolver()
     private imageResolver = new ImageResolver()
     private codeSpanResolver = new CodeSpanResolver()
     private entityResolver = new EntityResolver()
@@ -23,10 +23,7 @@ class ParseInline {
     private strikethroughResolver = new StrikethroughResolver()
     private delimiterLexer = new DelimiterLexer()
 
-    constructor(private linkReferences: LinkReferenceState) {
-        this.linkResolver = new LinkResolver(this.linkReferences)
-        this.autoLinkResolver = new AutoLinkResolver(this.linkReferences)
-    }
+    constructor(private linkReferences: LinkReferenceState) {}
 
     public apply(block: Block): Inline[] {
         const text = block.text ?? ''
@@ -133,9 +130,9 @@ class ParseInline {
     
             // Images
             if (ch === '!' && stream.peek(1) === '[') {
+                flushText()
                 const img = this.imageResolver.tryParse(stream, blockId, position)
                 if (img) {
-                    flushText()
                     result.push(img)
                     textStart = stream.position()
                     continue
@@ -144,9 +141,9 @@ class ParseInline {
     
             // Links
             if (ch === '[') {
+                flushText()
                 const link = this.linkResolver.tryParse(stream, blockId, position)
                 if (link) {
-                    flushText()
                     result.push(link)
                     textStart = stream.position()
                     continue
@@ -155,9 +152,9 @@ class ParseInline {
 
             // Autolinks
             if (ch === '<') {
+                flushText()
                 const autolink = this.autoLinkResolver.tryParse(stream, blockId, position)
                 if (autolink) {
-                    flushText()
                     result.push(autolink)
                     textStart = stream.position()
                     continue

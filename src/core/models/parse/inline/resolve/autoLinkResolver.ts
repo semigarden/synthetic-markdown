@@ -1,12 +1,8 @@
 import InlineStream from '../inlineStream'
-import LinkReferenceState from '../../linkReferenceState'
-import { parseLinkDestination } from '../parseLinkDestination'
 import { Inline } from '../../../../types'
 import { uuid } from '../../../../utils/utils'
 
 class AutoLinkResolver {
-    constructor(private linkReferences: LinkReferenceState) {}
-
     public tryParse(
         stream: InlineStream,
         blockId: string,

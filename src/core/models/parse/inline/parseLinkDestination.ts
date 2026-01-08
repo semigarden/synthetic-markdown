@@ -9,7 +9,6 @@ export function parseLinkDestination(
     stream: InlineStream
 ): LinkDestination | null {
     const start = stream.checkpoint()
-
     if (!stream.consume('(')) return null
 
     // skip whitespace
@@ -67,6 +66,7 @@ export function parseLinkDestination(
         }
 
         url = stream.slice(urlStart, stream.position())
+        console.log('url', url)
     }
 
     // skip whitespace
