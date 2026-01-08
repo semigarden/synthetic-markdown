@@ -33,10 +33,7 @@ class ParseAst {
         return blocks
     }
 
-    public reparseTextFragment(
-        text: string,
-        offset: number,
-    ): Block[] {
+    public reparseTextFragment(text: string, offset: number): Block[] {
         this.block.reset()
     
         const blocks: Block[] = []
@@ -50,7 +47,7 @@ class ParseAst {
         for (const block of blocks) {
             this.inline.applyRecursive(block)
         }
-    
+
         return blocks
     }
 
