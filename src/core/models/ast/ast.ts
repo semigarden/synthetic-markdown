@@ -87,7 +87,7 @@ class AST {
             detectedBlockType.type !== block.type ||
             (detectedBlockType.type === 'heading' && block.type === 'heading' && detectedBlockType.level !== block.level)
         
-        const ignoreTypes = ['blankLine', 'thematicBreak', 'codeBlock']
+        const ignoreTypes = ['blankLine', 'codeBlock']
         if (blockTypeChanged && !ignoreTypes.includes(detectedBlockType.type)) {
             return this.transformBlock(block, newText, caretPosition)
         }
@@ -253,14 +253,11 @@ class AST {
         const detectedBlockType = this.parser.block.detectType(newText)
 
         const blockTypeChanged =
-        detectedBlockType.type !== leftBlock.type ||
-        (
-            detectedBlockType.type === 'heading' &&
-            leftBlock.type === 'heading' &&
-            detectedBlockType.level !== leftBlock.level
-        )
-
-        if (blockTypeChanged) {
+            detectedBlockType.type !== leftBlock.type ||
+            (detectedBlockType.type === 'heading' && leftBlock.type === 'heading' && detectedBlockType.level !== leftBlock.level)
+        
+        const ignoreTypes = ['blankLine', 'codeBlock']
+        if (blockTypeChanged && !ignoreTypes.includes(detectedBlockType.type)) {
             return this.transformBlock(leftBlock, newText, caretPosition)
         }
 

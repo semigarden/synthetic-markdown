@@ -155,6 +155,18 @@ class ParseBlock {
                 break
             }
 
+            case 'thematicBreak': {
+                block = {
+                    id: uuid(),
+                    type: 'thematicBreak',
+                    text: line,
+                    position: { start, end },
+                    inlines: [],
+                }
+                blocks.push(block)
+                break
+            }
+
             case 'paragraph':
             default: {
                 block = {

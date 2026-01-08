@@ -98,7 +98,7 @@ class ParseInline {
 
             // Marker
             if (stream.position() === 0) {
-                const marker = this.markerResolver.tryParse(stream, text,blockId, blockType, position)
+                const marker = this.markerResolver.tryParse(stream, text, blockId, blockType, position)
                 if (marker) {
                     result.push(marker)
                     textStart = stream.position()

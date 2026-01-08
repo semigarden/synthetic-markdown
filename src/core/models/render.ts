@@ -45,6 +45,11 @@ class Render {
                     element.classList.add('listItem')
                     break
 
+                case 'thematicBreak':
+                    element = document.createElement('hr')
+                    element.classList.add('thematicBreak')
+                    break
+
                 default:
                     element = document.createElement('div')
             }

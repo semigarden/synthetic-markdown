@@ -10,27 +10,48 @@ class MarkerResolver {
         blockType: string,
         position: number
     ): Inline | null {
-        if (blockType !== 'heading') return null
         if (stream.position() !== 0) return null
 
-        const match = text.match(/^(#{1,6})(\s+|$)/)
-        if (!match) return null
+        if (blockType === 'heading') {
+            const match = text.match(/^(#{1,6})(\s+|$)/)
+            if (!match) return null
 
-        const markerText = match[1] + (match[2] ? ' ' : '')
-        const length = markerText.length
+            const markerText = match[1] + (match[2] ? ' ' : '')
+            const length = markerText.length
 
-        stream.advance(length)
+            stream.advance(length)
 
-        return {
-            id: uuid(),
-            type: 'marker',
-            blockId,
-            text: { symbolic: markerText, semantic: '' },
-            position: {
-                start: position,
-                end: position + length
+            return {
+                id: uuid(),
+                type: 'marker',
+                blockId,
+                text: { symbolic: markerText, semantic: '' },
+                position: {
+                    start: position,
+                    end: position + length
+                }
             }
         }
+
+        if (blockType === 'thematicBreak') {
+            const match = /^\s{0,3}([-*_])(?:\s*\1){2,}\s*$/.test(text)
+            if (!match) return null
+
+            stream.advance(text.length)
+
+            return {
+                id: uuid(),
+                type: 'marker',
+                blockId,
+                text: { symbolic: text, semantic: '' },
+                position: {
+                    start: position,
+                    end: position + text.length
+                }
+            }
+        }
+
+        return null
     }
 }
 
