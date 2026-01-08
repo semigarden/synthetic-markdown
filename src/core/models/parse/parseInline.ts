@@ -27,6 +27,7 @@ class ParseInline {
 
     public apply(block: Block): Inline[] {
         const text = block.text ?? ''
+        let inlines: Inline[] = []
         if (!text) return [{
             id: uuid(),
             type: 'text',
@@ -57,10 +58,18 @@ class ParseInline {
             if (match) {
                 textOffset = match[0].length
                 parseText = text.slice(textOffset)
+
+                inlines.push({
+                    id: uuid(),
+                    type: 'marker',
+                    blockId: block.id,
+                    text: { symbolic: match[0]!, semantic: '' },
+                    position: { start: textOffset, end: textOffset + match[0].length },
+                })
             }
         }
 
-        const inlines = this.lexInline(parseText, block.id, textOffset)
+        inlines.push(...this.lexInline(parseText, block.id, textOffset))
 
         return inlines.map(i => ({ ...i, id: uuid(), blockId: block.id }))
     }

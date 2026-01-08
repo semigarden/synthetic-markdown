@@ -4,6 +4,7 @@ import { EditContext } from '../types'
 
 class Selection {
     private rafId: number | null = null
+    private focusedBlockId: string | null = null
     private focusedInlineId: string | null = null
 
     constructor(
@@ -49,6 +50,24 @@ class Selection {
         
         const inline = this.ast.query.getInlineById(target.dataset.inlineId!)
         if (!inline) return
+
+        const block = this.ast.query.getBlockById(inline.blockId)
+        if (!block) return
+
+        const marker = block.inlines.find(i => i.type === 'marker')
+        if (marker && marker.text.symbolic.length > 0 && block.id !== this.focusedBlockId) {
+            const blockElement = this.rootElement.querySelector(`[data-block-id="${block.id}"]`) as HTMLElement
+            if (blockElement) {
+                const markerElement = this.rootElement.querySelector(`[data-inline-id="${marker.id}"]`) as HTMLElement
+                if (markerElement) {
+                    markerElement.innerHTML = ''
+                    const newTextNode = document.createTextNode(marker.text.symbolic)
+                    markerElement.appendChild(newTextNode)
+
+                    this.focusedBlockId = block.id
+                }
+            }
+        }
 
         const selection = window.getSelection()
         if (!selection || selection.rangeCount === 0) return
@@ -111,6 +130,24 @@ class Selection {
                     inlineEl.innerHTML = ''
                     const newTextNode = document.createTextNode(inline.text.semantic)
                     inlineEl.appendChild(newTextNode)
+                }
+
+                const block = this.ast.query.getBlockById(inline.blockId)
+                if (block) {
+                    const marker = block.inlines.find(i => i.type === 'marker')
+                    if (marker && marker.text.symbolic.length) {
+                        const blockElement = this.rootElement.querySelector(`[data-block-id="${block.id}"]`) as HTMLElement
+                        if (blockElement) {
+                            const markerElement = this.rootElement.querySelector(`[data-inline-id="${marker.id}"]`) as HTMLElement
+                            if (markerElement) {
+                                markerElement.innerHTML = ''
+                                const newTextNode = document.createTextNode(marker.text.semantic)
+                                markerElement.append(newTextNode)
+
+                                this.focusedBlockId = null
+                            }
+                        }
+                    }
                 }
             }
         }

@@ -162,6 +162,7 @@ interface InlineType<T extends string = string> {
 }
 
 export type Inline =
+    | Marker
     | Text
     | Emphasis
     | Strong
@@ -177,6 +178,8 @@ export type Inline =
     | RawHTML
     | Entity
 
+interface Marker extends InlineType<'marker'> {
+}
 interface Text extends InlineType<'text'> {
 }
 
