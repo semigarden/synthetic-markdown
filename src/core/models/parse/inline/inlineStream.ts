@@ -66,6 +66,13 @@ class InlineStream {
         return false
     }
 
+    public advance(count: number): void {
+        this.currentPosition = Math.min(
+            this.currentPosition + count,
+            this.input.length
+        )
+    }
+
     public checkpoint(): number {
         return this.currentPosition
     }

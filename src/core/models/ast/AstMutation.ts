@@ -26,6 +26,7 @@ class AstMutation {
         const leftInlines = this.parser.inline.lexInline(
             leftText,
             block.id,
+            block.type,
             block.position.start
         )
     
@@ -34,6 +35,7 @@ class AstMutation {
         const rightInlines = this.parser.inline.lexInline(
             rightText,
             rightBlockId,
+            block.type,
             0
         ).concat(afterInlines)
     
@@ -76,6 +78,7 @@ class AstMutation {
             const mergedInlines = this.parser.inline.lexInline(
                 mergedText,
                 leftBlock.id,
+                leftBlock.type,
                 leftBlock.position.start
             )
 
@@ -100,6 +103,7 @@ class AstMutation {
         const mergedInlines = this.parser.inline.lexInline(
             mergedText,
             leftBlock.id,
+            leftBlock.type,
             leftBlock.position.start
         )
 

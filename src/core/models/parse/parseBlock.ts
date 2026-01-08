@@ -55,16 +55,6 @@ class ParseBlock {
                     inlines: [],
                 }
                 blocks.push(block)
-
-                const markerText = '#'.repeat(detected.level!) + ' '
-                const marker: Marker = {
-                    id: uuid(),
-                    type: 'marker',
-                    blockId: block.id,
-                    text: { symbolic: markerText, semantic: '' },
-                    position: { start: start, end: start + markerText.length },
-                }
-                block.inlines.push(marker)
                 break
             }
 

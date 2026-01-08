@@ -1,4 +1,5 @@
 import InlineStream from './inline/inlineStream'
+import MarkerResolver from './inline/resolve/markerResolver'
 import LinkResolver from './inline/resolve/linkResolver'
 import AutoLinkResolver from './inline/resolve/autoLinkResolver'
 import ImageResolver from './inline/resolve/imageResolver'
@@ -13,6 +14,7 @@ import { Block, Inline, CodeBlock, TableCell, Paragraph, Delimiter } from '../..
 import { uuid, decodeHTMLEntity } from '../../utils/utils'
 
 class ParseInline {
+    private markerResolver = new MarkerResolver()
     private linkResolver = new LinkResolver()
     private autoLinkResolver = new AutoLinkResolver()
     private imageResolver = new ImageResolver()
@@ -27,14 +29,6 @@ class ParseInline {
 
     public apply(block: Block): Inline[] {
         const text = block.text ?? ''
-
-        if (!text) return [{
-            id: uuid(),
-            type: 'text',
-            blockId: block.id,
-            text: { symbolic: '', semantic: '' },
-            position: { start: 0, end: 0 },
-        }]
 
         if (block.type === 'codeBlock') {
             const codeBlock = block as CodeBlock
@@ -53,15 +47,7 @@ class ParseInline {
 
         let parseText = text
         let textOffset = 0
-        if (block.type === 'heading') {
-            const match = text.match(/^(#{1,6})\s+/)
-            if (match) {
-                textOffset = match[0].length
-                parseText = text.slice(textOffset)
-            }
-        }
-
-        const inlines = this.lexInline(parseText, block.id, textOffset)
+        const inlines = this.lexInline(parseText, block.id, block.type, textOffset)
 
         return inlines.map(i => ({ ...i, id: uuid(), blockId: block.id }))
     }
@@ -70,15 +56,27 @@ class ParseInline {
         if ('blocks' in block && Array.isArray(block.blocks)) {
             block.blocks.forEach(b => this.applyRecursive(b))
         } else if (['paragraph', 'heading', 'codeBlock'].includes(block.type)) {
-            block.inlines.push(...this.apply(block))
+            block.inlines = this.apply(block)
         }
     }
 
-    public lexInline(text: string, blockId: string, position: number = 0): Inline[] {
+    public lexInline(text: string, blockId: string, blockType: string, position: number = 0): Inline[] {
         const stream = new InlineStream(text)
         const result: Inline[] = []
         const delimiterStack: Delimiter[] = []
         let textStart = 0
+
+        if (text.length === 0) {
+            result.push({
+                id: uuid(),
+                type: 'text',
+                blockId,
+                text: { symbolic: '', semantic: '' },
+                position: { start: position, end: position }
+            })
+
+            return result
+        }
     
         const flushText = () => {
             const end = stream.position()
@@ -97,6 +95,16 @@ class ParseInline {
     
         while (!stream.end()) {
             const ch = stream.peek()!
+
+            // Marker
+            if (stream.position() === 0) {
+                const marker = this.markerResolver.tryParse(stream, text,blockId, blockType, position)
+                if (marker) {
+                    result.push(marker)
+                    textStart = stream.position()
+                    continue
+                }
+            }
     
             // Backslash escapes
             const escape = this.backslashEscapeResolver.tryParse(stream, blockId, position)
@@ -178,16 +186,6 @@ class ParseInline {
 
         this.emphasisResolver.apply(result, delimiterStack, blockId)
         this.strikethroughResolver.apply(result, delimiterStack, blockId)
-
-        if (result.length === 0) {
-            result.push({
-                id: uuid(),
-                type: 'text',
-                blockId,
-                text: { symbolic: '', semantic: '' },
-                position: { start: position, end: position }
-            })
-        }
 
         return result
     }
