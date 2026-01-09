@@ -25,6 +25,7 @@ type AstEffect =
  | { type: 'mergeInline'; leftInlineId: string; rightInlineId: string }
  | { type: 'indentListItem'; listItemId: string }
  | { type: 'outdentListItem'; listItemId: string }
+ | { type: 'mergeTableCell'; cellId: string }
 
 export type AstApplyEffect = {
     renderEffect: RenderEffect

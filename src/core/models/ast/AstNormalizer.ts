@@ -96,6 +96,7 @@ class AstNormalizer {
 
             if (block.type === 'table') {
                 const parts: string[] = []
+                const maxCells = Math.max(...block.blocks.map(r => (r as TableRow).blocks.length))
             
                 block.blocks.forEach((row, rowIndex) => {
                     const rowText = updateBlock(row)
@@ -105,10 +106,7 @@ class AstNormalizer {
                         parts.push('\n')
                         globalPos += 1
             
-                        const divider = (row as TableRow).blocks
-                            .map(() => '---')
-                            .join(' | ')
-            
+                        const divider = Array(maxCells).fill('---').join(' | ')
                         const dividerLine = `| ${divider} |`
                         parts.push(dividerLine)
                         globalPos += dividerLine.length
@@ -178,8 +176,8 @@ class AstNormalizer {
 
         this.text = parts.join('')
 
-        console.log('blocks', JSON.stringify(blocks, null, 2))
-        console.log('this.text', this.text)
+        // console.log('blocks', JSON.stringify(blocks, null, 2))
+        // console.log('this.text', this.text)
     }
 }
 

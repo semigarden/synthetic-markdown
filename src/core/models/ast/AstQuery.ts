@@ -60,7 +60,9 @@ class AstQuery {
 
     public getParentBlock(block: Block): Block | null {
         const flattenedBlocks = this.flattenBlocks(this.blocks)
-        const flatParentBlock = flattenedBlocks.find(b => b.block.type === 'list' && b.block.blocks?.some(b => b.id === block.id)) ?? flattenedBlocks.find(b => b.block.type === 'listItem' && b.block.blocks?.some(b => b.id === block.id))
+        const flatParentBlock = flattenedBlocks.find(b => 
+            'blocks' in b.block && b.block.blocks?.some(child => child.id === block.id)
+        )
         return flatParentBlock?.block ?? null
     }
 

@@ -20,7 +20,6 @@ class AST {
     setText(text: string) {
         this.text = text
         this.blocks = this.parser.parse(text)
-        console.log('blocks', JSON.stringify(this.blocks, null, 2))
     }
 
     public get query() {
@@ -529,6 +528,86 @@ class AST {
                     blockId: firstParagraph.id,
                     inlineId: inline.id,
                     position: inline.position.end,
+                    affinity: 'start',
+                },
+            },
+        }
+    }
+
+    public mergeTableCell(cellId: string): AstApplyEffect | null {
+        const cell = this.query.getBlockById(cellId) as TableCell
+        console.log('cell', JSON.stringify(cell, null, 2))
+        if (!cell || cell.type !== 'tableCell') return null
+
+        const flat = this.query.flattenBlocks(this.blocks)
+        const rowEntry = flat.find(e => e.block.type === 'tableRow' && (e.block as TableRow).blocks.some(c => c.id === cellId))
+        if (!rowEntry) return null
+
+        const row = rowEntry.block as TableRow
+        const cellIndex = row.blocks.findIndex(c => c.id === cellId)
+
+        const tableEntry = flat.find(e => e.block.type === 'table' && (e.block as Table).blocks.some(r => r.id === row.id))
+        if (!tableEntry) return null
+
+        const table = tableEntry.block as Table
+        const rowIndex = table.blocks.findIndex(r => r.id === row.id)
+
+        let prevCell: TableCell | null = null
+        let prevRow: TableRow | null = null
+
+        if (cellIndex > 0) {
+            prevCell = row.blocks[cellIndex - 1] as TableCell
+            prevRow = row
+        } else if (rowIndex > 0) {
+            prevRow = table.blocks[rowIndex - 1] as TableRow
+            prevCell = prevRow.blocks[prevRow.blocks.length - 1] as TableCell
+        }
+
+        if (!prevCell || !prevRow) return null
+
+        const prevParagraph = prevCell.blocks[0]
+        const currParagraph = cell.blocks[0]
+        
+        const mergedText = prevParagraph.text + currParagraph.text
+        const newInlines = this.parser.inline.lexInline(mergedText, prevParagraph.id, prevParagraph.type, prevParagraph.position.start)
+        
+        const caretPosition = prevParagraph.text.length
+        const { inline: caretInline, position } = this.query.getInlineAtPosition(newInlines, caretPosition) ?? { inline: null, position: 0 }
+        if (!caretInline) return null
+
+        prevParagraph.text = mergedText
+        prevParagraph.inlines = newInlines
+        newInlines.forEach((i: Inline) => i.blockId = prevParagraph.id)
+
+        prevCell.text = mergedText
+        prevCell.inlines = this.parser.inline.lexInline(mergedText, prevCell.id, 'tableCell', prevCell.position.start)
+        prevCell.inlines.forEach((i: Inline) => i.blockId = prevCell.id)
+
+        row.blocks.splice(cellIndex, 1)
+
+        const blocksToRemove: Block[] = [cell]
+
+        if (row.blocks.length === 0) {
+            table.blocks.splice(rowIndex, 1)
+            blocksToRemove.push(row)
+        }
+
+        return {
+            renderEffect: {
+                type: 'update',
+                render: {
+                    remove: blocksToRemove,
+                    insert: [
+                        { at: 'current', target: prevCell, current: prevCell },
+                    ],
+                },
+            },
+            caretEffect: {
+                type: 'restore',
+                caret: {
+                    blockId: prevParagraph.id,
+                    inlineId: caretInline.id,
+                    position: position,
                     affinity: 'start',
                 },
             },

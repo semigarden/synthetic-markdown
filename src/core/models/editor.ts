@@ -76,6 +76,17 @@ class Editor {
     private resolveMerge(context: EditContext): EditEffect {
         if (this.caret.getPositionInInline(context.inlineElement) !== 0) return { preventDefault: false }
 
+        const tableCell = this.ast.query.getParentBlock(context.block)
+        if (tableCell?.type === 'tableCell') {
+            const isFirstInline = context.inlineIndex === 0
+            if (isFirstInline) {
+                return {
+                    preventDefault: true,
+                    ast: [{ type: 'mergeTableCell', cellId: tableCell.id }],
+                }
+            }
+        }
+
         const listItem = this.ast.query.getParentBlock(context.block)
         if (listItem?.type === 'listItem') {
             const list = this.ast.query.getListFromBlock(listItem)
@@ -135,7 +146,7 @@ class Editor {
     public apply(effect: EditEffect) {
         if (effect.ast) {
             effect.ast.forEach(effect => {
-                const effectTypes = ['input', 'splitBlock', 'splitListItem', 'mergeInline', 'indentListItem', 'outdentListItem']
+                const effectTypes = ['input', 'splitBlock', 'splitListItem', 'mergeInline', 'indentListItem', 'outdentListItem', 'mergeTableCell']
                 if (effectTypes.includes(effect.type)) {
                     let result: AstApplyEffect | null = null
                     switch (effect.type) {
@@ -156,6 +167,9 @@ class Editor {
                             break
                         case 'outdentListItem':
                             result = this.ast.outdentListItem(effect.listItemId)
+                            break
+                        case 'mergeTableCell':
+                            result = this.ast.mergeTableCell(effect.cellId)
                             break
                     }
                     if (!result) return

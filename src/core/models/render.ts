@@ -97,8 +97,33 @@ class Render {
                 break
             }
 
-            case 'table':
-            case 'tableRow':
+            case 'table': {
+                const maxCells = Math.max(...block.blocks.map(r => ('blocks' in r ? r.blocks?.length : 0) ?? 0))
+                element.dataset.maxCells = String(maxCells)
+                
+                for (const child of block.blocks) {
+                    this.renderBlock(child, element)
+                }
+                break
+            }
+
+            case 'tableRow': {
+                const tableElement = rootElement.closest('table') || rootElement.querySelector('table')
+                const maxCells = parseInt(tableElement?.dataset.maxCells ?? '1', 10)
+                const rowCellCount = block.blocks?.length ?? 0
+                
+                for (const child of block.blocks) {
+                    const cellElement = this.renderBlock(child, element)
+                    
+                    if (rowCellCount === 1 && maxCells > 1) {
+                        cellElement.setAttribute('colspan', String(maxCells))
+                    } else {
+                        cellElement.removeAttribute('colspan')
+                    }
+                }
+                break
+            }
+
             case 'tableCell':
                 for (const child of block.blocks) {
                     this.renderBlock(child, element)
