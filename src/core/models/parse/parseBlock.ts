@@ -259,7 +259,7 @@ class ParseBlock {
             return { type: 'codeBlock' }
         }
     
-        const taskListMatch = /^\s{0,3}([-*+])\s+\[([ xX])\]\s+/.exec(line);
+        const taskListMatch = /^\s{0,3}([-*+])\s+\[([ xX])\]\s+/.exec(line)
         if (taskListMatch) {
             return { 
                 type: 'taskListItem', 
@@ -268,12 +268,12 @@ class ParseBlock {
             }
         }
     
-        const unorderedListMatch = /^\s{0,3}([-*+])\s+/.exec(line);
+        const unorderedListMatch = /^\s{0,3}([-*+])\s+/.exec(line)
         if (unorderedListMatch) {
             return { type: 'listItem', ordered: false }
         }
     
-        const orderedListMatch = /^\s{0,3}(\d{1,9})([.)])\s+/.exec(line);
+        const orderedListMatch = /^\s{0,3}(\d{1,9})([.)])\s+/.exec(line)
         if (orderedListMatch) {
             return { 
                 type: 'listItem', 

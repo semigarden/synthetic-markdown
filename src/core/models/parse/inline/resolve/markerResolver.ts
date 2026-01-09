@@ -51,6 +51,42 @@ class MarkerResolver {
             }
         }
 
+        if (blockType === 'listItem') {
+            const unorderedListMatch = /^\s{0,3}([-*+])\s+/.exec(text);
+            if (unorderedListMatch) {
+                stream.advance(text.length)
+
+                return {
+                    id: uuid(),
+                    type: 'marker',
+                    blockId,
+                    text: { symbolic: unorderedListMatch[0], semantic: '' },
+                    position: {
+                        start: position,
+                        end: position + text.length
+                    }
+                }
+            }
+        
+            const orderedListMatch = /^\s{0,3}(\d{1,9})([.)])\s+/.exec(text);
+            if (orderedListMatch) {
+                stream.advance(text.length)
+
+                return {
+                    id: uuid(),
+                    type: 'marker',
+                    blockId,
+                    text: { symbolic: orderedListMatch[0], semantic: '' },
+                    position: {
+                        start: position,
+                        end: position + text.length
+                    }
+                }
+            }
+
+            return null
+        }
+
         return null
     }
 }
