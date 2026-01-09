@@ -499,8 +499,13 @@ class AST {
         
         if (newBlocks.length === 0 || newBlocks[0].type !== 'table') return null
 
-        const table = newBlocks[0]
-        const inline = this.query.getFirstInline([table])
+        const table = newBlocks[0] as Table
+
+        const firstRow = table.blocks[0] as TableRow
+        const firstCell = firstRow?.blocks[0] as TableCell
+        const firstParagraph = firstCell?.blocks[0]
+        const inline = firstParagraph?.inlines[0]
+        
         if (!inline) return null
 
         const headerIndex = this.blocks.findIndex(b => b.id === headerBlock.id)
@@ -521,9 +526,9 @@ class AST {
             caretEffect: {
                 type: 'restore',
                 caret: {
-                    blockId: inline.blockId,
+                    blockId: firstParagraph.id,
                     inlineId: inline.id,
-                    position: 0,
+                    position: inline.position.end,
                     affinity: 'start',
                 },
             },
