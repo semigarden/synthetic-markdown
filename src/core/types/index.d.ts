@@ -33,6 +33,7 @@ type AstEffect =
  | { type: 'splitTableCellAtCaret'; cellId: string; blockId: string; inlineId: string; caretPosition: number }
  | { type: 'mergeBlocksInCell'; cellId: string; blockId: string }
  | { type: 'mergeInlineInCell'; cellId: string; leftInlineId: string; rightInlineId: string }
+ | { type: 'insertParagraphAboveTable'; tableId: string }
 
 export type AstApplyEffect = {
     renderEffect: RenderEffect
