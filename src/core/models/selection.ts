@@ -182,6 +182,22 @@ class Selection {
 
     private onClick = (e: MouseEvent) => {
         const target = e.target as HTMLElement
+
+        const tableElement = target.closest('table, tr, td, th')
+        if (tableElement && !target.dataset?.blockId && !target.dataset?.inlineId) {
+            const blockElement = tableElement.closest('[data-block-id]') as HTMLElement
+            if (blockElement?.dataset?.blockId) {
+                const block = this.ast.query.getBlockById(blockElement.dataset.blockId)
+                if (block && (block.type === 'table' || block.type === 'tableRow' || block.type === 'tableCell' || block.type === 'tableHeader')) {
+                    const lastInline = this.ast.query.getLastInline(block)
+                    if (lastInline) {
+                        this.caret.restoreCaret(lastInline.id, lastInline.text.symbolic.length)
+                        return
+                    }
+                }
+            }
+        }
+        
         if (target.dataset?.inlineId) {
             const inline = this.ast.query.getInlineById(target.dataset.inlineId!)
             if (!inline) return
@@ -242,9 +258,16 @@ class Selection {
                     }
                 }
 
-                const lastInline = block.inlines.at(-1)
-                if (lastInline) {
-                    this.caret.restoreCaret(lastInline.id, lastInline.text.symbolic.length)
+                if (block.type === 'table' || block.type === 'tableRow' || block.type === 'tableCell' || block.type === 'tableHeader') {
+                    const lastInline = this.ast.query.getLastInline(block)
+                    if (lastInline) {
+                        this.caret.restoreCaret(lastInline.id, lastInline.text.symbolic.length)
+                    }
+                } else {
+                    const lastInline = block.inlines.at(-1)
+                    if (lastInline) {
+                        this.caret.restoreCaret(lastInline.id, lastInline.text.symbolic.length)
+                    }
                 }
             }
         }

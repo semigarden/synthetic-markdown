@@ -85,6 +85,28 @@ class AstQuery {
         return null
     }
 
+    public getLastInline(block: Block): Inline | null {
+        if ('blocks' in block && block.blocks.length > 0) {
+            for (let i = block.blocks.length - 1; i >= 0; i--) {
+                const found = this.getLastInline(block.blocks[i])
+                if (found) return found
+            }
+        }
+
+        if (block.inlines && block.inlines.length > 0) {
+            if (block.type === 'listItem') {
+                const contentInlines = block.inlines.filter(i => i.type !== 'marker')
+                if (contentInlines.length > 0) {
+                    return contentInlines[contentInlines.length - 1]
+                }
+            } else {
+                return block.inlines[block.inlines.length - 1]
+            }
+        }
+        
+        return null
+    }
+
     public getPreviousInline(inlineId: string): Inline | null {
         const flat = this.flattenInlines(this.blocks)
     
