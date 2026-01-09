@@ -396,14 +396,16 @@ class AST {
             prev.blocks.push(sublist)
         }
 
+        const oldId = listItem.id
         list.blocks.splice(index, 1)
+        listItem.id = uuid()
         sublist.blocks.push(listItem)
     
         return {
             renderEffect: {
                 type: 'update',
                 render: {
-                    remove: [],
+                    remove: [{ ...listItem, id: oldId }],
                     insert: [
                         { at: 'current', target: prev, current: prev },
                     ],
