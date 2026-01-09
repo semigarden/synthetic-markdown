@@ -153,6 +153,13 @@ class AST {
             if (detectedBlock.type === 'listItem') caretPosition = 0
             return this.transformBlock(newText, block, detectedBlock, caretPosition)
         }
+
+        if (block.type === 'paragraph' && this.isTableDivider(newText)) {
+            const prevBlock = this.getPreviousBlock(block)
+            if (prevBlock?.type === 'paragraph' && this.isTableHeader(prevBlock.text)) {
+                return this.mergeIntoTable(prevBlock, block, newText)
+            }
+        }
         
         const newInlines = this.parser.inline.lexInline(newText, block.id, block.type, block.position.start)
         const { inline: newInline, position } = this.query.getInlineAtPosition(newInlines, absoluteCaretPosition) ?? { inline: null, position: 0 }
@@ -464,6 +471,58 @@ class AST {
                 caret: {
                     blockId: listItem.id,
                     inlineId: listItem.blocks[0].inlines[0].id,
+                    position: 0,
+                    affinity: 'start',
+                },
+            },
+        }
+    }
+
+    private isTableDivider(text: string): boolean {
+        const trimmed = text.trim()
+        return /^\|?\s*[-:]+(\s*\|\s*[-:]+)+\s*\|?$/.test(trimmed)
+    }
+
+    private isTableHeader(text: string): boolean {
+        return /\|/.test(text.trim())
+    }
+
+    private getPreviousBlock(block: Block): Block | null {
+        const index = this.blocks.findIndex(b => b.id === block.id)
+        if (index <= 0) return null
+        return this.blocks[index - 1]
+    }
+
+    private mergeIntoTable(headerBlock: Block, dividerBlock: Block, dividerText: string): AstApplyEffect | null {
+        const combinedText = headerBlock.text + '\n' + dividerText
+        const newBlocks = this.parser.reparseTextFragment(combinedText, headerBlock.position.start)
+        
+        if (newBlocks.length === 0 || newBlocks[0].type !== 'table') return null
+
+        const table = newBlocks[0]
+        const inline = this.query.getFirstInline([table])
+        if (!inline) return null
+
+        const headerIndex = this.blocks.findIndex(b => b.id === headerBlock.id)
+        this.blocks.splice(headerIndex, 2, table)
+
+        return {
+            renderEffect: {
+                type: 'update',
+                render: {
+                    remove: [headerBlock, dividerBlock],
+                    insert: [{
+                        at: 'current',
+                        target: headerBlock,
+                        current: table,
+                    }],
+                },
+            },
+            caretEffect: {
+                type: 'restore',
+                caret: {
+                    blockId: inline.blockId,
+                    inlineId: inline.id,
                     position: 0,
                     affinity: 'start',
                 },
