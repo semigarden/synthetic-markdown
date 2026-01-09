@@ -613,6 +613,86 @@ class AST {
             },
         }
     }
+
+    public addTableColumn(cellId: string): AstApplyEffect | null {
+        const cell = this.query.getBlockById(cellId) as TableCell
+        if (!cell || cell.type !== 'tableCell') return null
+
+        const flat = this.query.flattenBlocks(this.blocks)
+        const rowEntry = flat.find(e => e.block.type === 'tableRow' && (e.block as TableRow).blocks.some(c => c.id === cellId))
+        if (!rowEntry) return null
+
+        const row = rowEntry.block as TableRow
+        const cellIndex = row.blocks.findIndex(c => c.id === cellId)
+
+        const tableEntry = flat.find(e => e.block.type === 'table' && (e.block as Table).blocks.some(r => r.id === row.id))
+        if (!tableEntry) return null
+
+        const table = tableEntry.block as Table
+
+        const newCells: TableCell[] = []
+        let focusCell: TableCell | null = null
+
+        for (const tableRow of table.blocks as TableRow[]) {
+            const newParagraph: Block = {
+                id: uuid(),
+                type: 'paragraph',
+                text: '',
+                position: { start: 0, end: 0 },
+                inlines: [],
+            }
+            newParagraph.inlines = this.parser.inline.lexInline('', newParagraph.id, 'paragraph', 0)
+            newParagraph.inlines.forEach((i: Inline) => i.blockId = newParagraph.id)
+
+            const newCell: TableCell = {
+                id: uuid(),
+                type: 'tableCell',
+                text: '',
+                position: { start: 0, end: 0 },
+                blocks: [newParagraph],
+                inlines: [],
+            }
+            newCell.inlines = this.parser.inline.lexInline('', newCell.id, 'tableCell', 0)
+            newCell.inlines.forEach((i: Inline) => i.blockId = newCell.id)
+
+            const insertIndex = Math.min(cellIndex + 1, tableRow.blocks.length)
+            tableRow.blocks.splice(insertIndex, 0, newCell)
+            newCells.push(newCell)
+
+            if (tableRow.id === row.id) {
+                focusCell = newCell
+            }
+        }
+
+        if (!focusCell) return null
+
+        const focusParagraph = focusCell.blocks[0]
+        const focusInline = focusParagraph.inlines[0]
+        if (!focusInline) return null
+
+        return {
+            renderEffect: {
+                type: 'update',
+                render: {
+                    remove: [],
+                    insert: table.blocks.map(r => ({
+                        at: 'current' as const,
+                        target: r,
+                        current: r,
+                    })),
+                },
+            },
+            caretEffect: {
+                type: 'restore',
+                caret: {
+                    blockId: focusParagraph.id,
+                    inlineId: focusInline.id,
+                    position: 0,
+                    affinity: 'start',
+                },
+            },
+        }
+    }
 }
 
 export default AST

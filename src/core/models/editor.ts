@@ -124,6 +124,14 @@ class Editor {
     }
 
     private resolveIndent(context: EditContext): EditEffect {
+        const tableCell = this.ast.query.getParentBlock(context.block)
+        if (tableCell?.type === 'tableCell') {
+            return {
+                preventDefault: true,
+                ast: [{ type: 'addTableColumn', cellId: tableCell.id }],
+            }
+        }
+
         const listItem = this.ast.query.getParentBlock(context.block)
         if (!listItem || listItem.type !== 'listItem') return { preventDefault: false }
 
@@ -146,7 +154,7 @@ class Editor {
     public apply(effect: EditEffect) {
         if (effect.ast) {
             effect.ast.forEach(effect => {
-                const effectTypes = ['input', 'splitBlock', 'splitListItem', 'mergeInline', 'indentListItem', 'outdentListItem', 'mergeTableCell']
+                const effectTypes = ['input', 'splitBlock', 'splitListItem', 'mergeInline', 'indentListItem', 'outdentListItem', 'mergeTableCell', 'addTableColumn']
                 if (effectTypes.includes(effect.type)) {
                     let result: AstApplyEffect | null = null
                     switch (effect.type) {
@@ -170,6 +178,9 @@ class Editor {
                             break
                         case 'mergeTableCell':
                             result = this.ast.mergeTableCell(effect.cellId)
+                            break
+                        case 'addTableColumn':
+                            result = this.ast.addTableColumn(effect.cellId)
                             break
                     }
                     if (!result) return
