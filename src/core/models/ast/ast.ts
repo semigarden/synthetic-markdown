@@ -232,8 +232,11 @@ class AST {
 
         const { left, right } = result
 
+        const newLeft = this.parser.reparseTextFragment(left.text, left.position.start)
+        const newRight = this.parser.reparseTextFragment(right.text, right.position.start)
+
         const index = this.blocks.findIndex(b => b.id === block.id)
-        this.blocks.splice(index, 1, left, right)
+        this.blocks.splice(index, 1, ...newLeft, ...newRight)
 
         return {
             renderEffect: {
@@ -241,16 +244,16 @@ class AST {
                 render: {
                     remove: [],
                     insert: [
-                        { at: 'current', target: block, current: left },
-                        { at: 'next', target: block, current: right },
+                        { at: 'current', target: left, current: newLeft[0] },
+                        { at: 'next', target: newLeft[0], current: newRight[0] },
                     ],
                 },
             },
             caretEffect: {
                 type: 'restore',
                 caret: {
-                    blockId: right.id,
-                    inlineId: right.inlines[0].id,
+                    blockId: newRight[0].id,
+                    inlineId: newRight[0].inlines[0].id,
                     position: 0,
                     affinity: 'start',
                 },

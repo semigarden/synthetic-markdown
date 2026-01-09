@@ -51,6 +51,9 @@ class AstMutation {
             start: block.position.start,
             end: block.position.start + leftBlock.text.length,
         }
+        if (leftBlock.text.trim() === '') {
+            leftBlock.type = 'paragraph'
+        }
     
         const rightBlock = {
             id: rightBlockId,
@@ -63,7 +66,7 @@ class AstMutation {
                     rightInlines.map((i: Inline) => i.text.symbolic).join('').length,
             },
         } as Block
-    
+
         return { left: leftBlock, right: rightBlock }
     }
 

@@ -24,8 +24,8 @@ class Render {
                     break
 
                 case 'heading':
-                    element = document.createElement(`h${block.level}`)
-                    element.classList.add(`h${block.level}`)
+                    element = document.createElement(`h${block.level ?? 1}`)
+                    element.classList.add(`h${block.level ?? 1}`)
                     break
 
                 case 'codeBlock':
