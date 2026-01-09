@@ -420,6 +420,54 @@ class AST {
             },
         }
     }
+
+    public outdentListItem(listItemId: string): AstApplyEffect | null {
+        const listItem = this.query.getBlockById(listItemId) as ListItem
+        if (!listItem) return null
+
+        const sublist = this.query.getListFromBlock(listItem)
+        if (!sublist) return null
+
+        const parentListItem = this.query.getParentBlock(sublist) as ListItem | null
+        if (!parentListItem || parentListItem.type !== 'listItem') return null
+
+        const parentList = this.query.getListFromBlock(parentListItem)
+        if (!parentList) return null
+
+        const sublistIndex = sublist.blocks.indexOf(listItem)
+        const parentIndex = parentList.blocks.indexOf(parentListItem)
+
+        sublist.blocks.splice(sublistIndex, 1)
+
+        if (sublist.blocks.length === 0) {
+            const sublistIdx = parentListItem.blocks.indexOf(sublist)
+            parentListItem.blocks.splice(sublistIdx, 1)
+        }
+
+        parentList.blocks.splice(parentIndex + 1, 0, listItem)
+
+        return {
+            renderEffect: {
+                type: 'update',
+                render: {
+                    remove: [],
+                    insert: [
+                        { at: 'current', target: parentListItem, current: parentListItem },
+                        { at: 'next', target: parentListItem, current: listItem },
+                    ],
+                },
+            },
+            caretEffect: {
+                type: 'restore',
+                caret: {
+                    blockId: listItem.id,
+                    inlineId: listItem.blocks[0].inlines[0].id,
+                    position: 0,
+                    affinity: 'start',
+                },
+            },
+        }
+    }
 }
 
 export default AST

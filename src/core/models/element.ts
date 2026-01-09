@@ -90,7 +90,12 @@ class Element extends HTMLElement {
         })
 
         div.addEventListener('keydown', (event: KeyboardEvent) => {
-            const intent = onKey[event.key]
+            let intent = onKey[event.key]
+            
+            if (event.key === 'Tab' && event.shiftKey) {
+                intent = 'outdent'
+            }
+            
             if (!intent) return
 
             const context = this.selection?.resolveInlineContext()

@@ -24,6 +24,7 @@ type AstEffect =
  | { type: 'splitListItem'; listItemId: string; blockId: string; inlineId: string; caretPosition: number }
  | { type: 'mergeInline'; leftInlineId: string; rightInlineId: string }
  | { type: 'indentListItem'; listItemId: string }
+ | { type: 'outdentListItem'; listItemId: string }
 
 export type AstApplyEffect = {
     renderEffect: RenderEffect
@@ -67,6 +68,7 @@ export type Intent =
     | 'split'
     | 'merge'
     | 'indent'
+    | 'outdent'
 
 interface BlockType<T extends string = string> {
     id: string
