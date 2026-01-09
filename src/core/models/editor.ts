@@ -49,6 +49,16 @@ class Editor {
         
         const parentBlock = this.ast.query.getParentBlock(context.block)
 
+        if (parentBlock?.type === 'tableCell') {
+            return {
+                preventDefault: true,
+                ast: [{
+                    type: 'addTableRow',
+                    cellId: parentBlock.id,
+                }],
+            }
+        }
+
         if (parentBlock?.type === 'listItem') {
             return {
                 preventDefault: true,
@@ -154,7 +164,7 @@ class Editor {
     public apply(effect: EditEffect) {
         if (effect.ast) {
             effect.ast.forEach(effect => {
-                const effectTypes = ['input', 'splitBlock', 'splitListItem', 'mergeInline', 'indentListItem', 'outdentListItem', 'mergeTableCell', 'addTableColumn']
+                const effectTypes = ['input', 'splitBlock', 'splitListItem', 'mergeInline', 'indentListItem', 'outdentListItem', 'mergeTableCell', 'addTableColumn', 'addTableRow']
                 if (effectTypes.includes(effect.type)) {
                     let result: AstApplyEffect | null = null
                     switch (effect.type) {
@@ -181,6 +191,9 @@ class Editor {
                             break
                         case 'addTableColumn':
                             result = this.ast.addTableColumn(effect.cellId)
+                            break
+                        case 'addTableRow':
+                            result = this.ast.addTableRow(effect.cellId)
                             break
                     }
                     if (!result) return

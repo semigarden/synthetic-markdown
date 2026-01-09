@@ -27,6 +27,7 @@ type AstEffect =
  | { type: 'outdentListItem'; listItemId: string }
  | { type: 'mergeTableCell'; cellId: string }
  | { type: 'addTableColumn'; cellId: string }
+ | { type: 'addTableRow'; cellId: string }
 
 export type AstApplyEffect = {
     renderEffect: RenderEffect
