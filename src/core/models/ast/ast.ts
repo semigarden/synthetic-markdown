@@ -41,6 +41,34 @@ class AST {
         const inline = this.query.getFirstInline(newBlocks)
         if (!inline) return null
 
+        if (entry.parent && entry.parent.type === 'tableCell') {
+            const cell = entry.parent as TableCell
+            cell.blocks.splice(entry.index, 1, ...newBlocks)
+
+            return {
+                renderEffect: {
+                    type: 'update',
+                    render: {
+                        remove: [],
+                        insert: [{
+                            at: 'current',
+                            target: cell,
+                            current: cell,
+                        }],
+                    },
+                },
+                caretEffect: {
+                    type: 'restore',
+                    caret: {
+                        blockId: inline.blockId,
+                        inlineId: inline.id,
+                        position: caretPosition ?? inline.position.start,
+                        affinity: 'start',
+                    },
+                },
+            }
+        }
+
         if (entry.parent && entry.parent.type === 'list' && block.type === 'listItem' && block.type !== detectedBlock.type) {
             const list = entry.parent as List
             const listEntry = flat.find(b => b.block.id === list.id)

@@ -352,13 +352,29 @@ class ParseBlock {
         const makeCell = (text: string): TableCell => {
             const parts = text.split(/<br\s*\/?>/i)
             
-            const blocks: Block[] = parts.map(part => ({
-                id: uuid(),
-                type: 'paragraph',
-                text: part.trim(),
-                position: { start: 0, end: part.trim().length },
-                inlines: [],
-            }))
+            const blocks: Block[] = parts.map(part => {
+                const trimmed = part.trim()
+                const detected = this.detectType(trimmed)
+                
+                if (detected.type === 'heading' && 'level' in detected && detected.level !== undefined) {
+                    return {
+                        id: uuid(),
+                        type: 'heading' as const,
+                        text: trimmed,
+                        level: detected.level,
+                        position: { start: 0, end: trimmed.length },
+                        inlines: [],
+                    }
+                }
+                
+                return {
+                    id: uuid(),
+                    type: 'paragraph' as const,
+                    text: trimmed,
+                    position: { start: 0, end: trimmed.length },
+                    inlines: [],
+                }
+            })
     
             return {
                 id: uuid(),
