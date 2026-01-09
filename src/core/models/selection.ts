@@ -220,6 +220,7 @@ class Selection {
         if (target.dataset?.blockId) {
             const block = this.ast.query.getBlockById(target.dataset.blockId)
             if (block) {
+                console.log('block', JSON.stringify(block, null, 2))
                 if (block.type === 'thematicBreak') {
                     const marker = block.inlines.find(i => i.type === 'marker')
                     if (marker) {

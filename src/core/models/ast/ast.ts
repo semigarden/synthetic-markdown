@@ -2,7 +2,7 @@ import AstNormalizer from './AstNormalizer'
 import AstMutation from './AstMutation'
 import AstQuery from './AstQuery'
 import ParseAst from '../parse/parseAst'
-import { AstApplyEffect, Block, BlockQuote, CodeBlock, Inline, List, ListItem, Table, TableCell, TableRow } from '../../types'
+import { AstApplyEffect, DetectedBlock, Block, BlockQuote, CodeBlock, Inline, List, ListItem, Table, TableCell, TableRow } from '../../types'
 import { uuid } from '../../utils/utils'
 
 class AST {
@@ -31,7 +31,7 @@ class AST {
         this.text = this.normalizer.text
     }
 
-    private transformBlock(block: Block, text: string, caretPosition: number | null = null): AstApplyEffect | null {
+    private transformBlock(text: string, block: Block, detectedBlock: DetectedBlock, caretPosition: number | null = null): AstApplyEffect | null {
         const flat = this.query.flattenBlocks(this.blocks)
         const entry = flat.find(b => b.block.id === block.id)
         if (!entry) return null
@@ -66,7 +66,7 @@ class AST {
                 },
             },
         }
-    }
+    } 
 
     public input(blockId: string, inlineId: string, text: string, caretPosition: number): AstApplyEffect | null {
         const block = this.query.getBlockById(blockId)
@@ -83,15 +83,15 @@ class AST {
             + caretPosition
 
         const newText = block.inlines.slice(0, inlineIndex).map(i => i.text.symbolic).join('') + text + block.inlines.slice(inlineIndex + 1).map(i => i.text.symbolic).join('')
-        const detectedBlockType = this.parser.block.detectType(newText)
+        const detectedBlock = this.parser.block.detectType(newText)
 
         const blockTypeChanged =
-            detectedBlockType.type !== block.type ||
-            (detectedBlockType.type === 'heading' && block.type === 'heading' && detectedBlockType.level !== block.level)
+            detectedBlock.type !== block.type ||
+            (detectedBlock.type === 'heading' && block.type === 'heading' && detectedBlock.level !== block.level)
         
         const ignoreTypes = ['blankLine', 'codeBlock']
-        if (blockTypeChanged && !ignoreTypes.includes(detectedBlockType.type)) {
-            return this.transformBlock(block, newText, caretPosition)
+        if (blockTypeChanged && !ignoreTypes.includes(detectedBlock.type)) {
+            return this.transformBlock(newText, block, detectedBlock, caretPosition)
         }
         
         const newInlines = this.parser.inline.lexInline(newText, block.id, block.type, block.position.start)
@@ -252,15 +252,15 @@ class AST {
         + caretPositionInMergedInline
 
         const newText = leftBlock.inlines.map(i => i.text.symbolic).join('')
-        const detectedBlockType = this.parser.block.detectType(newText)
+        const detectedBlock = this.parser.block.detectType(newText)
 
         const blockTypeChanged =
-            detectedBlockType.type !== leftBlock.type ||
-            (detectedBlockType.type === 'heading' && leftBlock.type === 'heading' && detectedBlockType.level !== leftBlock.level)
-        
+            detectedBlock.type !== leftBlock.type ||
+            (detectedBlock.type === 'heading' && leftBlock.type === 'heading' && detectedBlock.level !== leftBlock.level)
+
         const ignoreTypes = ['blankLine', 'codeBlock']
-        if (blockTypeChanged && !ignoreTypes.includes(detectedBlockType.type)) {
-            return this.transformBlock(leftBlock, newText, caretPosition)
+        if (blockTypeChanged && !ignoreTypes.includes(detectedBlock.type)) {
+            return this.transformBlock(newText, leftBlock, detectedBlock, caretPosition)
         }
 
         return {
