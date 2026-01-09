@@ -152,22 +152,6 @@ class AstMutation {
         }
     }
 
-    public listItemToParagraph(listItem: ListItem): Block {
-        const block = listItem.blocks[0]
-    
-        const paragraph: Block = {
-            id: uuid(),
-            type: 'paragraph',
-            inlines: block.inlines,
-            text: block.inlines.map(i => i.text.symbolic).join(''),
-            position: { ...block.position },
-        }
-
-        paragraph.inlines.forEach(i => (i.blockId = paragraph.id))
-    
-        return paragraph
-    }
-
     public removeBlockCascade(block: Block) {
         const removed: Block[] = []
         let current: Block | null = block

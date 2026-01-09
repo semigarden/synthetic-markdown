@@ -92,7 +92,7 @@ class Editor {
     public apply(effect: EditEffect) {
         if (effect.ast) {
             effect.ast.forEach(effect => {
-                const effectTypes = ['input', 'splitBlock', 'splitListItem', 'mergeInline', 'mergeMarker']
+                const effectTypes = ['input', 'splitBlock', 'splitListItem', 'mergeInline']
                 if (effectTypes.includes(effect.type)) {
                     let result: AstApplyEffect | null = null
                     switch (effect.type) {
@@ -107,9 +107,6 @@ class Editor {
                             break
                         case 'mergeInline':
                             result = this.ast.mergeInline(effect.leftInlineId, effect.rightInlineId)
-                            break
-                        case 'mergeMarker':
-                            result = this.ast.mergeMarker(effect.blockId)
                             break
                     }
                     if (!result) return
