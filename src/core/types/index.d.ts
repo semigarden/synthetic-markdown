@@ -262,3 +262,9 @@ interface Delimiter {
     canClose: boolean;
     active: boolean;
 }
+
+export type FlatEntry = {
+    block: Block
+    parent: Block | null
+    index: number
+}

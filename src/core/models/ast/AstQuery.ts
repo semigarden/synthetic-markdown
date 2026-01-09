@@ -1,4 +1,4 @@
-import { Block, Inline, List, ListItem } from "../../types"
+import { FlatEntry, Block, Inline, List, ListItem } from "../../types"
 
 class AstQuery {
     constructor(private blocks: Block[]) {}
@@ -32,11 +32,15 @@ class AstQuery {
         return null
     }
 
-    public flattenBlocks(blocks: Block[], acc: Block[] = []): Block[] {
-        for (const b of blocks) {
-          acc.push(b)
-          if ('blocks' in b && b.blocks) this.flattenBlocks(b.blocks, acc)
-        }
+    public flattenBlocks(blocks: Block[], parent: Block | null = null, acc: FlatEntry[] = []): FlatEntry[] {
+        blocks.forEach((block, index) => {
+            acc.push({ block, parent, index })
+
+            if ('blocks' in block && block.blocks) {
+                this.flattenBlocks(block.blocks, block, acc)
+            }
+        })
+    
         return acc
     }
 
@@ -51,8 +55,8 @@ class AstQuery {
 
     public getParentBlock(block: Block): Block | null {
         const flattenedBlocks = this.flattenBlocks(this.blocks)
-        const parentBlock = flattenedBlocks.find(b => b.type === 'list' && b.blocks?.some(b => b.id === block.id)) ?? flattenedBlocks.find(b => b.type === 'listItem' && b.blocks?.some(b => b.id === block.id))
-        return parentBlock ?? null
+        const flatParentBlock = flattenedBlocks.find(b => b.block.type === 'list' && b.block.blocks?.some(b => b.id === block.id)) ?? flattenedBlocks.find(b => b.block.type === 'listItem' && b.block.blocks?.some(b => b.id === block.id))
+        return flatParentBlock?.block ?? null
     }
 
     public getFirstInline(blocks: Block[]): Inline | null {

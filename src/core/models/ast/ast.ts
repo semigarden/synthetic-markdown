@@ -2,7 +2,7 @@ import AstNormalizer from './AstNormalizer'
 import AstMutation from './AstMutation'
 import AstQuery from './AstQuery'
 import ParseAst from '../parse/parseAst'
-import { AstApplyEffect, Block, Inline, List, ListItem } from '../../types'
+import { AstApplyEffect, Block, BlockQuote, CodeBlock, Inline, List, ListItem, Table, TableCell, TableRow } from '../../types'
 import { uuid } from '../../utils/utils'
 
 class AST {
@@ -33,14 +33,16 @@ class AST {
 
     private transformBlock(block: Block, text: string, caretPosition: number | null = null): AstApplyEffect | null {
         const flat = this.query.flattenBlocks(this.blocks)
-        const index = flat.findIndex(b => b.id === block.id)
-    
+        const entry = flat.find(b => b.block.id === block.id)
+        if (!entry) return null
+
         const newBlocks = this.parser.reparseTextFragment(text, block.position.start)
-    
+
         const inline = this.query.getFirstInline(newBlocks)
         if (!inline) return null
     
-        this.blocks.splice(index, 1, ...newBlocks)
+        const blocks = entry.parent ? (entry.parent as List | ListItem | Table | TableRow | TableCell | BlockQuote).blocks : this.blocks
+        blocks.splice(entry.index, 1, ...newBlocks)
 
         return {
             renderEffect: {
