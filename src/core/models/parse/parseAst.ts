@@ -215,6 +215,7 @@ class ParseAst {
         const m = /^(\s{0,3})([-*+])\s+(.*)$/.exec(line)
         if (!m) return false
     
+        const listItemText = m[0]
         const indent = m[1].length
         const marker = m[2]
         const content = m[3]
@@ -239,7 +240,7 @@ class ParseAst {
         const item = {
             id: uuid(),
             type: 'listItem',
-            text: '',
+            text: listItemText,
             blocks: [],
             position: { start: offset, end: offset },
             inlines: [],

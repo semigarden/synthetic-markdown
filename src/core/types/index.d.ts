@@ -263,9 +263,15 @@ interface Delimiter {
     active: boolean;
 }
 
-export type FlatEntry = {
+export type FlatBlockEntry = {
     block: Block
     parent: Block | null
+    index: number
+}
+
+export type FlatInlineEntry = {
+    inline: Inline
+    block: Block
     index: number
 }
 

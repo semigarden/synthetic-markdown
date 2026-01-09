@@ -1,4 +1,4 @@
-import { FlatEntry, Block, Inline, List, ListItem } from "../../types"
+import { FlatBlockEntry, FlatInlineEntry, Block, Inline, List, ListItem } from "../../types"
 
 class AstQuery {
     constructor(private blocks: Block[]) {}
@@ -32,7 +32,7 @@ class AstQuery {
         return null
     }
 
-    public flattenBlocks(blocks: Block[], parent: Block | null = null, acc: FlatEntry[] = []): FlatEntry[] {
+    public flattenBlocks(blocks: Block[], parent: Block | null = null, acc: FlatBlockEntry[] = []): FlatBlockEntry[] {
         blocks.forEach((block, index) => {
             acc.push({ block, parent, index })
 
@@ -44,13 +44,18 @@ class AstQuery {
         return acc
     }
 
-    public flattenInlines(blocks: Block[]): Inline[] {
-        const inlines: Inline[] = []
-        for (const b of blocks) {
-            inlines.push(...b.inlines)
-            if ('blocks' in b && b.blocks) inlines.push(...this.flattenInlines(b.blocks))
+    public flattenInlines(blocks: Block[], parent: Block | null = null, acc: FlatInlineEntry[] = []): FlatInlineEntry[] {
+        for (const block of blocks) {
+            block.inlines.forEach((inline, index) => {
+                acc.push({ inline, block, index })
+            })
+    
+            if ('blocks' in block && block.blocks) {
+                this.flattenInlines(block.blocks, block, acc)
+            }
         }
-        return inlines
+    
+        return acc
     }
 
     public getParentBlock(block: Block): Block | null {
@@ -75,11 +80,12 @@ class AstQuery {
     }
 
     public getPreviousInline(inlineId: string): Inline | null {
-        const flattenedInlines = this.flattenInlines(this.blocks)
-        const inlineIndex = flattenedInlines.findIndex(i => i.id === inlineId)
-        if (inlineIndex === -1) return null
-
-        return flattenedInlines[inlineIndex - 1] ?? null
+        const flat = this.flattenInlines(this.blocks)
+    
+        const flatIndex = flat.findIndex(e => e.inline.id === inlineId)
+        if (flatIndex === -1) return null
+    
+        return flatIndex > 0 ? flat[flatIndex - 1].inline : null
     }
 
     public getInlineAtPosition(inlines: Inline[], caretPosition: number): { inline: Inline; position: number } | null {
@@ -125,6 +131,29 @@ class AstQuery {
     
             return null
         }
+    }
+
+    public getListFromBlock(block: Block): List | null {
+        let current: Block | null = block
+        while (true) {
+            const parent = this.getParentBlock(current)
+            if (!parent) return null
+            if (parent.type === 'list') return parent
+            current = parent
+        }
+    }
+
+    public getPreviousInlineInList(inline: Inline): Inline | null {
+        const block = this.getBlockById(inline.blockId)
+        if (!block) return null
+
+        const list = this.getListFromBlock(block)
+        if (!list) return null
+
+        const flat = this.flattenInlines(list.blocks).filter(e => e.inline.type !== 'marker')
+        const flatIndex = flat.findIndex(e => e.inline.id === inline.id)
+        if (flatIndex === -1) return null
+        return flatIndex > 0 ? flat[flatIndex - 1].inline : null
     }
 
     public getListItemText(item: ListItem): string {

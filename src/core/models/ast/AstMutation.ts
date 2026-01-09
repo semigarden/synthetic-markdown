@@ -78,22 +78,15 @@ class AstMutation {
 
         if (sameOwner && leftOwner) {
             const owner = leftOwner
-        
-            const ownerText = this.ast.query.getInlinesUnder(owner.id)
-                .map(i => i.text.symbolic)
-                .join('')
-        
-            const mergedText =
-                ownerText.slice(0, ownerText.length - rightInline.text.symbolic.length - 1) +
-                rightInline.text.symbolic
-        
+            const mergedText = leftInline.text.symbolic.slice(0, -1) + rightInline.text.symbolic
+
             const mergedInlines = this.parser.inline.lexInline(
                 mergedText,
                 owner.id,
                 owner.type,
                 owner.position.start
             )
-        
+
             this.clearInlinesUnder(owner.id)
         
             owner.inlines = mergedInlines
@@ -157,71 +150,6 @@ class AstMutation {
             mergedInline: mergedInlines[0],
             removedBlock: rightBlock,
         }
-
-        // console.log('sameBlock', sameBlock)
-        // console.log('leftInline', JSON.stringify(leftInline, null, 2))
-        // console.log('rightInline', JSON.stringify(rightInline, null, 2))
-        // if (sameBlock) {
-        //     const mergedText = leftInline.text.symbolic.slice(0, -1) + rightInline.text.symbolic
-        //     const mergedInlines = this.parser.inline.lexInline(
-        //         mergedText,
-        //         leftBlock.id,
-        //         leftBlock.type,
-        //         leftBlock.position.start
-        //     )
-
-        //     const leftIndex = leftBlock.inlines.findIndex(i => i.id === leftInline.id)
-        //     const rightIndex = leftBlock.inlines.findIndex(i => i.id === rightInline.id)
-        //     if (leftIndex === -1 || rightIndex === -1) return null
-    
-        //     leftBlock.inlines.splice(
-        //         leftIndex,
-        //         rightIndex === leftIndex + 1 ? 2 : 1,
-        //         ...mergedInlines
-        //     )
-    
-        //     leftBlock.text = leftBlock.inlines.map(i => i.text.symbolic).join('')
-        //     leftBlock.position.end =
-        //         leftBlock.position.start + leftBlock.text.length
-    
-        //     return { leftBlock, mergedInline: mergedInlines[0] }
-        // }
-
-        // const mergedText = leftInline.text.symbolic + rightInline.text.symbolic
-        // const mergedInlines = this.parser.inline.lexInline(
-        //     mergedText,
-        //     leftBlock.id,
-        //     leftBlock.type,
-        //     leftBlock.position.start
-        // )
-
-        // console.log('mergedInlines', JSON.stringify(mergedInlines, null, 2))
-        // console.log('mergedText', JSON.stringify(mergedText, null, 2))
-
-        // const leftIndex = leftBlock.inlines.findIndex(i => i.id === leftInline.id)
-        // const rightIndex = rightBlock.inlines.findIndex(i => i.id === rightInline.id)
-        // if (leftIndex === -1 || rightIndex === -1) return null
-    
-        // const tailInlines = rightBlock.inlines.slice(rightIndex + 1)
-    
-        // tailInlines.forEach(i => (i.blockId = leftBlock.id))
-    
-        // leftBlock.inlines.splice(
-        //     leftIndex,
-        //     1,
-        //     ...mergedInlines,
-        //     ...tailInlines
-        // )
-
-        // leftBlock.text = leftBlock.inlines.map(i => i.text.symbolic).join('')
-        // leftBlock.position.end =
-        //     leftBlock.position.start + leftBlock.text.length
-    
-        // return {
-        //     leftBlock,
-        //     mergedInline: mergedInlines[0],
-        //     removedBlock: rightBlock,
-        // }
     }
 
     public listItemToParagraph(listItem: ListItem): Block {
@@ -247,7 +175,7 @@ class AstMutation {
         while (current) {
             removed.push(current)
             const parent = this.query.getParentBlock(current)
-    
+
             if (!parent) {
                 const i = this.ast.blocks.findIndex(b => b.id === current!.id)
                 if (i !== -1) this.ast.blocks.splice(i, 1)
@@ -285,9 +213,23 @@ class AstMutation {
     }
 
     public isBlockEmpty(block: Block): boolean {
-        if ('inlines' in block && block.inlines.length > 0) return false
-        if ('blocks' in block && block.blocks.length > 0) return false
-        return true
+        switch (block.type) {
+            case 'listItem':
+                return block.blocks.length === 0
+    
+            case 'list':
+            case 'blockQuote':
+                return block.blocks.length === 0
+    
+            case 'paragraph':
+            case 'heading':
+                return block.inlines.length === 0
+    
+            default:
+                if ('blocks' in block && block.blocks.length > 0) return false
+                if ('inlines' in block && block.inlines.length > 0) return false
+                return true
+        }
     }
 }
 

@@ -43,10 +43,37 @@ class AST {
 
         if (entry.parent && entry.parent.type === 'list' && block.type === 'listItem' && block.type !== detectedBlock.type) {
             const list = entry.parent as List
-            if (list.blocks.length === 1) {
-                const listEntry = flat.find(b => b.block.id === list.id)
-                if (!listEntry) return null
 
+            const listEntry = flat.find(b => b.block.id === list.id)
+            if (!listEntry) return null
+        
+            if (list.blocks.length > 1) {
+                list.blocks.splice(entry.index, 1)
+                this.blocks.splice(listEntry.index, 0, ...newBlocks)
+
+                return {
+                    renderEffect: {
+                        type: 'update',
+                        render: {
+                            remove: [entry.block],
+                            insert: [{
+                                at: 'previous',
+                                target: list,
+                                current: newBlocks[0],
+                            }],
+                        },
+                    },
+                    caretEffect: {
+                        type: 'restore',
+                        caret: {
+                            blockId: inline.blockId,
+                            inlineId: inline.id,
+                            position: caretPosition ?? inline.position.start,
+                            affinity: 'start',
+                        },
+                    },
+                }
+            } else {
                 this.blocks.splice(listEntry.index, 1, ...newBlocks)
 
                 return {
@@ -255,19 +282,15 @@ class AST {
     }
 
     public mergeInline(inlineAId: string, inlineBId: string): AstApplyEffect | null {
-        const inlineA = this.query.getInlineById(inlineAId)
-        const inlineB = this.query.getInlineById(inlineBId)
-        if (!inlineA || !inlineB) return null
-
         const flattened = this.query.flattenInlines(this.blocks)
-        const iA = flattened.findIndex(i => i.id === inlineAId)
-        const iB = flattened.findIndex(i => i.id === inlineBId)
+        const iA = flattened.findIndex(i => i.inline.id === inlineAId)
+        const iB = flattened.findIndex(i => i.inline.id === inlineBId)
         if (iA === -1 || iB === -1) return null
 
-        const [leftInline, rightInline] =
-            iA < iB ? [inlineA, inlineB] : [inlineB, inlineA]
+        const [leftInline, rightInline] = iA < iB ? [flattened[iA].inline, flattened[iB].inline] : [flattened[iB].inline, flattened[iA].inline]
 
         const result = this.mutation.mergeInlinePure(leftInline, rightInline)
+
         if (!result) return null
 
         const { leftBlock, mergedInline, removedBlock } = result
