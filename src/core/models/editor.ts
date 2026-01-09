@@ -158,9 +158,16 @@ class Editor {
     private resolveIndent(context: EditContext): EditEffect {
         const tableCell = this.ast.query.getParentBlock(context.block)
         if (tableCell?.type === 'tableCell') {
+            const caretPosition = this.caret.getPositionInInline(context.inlineElement)
             return {
                 preventDefault: true,
-                ast: [{ type: 'addTableColumn', cellId: tableCell.id }],
+                ast: [{
+                    type: 'splitTableCellAtCaret',
+                    cellId: tableCell.id,
+                    blockId: context.block.id,
+                    inlineId: context.inline.id,
+                    caretPosition: caretPosition,
+                }],
             }
         }
 
@@ -214,7 +221,7 @@ class Editor {
     public apply(effect: EditEffect) {
         if (effect.ast) {
             effect.ast.forEach(effect => {
-                const effectTypes = ['input', 'splitBlock', 'splitListItem', 'mergeInline', 'indentListItem', 'outdentListItem', 'mergeTableCell', 'addTableColumn', 'addTableRow', 'addTableRowAbove', 'splitTableCell', 'mergeBlocksInCell', 'mergeInlineInCell']
+                const effectTypes = ['input', 'splitBlock', 'splitListItem', 'mergeInline', 'indentListItem', 'outdentListItem', 'mergeTableCell', 'addTableColumn', 'addTableRow', 'addTableRowAbove', 'splitTableCell', 'splitTableCellAtCaret', 'mergeBlocksInCell', 'mergeInlineInCell']
                 if (effectTypes.includes(effect.type)) {
                     let result: AstApplyEffect | null = null
                     switch (effect.type) {
@@ -250,6 +257,9 @@ class Editor {
                             break
                         case 'splitTableCell':
                             result = this.ast.splitTableCell(effect.cellId, effect.blockId, effect.inlineId, effect.caretPosition)
+                            break
+                        case 'splitTableCellAtCaret':
+                            result = this.ast.splitTableCellAtCaret(effect.cellId, effect.blockId, effect.inlineId, effect.caretPosition)
                             break
                         case 'mergeBlocksInCell':
                             result = this.ast.mergeBlocksInCell(effect.cellId, effect.blockId)

@@ -30,6 +30,7 @@ type AstEffect =
  | { type: 'addTableRow'; cellId: string }
  | { type: 'addTableRowAbove'; cellId: string }
  | { type: 'splitTableCell'; cellId: string; blockId: string; inlineId: string; caretPosition: number }
+ | { type: 'splitTableCellAtCaret'; cellId: string; blockId: string; inlineId: string; caretPosition: number }
  | { type: 'mergeBlocksInCell'; cellId: string; blockId: string }
  | { type: 'mergeInlineInCell'; cellId: string; leftInlineId: string; rightInlineId: string }
 

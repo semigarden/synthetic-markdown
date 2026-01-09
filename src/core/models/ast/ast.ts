@@ -1147,6 +1147,93 @@ class AST {
         }
     }
 
+    public splitTableCellAtCaret(cellId: string, blockId: string, inlineId: string, caretPosition: number): AstApplyEffect | null {
+        const cell = this.query.getBlockById(cellId) as TableCell
+        if (!cell || cell.type !== 'tableCell') return null
+
+        const flat = this.query.flattenBlocks(this.blocks)
+        const rowEntry = flat.find(e => e.block.type === 'tableRow' && (e.block as TableRow).blocks.some(c => c.id === cellId))
+        if (!rowEntry) return null
+
+        const row = rowEntry.block as TableRow
+        const cellIndex = row.blocks.findIndex(c => c.id === cellId)
+
+        const block = cell.blocks.find(b => b.id === blockId)
+        if (!block) return null
+
+        const inline = block.inlines.find(i => i.id === inlineId)
+        if (!inline) return null
+
+        const inlineIndex = block.inlines.findIndex(i => i.id === inlineId)
+
+        let textBeforeCaret = ''
+        for (let i = 0; i < inlineIndex; i++) {
+            textBeforeCaret += block.inlines[i].text.symbolic
+        }
+        textBeforeCaret += inline.text.symbolic.slice(0, caretPosition)
+
+        const textAfterCaret = block.inlines
+            .slice(inlineIndex)
+            .map((i, idx) => idx === 0 ? i.text.symbolic.slice(caretPosition) : i.text.symbolic)
+            .join('')
+
+        block.text = textBeforeCaret
+        block.inlines = this.parser.inline.lexInline(textBeforeCaret, block.id, block.type, block.position.start)
+        block.inlines.forEach((i: Inline) => i.blockId = block.id)
+
+        cell.text = textBeforeCaret
+        cell.inlines = this.parser.inline.lexInline(textBeforeCaret, cell.id, 'tableCell', cell.position.start)
+        cell.inlines.forEach((i: Inline) => i.blockId = cell.id)
+
+        const newParagraph: Block = {
+            id: uuid(),
+            type: 'paragraph',
+            text: textAfterCaret,
+            position: { start: 0, end: textAfterCaret.length },
+            inlines: [],
+        }
+        newParagraph.inlines = this.parser.inline.lexInline(textAfterCaret, newParagraph.id, 'paragraph', 0)
+        newParagraph.inlines.forEach((i: Inline) => i.blockId = newParagraph.id)
+
+        const newCell: TableCell = {
+            id: uuid(),
+            type: 'tableCell',
+            text: textAfterCaret,
+            position: { start: 0, end: textAfterCaret.length },
+            blocks: [newParagraph],
+            inlines: [],
+        }
+        newCell.inlines = this.parser.inline.lexInline(textAfterCaret, newCell.id, 'tableCell', 0)
+        newCell.inlines.forEach((i: Inline) => i.blockId = newCell.id)
+
+        row.blocks.splice(cellIndex + 1, 0, newCell)
+
+        const focusInline = newParagraph.inlines[0]
+        if (!focusInline) return null
+
+        return {
+            renderEffect: {
+                type: 'update',
+                render: {
+                    remove: [],
+                    insert: [
+                        { at: 'current' as const, target: cell, current: cell },
+                        { at: 'next' as const, target: cell, current: newCell },
+                    ],
+                },
+            },
+            caretEffect: {
+                type: 'restore',
+                caret: {
+                    blockId: newParagraph.id,
+                    inlineId: focusInline.id,
+                    position: 0,
+                    affinity: 'start',
+                },
+            },
+        }
+    }
+
     public mergeBlocksInCell(cellId: string, blockId: string): AstApplyEffect | null {
         const cell = this.query.getBlockById(cellId) as TableCell
         if (!cell || cell.type !== 'tableCell') return null
