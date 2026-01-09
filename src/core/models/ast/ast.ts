@@ -2,7 +2,7 @@ import AstNormalizer from './AstNormalizer'
 import AstMutation from './AstMutation'
 import AstQuery from './AstQuery'
 import ParseAst from '../parse/parseAst'
-import { AstApplyEffect, DetectedBlock, Block, BlockQuote, CodeBlock, Inline, List, ListItem, Table, TableCell, TableHeader, TableRow } from '../../types'
+import { AstApplyEffect, DetectedBlock, Block, BlockQuote, CodeBlock, Inline, List, ListItem, Table, TableCell, TableHeader, TableRow, Heading } from '../../types'
 import { uuid } from '../../utils/utils'
 
 class AST {
@@ -31,7 +31,7 @@ class AST {
         this.text = this.normalizer.text
     }
 
-    private transformBlock(text: string, block: Block, detectedBlock: DetectedBlock, caretPosition: number | null = null): AstApplyEffect | null {
+    private transformBlock(text: string, block: Block, detectedBlock: DetectedBlock, caretPosition: number | null = null, removedBlocks: Block[] = []): AstApplyEffect | null {
         const flat = this.query.flattenBlocks(this.blocks)
         const entry = flat.find(b => b.block.id === block.id)
         if (!entry) return null
@@ -128,16 +128,17 @@ class AST {
             }
         }
     
+        const oldBlock = block
         this.blocks.splice(entry.index, 1, ...newBlocks)
 
         return {
             renderEffect: {
                 type: 'update',
                 render: {
-                    remove: [],
+                    remove: removedBlocks,
                     insert: [{
                         at: 'current',
-                        target: block,
+                        target: oldBlock,
                         current: newBlocks[0],
                     }],
                 },
@@ -276,7 +277,10 @@ class AST {
 
         const { left, right } = result
 
-        listItem.blocks = [left]
+        const newLeft = this.parser.reparseTextFragment(left.text, left.position.start)
+        const newRight = this.parser.reparseTextFragment(right.text, right.position.start)
+
+        listItem.blocks = newLeft
 
         const index = list.blocks.findIndex(b => b.id === listItem.id)
         listItem.text = this.query.getListItemText(listItem, list)
@@ -305,7 +309,7 @@ class AST {
             position: { start: 0, end: marker.length },
         } as Inline)
 
-        const bodyText = [right]
+        const bodyText = newRight
             .map(b => b.inlines.map(i => i.text.symbolic).join(''))
             .join('')
 
@@ -376,7 +380,7 @@ class AST {
 
         const ignoreTypes = ['blankLine', 'codeBlock', 'table']
         if (blockTypeChanged && !ignoreTypes.includes(detectedBlock.type)) {
-            return this.transformBlock(newText, leftBlock, detectedBlock, caretPosition)
+            return this.transformBlock(newText, leftBlock, detectedBlock, caretPosition, removedBlocks)
         }
 
         return {
