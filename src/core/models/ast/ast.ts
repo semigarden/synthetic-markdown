@@ -703,7 +703,6 @@ class AST {
         if (!rowEntry) return null
 
         const row = rowEntry.block as TableRow
-        const cellIndex = row.blocks.findIndex(c => c.id === cellId)
 
         const tableEntry = flat.find(e => e.block.type === 'table' && (e.block as Table).blocks.some(r => r.id === row.id))
         if (!tableEntry) return null
@@ -711,54 +710,39 @@ class AST {
         const table = tableEntry.block as Table
         const rowIndex = table.blocks.findIndex(r => r.id === row.id)
 
-        const cellCount = 1 // row.blocks.length
-        const newCells: TableCell[] = []
-        let focusCell: TableCell | null = null
-
-        for (let i = 0; i < cellCount; i++) {
-            const newParagraph: Block = {
-                id: uuid(),
-                type: 'paragraph',
-                text: '',
-                position: { start: 0, end: 0 },
-                inlines: [],
-            }
-            newParagraph.inlines = this.parser.inline.lexInline('', newParagraph.id, 'paragraph', 0)
-            newParagraph.inlines.forEach((i: Inline) => i.blockId = newParagraph.id)
-
-            const newCell: TableCell = {
-                id: uuid(),
-                type: 'tableCell',
-                text: '',
-                position: { start: 0, end: 0 },
-                blocks: [newParagraph],
-                inlines: [],
-            }
-            newCell.inlines = this.parser.inline.lexInline('', newCell.id, 'tableCell', 0)
-            newCell.inlines.forEach((i: Inline) => i.blockId = newCell.id)
-
-            newCells.push(newCell)
-
-            if (i === cellIndex) {
-                focusCell = newCell
-            }
+        const newParagraph: Block = {
+            id: uuid(),
+            type: 'paragraph',
+            text: '',
+            position: { start: 0, end: 0 },
+            inlines: [],
         }
+        newParagraph.inlines = this.parser.inline.lexInline('', newParagraph.id, 'paragraph', 0)
+        newParagraph.inlines.forEach((i: Inline) => i.blockId = newParagraph.id)
+
+        const newCell: TableCell = {
+            id: uuid(),
+            type: 'tableCell',
+            text: '',
+            position: { start: 0, end: 0 },
+            blocks: [newParagraph],
+            inlines: [],
+        }
+        newCell.inlines = this.parser.inline.lexInline('', newCell.id, 'tableCell', 0)
+        newCell.inlines.forEach((i: Inline) => i.blockId = newCell.id)
 
         const newRow: TableRow = {
             id: uuid(),
             type: 'tableRow',
             text: '',
             position: { start: 0, end: 0 },
-            blocks: newCells,
+            blocks: [newCell],
             inlines: [],
         }
 
         table.blocks.splice(rowIndex + 1, 0, newRow)
 
-        if (!focusCell) return null
-
-        const focusParagraph = focusCell.blocks[0]
-        const focusInline = focusParagraph.inlines[0]
+        const focusInline = newParagraph.inlines[0]
         if (!focusInline) return null
 
         return {
@@ -774,7 +758,7 @@ class AST {
             caretEffect: {
                 type: 'restore',
                 caret: {
-                    blockId: focusParagraph.id,
+                    blockId: newParagraph.id,
                     inlineId: focusInline.id,
                     position: 0,
                     affinity: 'start',
