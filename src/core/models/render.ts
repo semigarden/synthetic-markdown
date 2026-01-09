@@ -107,6 +107,9 @@ class Render {
                 this.renderInlines(block.inlines, code)
                 if (!element.querySelector('code')) element.appendChild(code)
                 break
+
+            case 'thematicBreak':
+                break
         
             default:
                 this.renderInlines(block.inlines, element)

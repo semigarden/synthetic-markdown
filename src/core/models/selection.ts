@@ -146,6 +146,17 @@ class Selection {
 
                                 this.focusedBlockId = null
                             }
+
+                            if (block.type === 'thematicBreak') {
+                                const thematicBreakElement = document.createElement('hr') as HTMLElement
+                                thematicBreakElement.classList.add('block', 'thematicBreak')
+                                thematicBreakElement.id = block.id
+                                thematicBreakElement.dataset.blockId = block.id
+                                blockElement.replaceWith(thematicBreakElement)
+        
+                                this.focusedBlockId = null
+                                this.focusedInlineId = null
+                            }
                         }
                     }
                 }
@@ -209,6 +220,27 @@ class Selection {
         if (target.dataset?.blockId) {
             const block = this.ast.query.getBlockById(target.dataset.blockId)
             if (block) {
+                if (block.type === 'thematicBreak') {
+                    const marker = block.inlines.find(i => i.type === 'marker')
+                    if (marker) {
+                        const thematicBreakElement = document.createElement('p') as HTMLElement
+                        thematicBreakElement.id = block.id
+                        thematicBreakElement.dataset.blockId = block.id
+                        thematicBreakElement.classList.add('block', 'thematicBreak', 'focus')
+                        target.replaceWith(thematicBreakElement)
+
+                        const markerElement = document.createElement('span') as HTMLElement
+                        markerElement.id = marker.id
+                        markerElement.dataset.inlineId = marker.id
+                        markerElement.contentEditable = 'true'
+                        markerElement.classList.add('inline', 'marker')
+                        thematicBreakElement.appendChild(markerElement)
+
+                        this.focusedBlockId = block.id
+                        this.focusedInlineId = marker.id
+                    }
+                }
+
                 const lastInline = block.inlines.at(-1)
                 if (lastInline) {
                     this.caret.restoreCaret(lastInline.id, lastInline.text.symbolic.length)
