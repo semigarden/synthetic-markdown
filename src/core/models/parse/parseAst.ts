@@ -49,6 +49,15 @@ class ParseAst {
         if (this.tryOpenList(state.line, offset)) return
         if (this.tryOpenLeafBlock(state.line, offset)) return
 
+        const openParagraph = this.getOpenParagraph()
+        const openListItem = this.openBlocks.findLast(b => b.type === 'listItem')
+
+        if (openParagraph && openListItem) {
+            openParagraph.text += '\n' + state.line
+            openParagraph.position.end = offset + state.line.length
+            return
+        }
+
         this.addParagraph(state.line, offset)
     }
 
@@ -74,10 +83,9 @@ class ParseAst {
                     rest = rest.slice(open.indent)
                     continue
                 }
-    
-                this.openBlocks.splice(i)
-                break
-            }
+
+                continue
+            }            
 
             if (open.type === 'list') {
                 const canContinue =
@@ -266,7 +274,12 @@ class ParseAst {
         else this.blocks.push(p)
     
         this.openBlocks.push({ block: p, type: 'paragraph', indent: 0 })
-    }    
+    }
+    
+    private getOpenParagraph(): Block | null {
+        const last = this.openBlocks.at(-1)
+        return last?.type === 'paragraph' ? last.block : null
+    }
 
     private handleBlankLine() {
         while (this.openBlocks.at(-1)?.type === 'paragraph') {
