@@ -20,6 +20,8 @@ class Editor {
             return this.resolveSplit(context)
         } else if (intent === 'merge') {
             return this.resolveMerge(context)
+        } else if (intent === 'indent') {
+            return this.resolveIndent(context)
         }
 
         return { preventDefault: false }
@@ -89,10 +91,20 @@ class Editor {
         return { preventDefault: false }
     }
 
+    private resolveIndent(context: EditContext): EditEffect {
+        const listItem = this.ast.query.getParentBlock(context.block)
+        if (!listItem || listItem.type !== 'listItem') return { preventDefault: false }
+
+        return {
+            preventDefault: true,
+            ast: [{ type: 'indentListItem', listItemId: listItem.id }],
+        }
+    }
+
     public apply(effect: EditEffect) {
         if (effect.ast) {
             effect.ast.forEach(effect => {
-                const effectTypes = ['input', 'splitBlock', 'splitListItem', 'mergeInline']
+                const effectTypes = ['input', 'splitBlock', 'splitListItem', 'mergeInline', 'indentListItem']
                 if (effectTypes.includes(effect.type)) {
                     let result: AstApplyEffect | null = null
                     switch (effect.type) {
@@ -107,6 +119,9 @@ class Editor {
                             break
                         case 'mergeInline':
                             result = this.ast.mergeInline(effect.leftInlineId, effect.rightInlineId)
+                            break
+                        case 'indentListItem':
+                            result = this.ast.indentListItem(effect.listItemId)
                             break
                     }
                     if (!result) return

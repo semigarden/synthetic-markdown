@@ -85,8 +85,13 @@ class ParseAst {
                     continue
                 }
 
-                continue
-            }            
+                if (/^\s+([-*+]|\d+[.)])\s/.test(rest)) {
+                    continue
+                }
+
+                this.openBlocks.splice(i)
+                break
+            }         
 
             if (open.type === 'list') {
                 const list = open.block as List
@@ -222,12 +227,34 @@ class ParseAst {
         const m = /^(\s{0,3})([-*+]|(\d+[.)]))\s+(.*)$/.exec(line)
         if (!m) return false
 
+        while (this.openBlocks.at(-1)?.type === 'paragraph') {
+            this.openBlocks.pop()
+        }
+
         const indent = m[1].length
         const marker = m[2]
         const ordered = !!m[3]
         const listStart = ordered ? parseInt(m[3], 10) : undefined
         const content = m[4]
         const listItemText = m[0]
+
+        while (true) {
+            const top = this.openBlocks.at(-1)
+            if (!top) break
+        
+            if (top.type === 'paragraph') {
+                this.openBlocks.pop()
+                continue
+            }
+        
+            if (top.type === 'listItem' && top.indent > indent) {
+                if (indent > 0) break
+                this.openBlocks.pop()
+                continue
+            }
+        
+            break
+        }
 
         const openListBlock = this.openBlocks.findLast(
             b =>
@@ -238,7 +265,7 @@ class ParseAst {
         
         let list = openListBlock?.block as List | undefined
 
-        if (!list || list.ordered !== ordered) {
+        if (!list) {
             list = {
                 id: uuid(),
                 type: 'list',
@@ -251,7 +278,13 @@ class ParseAst {
                 tight: true,
             }
 
-            this.blocks.push(list)
+            const parentListItem = this.openBlocks.findLast(b => b.type === 'listItem')?.block
+
+            if (parentListItem && indent > (openListBlock?.indent ?? 0)) {
+                (parentListItem as ListItem).blocks.push(list)
+            } else {
+                this.blocks.push(list)
+            }
             this.openBlocks.push({
                 block: list,
                 type: 'list',

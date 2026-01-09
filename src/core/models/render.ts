@@ -82,11 +82,20 @@ class Render {
         switch (block.type) {
             case 'blockQuote':
             case 'list':
-            case 'listItem':
+            case 'listItem': {
                 for (const child of block.blocks) {
-                    this.renderBlock(child, element)
+                    if (child.type !== 'list') {
+                        this.renderBlock(child, element)
+                    }
                 }
+
+                const nestedList = block.blocks.find(b => b.type === 'list')
+                if (nestedList) {
+                    this.renderBlock(nestedList, element)
+                }
+
                 break
+            }
 
             case 'table':
                 case 'tableRow':

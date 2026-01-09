@@ -20,6 +20,7 @@ class AST {
     setText(text: string) {
         this.text = text
         this.blocks = this.parser.parse(text)
+        console.log('blocks', JSON.stringify(this.blocks, null, 2))
     }
 
     public get query() {
@@ -361,6 +362,59 @@ class AST {
                     blockId: leftBlock.id,
                     inlineId: mergedInline.id,
                     position: caretPositionInMergedInline,
+                    affinity: 'start',
+                },
+            },
+        }
+    }
+
+    public indentListItem(listItemId: string): AstApplyEffect | null {
+        const listItem = this.query.getBlockById(listItemId) as ListItem
+        if (!listItem) return null
+    
+        const list = this.query.getListFromBlock(listItem)
+        if (!list) return null
+    
+        const index = list.blocks.indexOf(listItem)
+        if (index === 0) return null
+    
+        const prev = list.blocks[index - 1] as ListItem
+    
+        let sublist = prev.blocks.find(b => b.type === 'list') as List | undefined
+        if (!sublist) {
+            sublist = {
+                id: uuid(),
+                type: 'list',
+                ordered: list.ordered,
+                listStart: list.listStart,
+                tight: list.tight,
+                blocks: [],
+                inlines: [],
+                text: '',
+                position: { start: 0, end: 0 },
+            }
+            prev.blocks.push(sublist)
+        }
+
+        list.blocks.splice(index, 1)
+        sublist.blocks.push(listItem)
+    
+        return {
+            renderEffect: {
+                type: 'update',
+                render: {
+                    remove: [],
+                    insert: [
+                        { at: 'current', target: prev, current: prev },
+                    ],
+                },
+            },
+            caretEffect: {
+                type: 'restore',
+                caret: {
+                    blockId: listItem.id,
+                    inlineId: listItem.blocks[0].inlines[0].id,
+                    position: 0,
                     affinity: 'start',
                 },
             },
