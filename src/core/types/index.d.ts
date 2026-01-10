@@ -318,3 +318,9 @@ export interface SelectionRange {
     start: SelectionPoint
     end: SelectionPoint
 }
+
+export type SelectionType =
+    | 'caret'
+    | 'inline'
+    | 'block'
+    | 'multiBlock'

@@ -1,6 +1,6 @@
 import AST from './ast/ast'
 import Caret from './caret'
-import { EditContext, SelectionRange, SelectionPoint } from '../types'
+import { EditContext, SelectionRange, SelectionPoint, SelectionType } from '../types'
 
 class Selection {
     private rafId: number | null = null
@@ -527,6 +527,19 @@ class Selection {
 
         return { inline, position }
     }
+
+    private getSelectionType(range: SelectionRange): SelectionType {
+        if (range.start.position === range.end.position) {
+            return 'caret'
+        }
+    
+        if (range.start.blockId === range.end.blockId) {
+            return 'inline'
+        }
+    
+        return 'multiBlock'
+    }
+    
 }
 
 export default Selection
