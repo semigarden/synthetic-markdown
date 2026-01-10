@@ -1,22 +1,22 @@
 import Editor from './editor'
-import { Event, Block, Caret } from '../types'
+import { TimelineEvent, Block, Caret } from '../types'
 
 class Timeline {
-    private undoStack: Event[] = []
-    private redoStack: Event[] = []
-    private currentEvent: Event
+    private undoStack: TimelineEvent[] = []
+    private redoStack: TimelineEvent[] = []
+    private currentEvent: TimelineEvent
 
-    constructor(private editor: Editor, initialEvent: Event) {
+    constructor(private editor: Editor, initialEvent: TimelineEvent) {
         this.currentEvent = this.cloneEvent(initialEvent)
     }
 
-    public push(event: Event): void {
+    public push(event: TimelineEvent): void {
         const clonedEvent = this.cloneEvent(event)
         this.undoStack.push(clonedEvent)
         this.redoStack = []
     }
 
-    public updateEvent(event: Event): void {
+    public updateEvent(event: TimelineEvent): void {
         this.currentEvent = this.cloneEvent(event)
     }
 
@@ -36,7 +36,7 @@ class Timeline {
         this.restore(event)
     }
 
-    private restore(event: Event): void {
+    private restore(event: TimelineEvent): void {
         const clonedBlocks = this.cloneBlocks(event.blocks)
 
         this.editor.ast.text = event.text
@@ -46,7 +46,7 @@ class Timeline {
         this.editor.emitChange()
     }
 
-    private cloneEvent(event: Event): Event {
+    private cloneEvent(event: TimelineEvent): TimelineEvent {
         return {
             text: event.text,
             blocks: this.cloneBlocks(event.blocks),

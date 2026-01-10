@@ -302,7 +302,7 @@ export interface OpenBlock {
     marker?: string
 }
 
-export interface Event {
+export interface TimelineEvent {
     text: string
     blocks: Block[]
     caret: Caret
