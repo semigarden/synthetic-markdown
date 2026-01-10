@@ -80,6 +80,7 @@ class Element extends HTMLElement {
     
         const div = document.createElement('div')
         div.classList.add('element')
+        div.contentEditable = 'true'
 
         div.addEventListener('input', () => {
             const context = this.selection?.resolveInlineContext()

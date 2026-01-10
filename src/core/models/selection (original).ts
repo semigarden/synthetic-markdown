@@ -30,28 +30,54 @@ class Selection {
     }
 
     private onSelectionChange = () => {
-        console.log('onSelectionChange')
         if (this.suppressSelectionChange) return
-    
+
         if (this.rafId !== null) {
             cancelAnimationFrame(this.rafId)
         }
-    
+        
         this.rafId = requestAnimationFrame(() => {
+            if (this.suppressSelectionChange) return
+
             const selection = window.getSelection()
-            if (!selection || selection.rangeCount === 0) {
-                this.range = null
-                this.caret.clear()
+            if (!selection || selection.rangeCount === 0) return
+
+            const domRange = selection.getRangeAt(0)
+
+            this.resolveRangeFromSelection(selection, domRange)
+
+            console.log('range', JSON.stringify(this.range, null, 2))
+
+            if (!this.range) return
+
+            const type = this.getSelectionType(this.range)
+
+            if (type === 'caret') {
+                this.clearRenderedSelection()
                 return
-            }
-    
-            const range = selection.getRangeAt(0)
-            this.resolveRangeFromSelection(selection, range)
+            }            
+
+            const effect = this.resolveSelection(this.range)
+
+            const astRange = this.range
+
+            this.suppressSelectionChange = true
+
+            requestAnimationFrame(() => {
+                this.renderSelection(effect)
+
+                if (astRange) {
+                    this.restoreRangeFromAst(astRange)
+                }
+
+                requestAnimationFrame(() => {
+                    this.suppressSelectionChange = false
+                })
+            })
         })
     }
 
     private onFocusIn = (e: FocusEvent) => {
-        console.log('onFocusIn')
         const target = e.target as HTMLElement
         if (!target.dataset?.inlineId) return
     
@@ -126,7 +152,6 @@ class Selection {
     }
 
     private onFocusOut = (e: FocusEvent) => {
-        console.log('onFocusOut')
         if (this.focusedInlineId !== null) {
             const inlineEl = this.rootElement?.querySelector(`[data-inline-id="${this.focusedInlineId}"]`) as HTMLElement
             if (!inlineEl) return
@@ -201,118 +226,117 @@ class Selection {
     }
 
     private onClick = (e: MouseEvent) => {
-        // console.log('onClick')
-        // const target = e.target as HTMLElement
+        const target = e.target as HTMLElement
 
-        // const tableElement = target.closest('table, tr, td, th')
-        // if (tableElement && !target.dataset?.blockId && !target.dataset?.inlineId) {
-        //     const blockElement = tableElement.closest('[data-block-id]') as HTMLElement
-        //     if (blockElement?.dataset?.blockId) {
-        //         const block = this.ast.query.getBlockById(blockElement.dataset.blockId)
-        //         if (block && (block.type === 'table' || block.type === 'tableRow' || block.type === 'tableCell' || block.type === 'tableHeader')) {
-        //             const result = this.findClosestInlineAndPosition(block, e.clientX, e.clientY)
-        //             if (result) {
-        //                 this.caret.restoreCaret(result.inline.id, result.position)
-        //                 return
-        //             }
+        const tableElement = target.closest('table, tr, td, th')
+        if (tableElement && !target.dataset?.blockId && !target.dataset?.inlineId) {
+            const blockElement = tableElement.closest('[data-block-id]') as HTMLElement
+            if (blockElement?.dataset?.blockId) {
+                const block = this.ast.query.getBlockById(blockElement.dataset.blockId)
+                if (block && (block.type === 'table' || block.type === 'tableRow' || block.type === 'tableCell' || block.type === 'tableHeader')) {
+                    const result = this.findClosestInlineAndPosition(block, e.clientX, e.clientY)
+                    if (result) {
+                        this.caret.restoreCaret(result.inline.id, result.position)
+                        return
+                    }
 
-        //             const lastInline = this.ast.query.getLastInline(block)
-        //             if (lastInline) {
-        //                 this.caret.restoreCaret(lastInline.id, lastInline.text.symbolic.length)
-        //                 return
-        //             }
-        //         }
-        //     }
-        // }
+                    const lastInline = this.ast.query.getLastInline(block)
+                    if (lastInline) {
+                        this.caret.restoreCaret(lastInline.id, lastInline.text.symbolic.length)
+                        return
+                    }
+                }
+            }
+        }
         
-        // if (target.dataset?.inlineId) {
-        //     const inline = this.ast.query.getInlineById(target.dataset.inlineId!)
-        //     if (!inline) return
+        if (target.dataset?.inlineId) {
+            const inline = this.ast.query.getInlineById(target.dataset.inlineId!)
+            if (!inline) return
 
-        //     if (inline.type === 'image' && inline.id !== this.focusedInlineId) {
-        //         const focusedImage = document.createElement('span')
-        //         focusedImage.classList.add('inline', 'image', 'focus')
-        //         focusedImage.id = inline.id
-        //         focusedImage.dataset.inlineId = inline.id
-        //         focusedImage.contentEditable = 'true'
+            if (inline.type === 'image' && inline.id !== this.focusedInlineId) {
+                const focusedImage = document.createElement('span')
+                focusedImage.classList.add('inline', 'image', 'focus')
+                focusedImage.id = inline.id
+                focusedImage.dataset.inlineId = inline.id
+                focusedImage.contentEditable = 'true'
 
-        //         target.replaceWith(focusedImage)
+                target.replaceWith(focusedImage)
 
-        //         const textNode = document.createTextNode(inline.text.symbolic)
-        //         focusedImage.appendChild(textNode)
+                const textNode = document.createTextNode(inline.text.symbolic)
+                focusedImage.appendChild(textNode)
 
-        //         const caretOffset = textNode.length
+                const caretOffset = textNode.length
 
-        //         const selection = window.getSelection()
-        //         if (!selection || selection.rangeCount === 0) return
+                const selection = window.getSelection()
+                if (!selection || selection.rangeCount === 0) return
 
-        //         const newRange = document.createRange()
-        //         newRange.setStart(textNode, caretOffset)
-        //         newRange.collapse(true)
+                const newRange = document.createRange()
+                newRange.setStart(textNode, caretOffset)
+                newRange.collapse(true)
 
-        //         selection.removeAllRanges()
-        //         selection.addRange(newRange)
+                selection.removeAllRanges()
+                selection.addRange(newRange)
 
-        //         focusedImage.focus()
+                focusedImage.focus()
 
-        //         this.focusedInlineId = inline.id
-        //         return
-        //     }
-        // }
+                this.focusedInlineId = inline.id
+                return
+            }
+        }
 
-        // if (target.dataset?.blockId) {
-        //     const block = this.ast.query.getBlockById(target.dataset.blockId)
-        //     if (block) {
-        //         console.log('block', JSON.stringify(block, null, 2))
-        //         if (block.type === 'thematicBreak') {
-        //             const marker = block.inlines.find(i => i.type === 'marker')
-        //             if (marker) {
-        //                 const thematicBreakElement = document.createElement('p') as HTMLElement
-        //                 thematicBreakElement.id = block.id
-        //                 thematicBreakElement.dataset.blockId = block.id
-        //                 thematicBreakElement.classList.add('block', 'thematicBreak', 'focus')
-        //                 target.replaceWith(thematicBreakElement)
+        if (target.dataset?.blockId) {
+            const block = this.ast.query.getBlockById(target.dataset.blockId)
+            if (block) {
+                console.log('block', JSON.stringify(block, null, 2))
+                if (block.type === 'thematicBreak') {
+                    const marker = block.inlines.find(i => i.type === 'marker')
+                    if (marker) {
+                        const thematicBreakElement = document.createElement('p') as HTMLElement
+                        thematicBreakElement.id = block.id
+                        thematicBreakElement.dataset.blockId = block.id
+                        thematicBreakElement.classList.add('block', 'thematicBreak', 'focus')
+                        target.replaceWith(thematicBreakElement)
 
-        //                 const markerElement = document.createElement('span') as HTMLElement
-        //                 markerElement.id = marker.id
-        //                 markerElement.dataset.inlineId = marker.id
-        //                 markerElement.contentEditable = 'true'
-        //                 markerElement.classList.add('inline', 'marker')
-        //                 thematicBreakElement.appendChild(markerElement)
+                        const markerElement = document.createElement('span') as HTMLElement
+                        markerElement.id = marker.id
+                        markerElement.dataset.inlineId = marker.id
+                        markerElement.contentEditable = 'true'
+                        markerElement.classList.add('inline', 'marker')
+                        thematicBreakElement.appendChild(markerElement)
 
-        //                 this.focusedBlockId = block.id
-        //                 this.focusedInlineId = marker.id
-        //             }
-        //         }
+                        this.focusedBlockId = block.id
+                        this.focusedInlineId = marker.id
+                    }
+                }
 
-        //         if (block.type === 'table' || block.type === 'tableRow' || block.type === 'tableCell' || block.type === 'tableHeader') {
-        //             const result = this.findClosestInlineAndPosition(block, e.clientX, e.clientY)
-        //             if (result) {
-        //                 this.caret.restoreCaret(result.inline.id, result.position)
-        //             } else {
-        //                 const lastInline = this.ast.query.getLastInline(block)
-        //                 if (lastInline) {
-        //                     this.caret.restoreCaret(lastInline.id, lastInline.text.symbolic.length)
-        //                 }
-        //             }
-        //         } else {
-        //             const lastInline = block.inlines.at(-1)
-        //             if (lastInline) {
-        //                 this.caret.restoreCaret(lastInline.id, lastInline.text.symbolic.length)
-        //             }
-        //         }
-        //     }
-        // }
+                if (block.type === 'table' || block.type === 'tableRow' || block.type === 'tableCell' || block.type === 'tableHeader') {
+                    const result = this.findClosestInlineAndPosition(block, e.clientX, e.clientY)
+                    if (result) {
+                        this.caret.restoreCaret(result.inline.id, result.position)
+                    } else {
+                        const lastInline = this.ast.query.getLastInline(block)
+                        if (lastInline) {
+                            this.caret.restoreCaret(lastInline.id, lastInline.text.symbolic.length)
+                        }
+                    }
+                } else {
+                    const lastInline = block.inlines.at(-1)
+                    if (lastInline) {
+                        this.caret.restoreCaret(lastInline.id, lastInline.text.symbolic.length)
+                    }
+                }
+            }
+        }
 
-        // if (target.classList.contains('element')) {
-        //     const lastBlock = this.ast.blocks.at(-1)
-        //     if (lastBlock) {
-        //         const lastInline = lastBlock.inlines.at(-1)
-        //         if (lastInline) {
-        //             this.caret.restoreCaret(lastInline.id, lastInline.text.symbolic.length)
-        //         }
-        //     }
-        // }
+        if (target.classList.contains('element')) {
+            const lastBlock = this.ast.blocks.at(-1)
+            if (lastBlock) {
+                const lastInline = lastBlock.inlines.at(-1)
+                if (lastInline) {
+                    this.caret.restoreCaret(lastInline.id, lastInline.text.symbolic.length)
+                }
+            }
+        }
     }
 
     private resolvePoint(element: Node, position: number, affinity: 'start' | 'end'): SelectionPoint | null {
@@ -363,7 +387,6 @@ class Selection {
         )
     
         if (!anchor || !focus) {
-            this.range = null
             this.caret.clear()
             return
         }
@@ -587,6 +610,166 @@ class Selection {
         position = Math.max(0, Math.min(position, inline.text.symbolic.length))
 
         return { inline, position }
+    }
+
+    private getSelectionType(range: SelectionRange): SelectionType {
+        if (range.start.position === range.end.position) {
+            return 'caret'
+        }
+    
+        if (range.start.blockId === range.end.blockId) {
+            return 'inline'
+        }
+    
+        return 'multiBlock'
+    }
+    
+    private resolveSelection(range: SelectionRange): SelectionEffect {
+        const result = []
+        const blocks = this.ast.blocks
+        
+        for (const block of blocks) {
+            const blockStart = block.position.start
+            const blockEnd = block.position.end
+
+            if (blockEnd <= range.start.position) continue
+            if (blockStart >= range.end.position) break
+
+            const inlines = []
+
+            for (const inline of block.inlines) {
+                const inlineStart = blockStart + inline.position.start
+                const inlineEnd = blockStart + inline.position.end
+
+                const from = Math.max(inlineStart, range.start.position)
+                const to = Math.min(inlineEnd, range.end.position)
+
+                if (from < to) {
+                    inlines.push({ inline, from: from - inlineStart, to: to - inlineStart })
+                }
+            }
+
+            if (inlines.length > 0) {
+                result.push({block, inlines})
+            }
+        }
+
+        return { blocks: result }
+    }
+
+    public renderSelection(effect: SelectionEffect) {
+        this.clearRenderedSelection()
+    
+        for (const { inlines } of effect.blocks) {
+            for (const { inline, from, to } of inlines) {
+                const inlineElement = this.rootElement.querySelector(
+                    `[data-inline-id="${inline.id}"]`
+                ) as HTMLElement
+    
+                if (!inlineElement) continue
+    
+                this.wrapRange(inlineElement, from, to)
+            }
+        }
+    }    
+
+    private wrapRange(inlineElement: HTMLElement, from: number, to: number) {
+        const text = inlineElement.textContent ?? ''
+        if (from >= to || from < 0 || to > text.length) return
+
+        inlineElement.textContent = ''
+    
+        inlineElement.append(
+            document.createTextNode(text.slice(0, from)),
+            this.mark(text.slice(from, to)),
+            document.createTextNode(text.slice(to))
+        )
+    }
+    
+    private mark(text: string) {
+        const span = document.createElement('span')
+        span.classList.add('selection')
+        span.textContent = text
+        return span
+    }
+
+    private clearRenderedSelection() {
+        const marks = this.rootElement.querySelectorAll('.selection')
+        for (const mark of Array.from(marks)) {
+            const parent = mark.parentNode
+            if (!parent) continue
+    
+            parent.replaceChild(
+                document.createTextNode(mark.textContent ?? ''),
+                mark
+            )
+    
+            parent.normalize()
+        }
+    }    
+    
+    private clearSelection() {
+        const selection = window.getSelection()
+        if (selection) {
+            selection.removeAllRanges()
+        }
+    }
+
+    private snapshotSelection(): Range | null {
+        const selection = window.getSelection()
+        if (!selection || selection.rangeCount === 0) return null
+        return selection.getRangeAt(0).cloneRange()
+    }
+    
+    private restoreSelection(range: Range | null) {
+        if (!range) return
+        const selection = window.getSelection()
+        if (!selection) return
+    
+        selection.removeAllRanges()
+        selection.addRange(range)
+    }
+    
+    private restoreRangeFromAst(range: SelectionRange) {
+        const selection = window.getSelection()
+        if (!selection) return
+    
+        const startEl = this.rootElement.querySelector(
+            `[data-inline-id="${range.start.inlineId}"]`
+        ) as HTMLElement | null
+    
+        const endEl = this.rootElement.querySelector(
+            `[data-inline-id="${range.end.inlineId}"]`
+        ) as HTMLElement | null
+    
+        if (!startEl || !endEl) return
+    
+        const startOffset =
+            range.start.position -
+            this.ast.query.getBlockById(range.start.blockId)!.position.start -
+            this.ast.query.getInlineById(range.start.inlineId)!.position.start
+    
+        const endOffset =
+            range.end.position -
+            this.ast.query.getBlockById(range.end.blockId)!.position.start -
+            this.ast.query.getInlineById(range.end.inlineId)!.position.start
+    
+        const start = this.resolveTextNodeAt(startEl, startOffset)
+        const end = this.resolveTextNodeAt(endEl, endOffset)
+    
+        if (!start || !end) return
+    
+        const domRange = document.createRange()
+        domRange.setStart(start.node, Math.min(start.offset, start.node.length))
+        domRange.setEnd(end.node, Math.min(end.offset, end.node.length))
+    
+        selection.removeAllRanges()
+        selection.addRange(domRange)
+        
+        if (range.direction === 'backward') {
+            selection.collapseToEnd()
+            selection.extend(start.node, Math.min(start.offset, start.node.length))
+        }
     }
     
     private resolveTextNodeAt(

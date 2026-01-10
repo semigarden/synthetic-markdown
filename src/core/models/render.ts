@@ -82,6 +82,7 @@ class Render {
             element.dataset.blockId = block.id
             element.id = block.id
             element.classList.add('block')
+            element.contentEditable = 'false'
         }
 
         switch (block.type) {
@@ -195,7 +196,8 @@ class Render {
         inlineElement.id = inline.id
         inlineElement.dataset.inlineId = inline.id
         inlineElement.textContent = inline.text.semantic
-        inlineElement.contentEditable = 'true'
+        // inlineElement.contentEditable = 'true'
+        inlineElement.contentEditable = 'false'
         inlineElement.classList.add('inline', inline.type)
 
         if (inline.type === 'link') {

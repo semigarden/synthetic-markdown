@@ -42,10 +42,10 @@
     background: var(--color-selection-bg);
 }
 
-::selection {
-    background: transparent;
-    color: inherit;
-}
+// ::selection {
+//     background: transparent;
+//     color: inherit;
+// }
 
 .block {
     margin: 0;
