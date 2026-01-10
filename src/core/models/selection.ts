@@ -41,8 +41,10 @@ class Selection {
 
             const selection = window.getSelection()
             if (!selection || selection.rangeCount === 0) return
-            const range = selection.getRangeAt(0)
-            this.resolveRange(range)
+
+            const domRange = selection.getRangeAt(0)
+
+            this.resolveRangeFromSelection(selection, domRange)
 
             console.log('range', JSON.stringify(this.range, null, 2))
 
@@ -371,29 +373,84 @@ class Selection {
         }
     }
 
+    private resolveRangeFromSelection(selection: globalThis.Selection, range: Range) {
+        const anchor = this.resolvePoint(
+            selection.anchorNode!,
+            selection.anchorOffset,
+            'start'
+        )
+    
+        const focus = this.resolvePoint(
+            selection.focusNode!,
+            selection.focusOffset,
+            'end'
+        )
+    
+        if (!anchor || !focus) {
+            this.caret.clear()
+            return
+        }
+    
+        const direction =
+            selection.anchorNode === selection.focusNode
+                ? selection.anchorOffset <= selection.focusOffset
+                    ? 'forward'
+                    : 'backward'
+                : anchor.position <= focus.position
+                    ? 'forward'
+                    : 'backward'
+    
+        const ordered =
+            anchor.position <= focus.position
+                ? { start: anchor, end: focus }
+                : { start: focus, end: anchor }
+    
+        this.range = {
+            ...ordered,
+            direction
+        }
+    
+        if (ordered.start.position === ordered.end.position) {
+            this.caret.blockId = ordered.start.blockId
+            this.caret.inlineId = ordered.start.inlineId
+            this.caret.position = ordered.start.position
+            this.caret.affinity = direction === 'forward' ? 'end' : 'start'
+        } else {
+            this.caret.clear()
+        }
+    }    
+
     private resolveRange(range: Range) {
         const start = this.resolvePoint(range.startContainer, range.startOffset, 'start')
         const end = this.resolvePoint(range.endContainer, range.endOffset, 'end')
-
-        if (start && end) {
-            this.range = {
-                start,
-                end
-            }
-        }
 
         if (!start || !end) {
             this.caret.clear()
             return
         }
 
-        this.range = start.position <= end.position ? { start, end } : { start: end, end: start }
+        const isForward =
+            range.startContainer === range.commonAncestorContainer
+                ? range.startOffset <= range.endOffset
+                : start.position <= end.position
 
-        if (this.range.start.position === this.range.end.position) {
-            this.caret.blockId = this.range.start.blockId
-            this.caret.inlineId = this.range.start.inlineId
-            this.caret.position = this.range.start.position
-            this.caret.affinity = this.range.start.affinity
+        const direction = isForward ? 'forward' : 'backward'
+
+        const ordered =
+            start.position <= end.position
+                ? { start, end }
+                : { start: end, end: start }
+
+        this.range = {
+            ...ordered,
+            direction
+        }
+
+        if (ordered.start.position === ordered.end.position) {
+            this.caret.blockId = ordered.start.blockId
+            this.caret.inlineId = ordered.start.inlineId
+            this.caret.position = ordered.start.position
+            this.caret.affinity = direction === 'forward' ? 'end' : 'start'
         } else {
             this.caret.clear()
         }
@@ -687,25 +744,18 @@ class Selection {
     
         if (!startEl || !endEl) return
     
-        const startInline = this.ast.query.getInlineById(range.start.inlineId)
-        const endInline = this.ast.query.getInlineById(range.end.inlineId)
-        const startBlock = this.ast.query.getBlockById(range.start.blockId)
-        const endBlock = this.ast.query.getBlockById(range.end.blockId)
-    
-        if (!startInline || !endInline || !startBlock || !endBlock) return
-    
         const startOffset =
             range.start.position -
-            startBlock.position.start -
-            startInline.position.start
+            this.ast.query.getBlockById(range.start.blockId)!.position.start -
+            this.ast.query.getInlineById(range.start.inlineId)!.position.start
     
         const endOffset =
             range.end.position -
-            endBlock.position.start -
-            endInline.position.start
+            this.ast.query.getBlockById(range.end.blockId)!.position.start -
+            this.ast.query.getInlineById(range.end.inlineId)!.position.start
     
-        const start = this.resolveTextNodeAt(startEl, Math.max(0, startOffset))
-        const end = this.resolveTextNodeAt(endEl, Math.max(0, endOffset))
+        const start = this.resolveTextNodeAt(startEl, startOffset)
+        const end = this.resolveTextNodeAt(endEl, endOffset)
     
         if (!start || !end) return
     
@@ -715,6 +765,11 @@ class Selection {
     
         selection.removeAllRanges()
         selection.addRange(domRange)
+        
+        if (range.direction === 'backward') {
+            selection.collapseToEnd()
+            selection.extend(start.node, Math.min(start.offset, start.node.length))
+        }
     }
     
     private resolveTextNodeAt(
@@ -733,7 +788,6 @@ class Selection {
             } else if (child instanceof HTMLElement) {
                 const len = child.textContent?.length ?? 0
                 if (remaining <= len) {
-                    // selection span or similar → descend
                     const text = child.firstChild
                     if (text instanceof Text) {
                         return { node: text, offset: remaining }
@@ -743,8 +797,7 @@ class Selection {
                 remaining -= len
             }
         }
-    
-        // fallback: end of last text node
+
         const last = inlineEl.lastChild
         if (last instanceof Text) {
             return { node: last, offset: last.length }

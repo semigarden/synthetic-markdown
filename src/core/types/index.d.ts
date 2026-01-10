@@ -317,6 +317,7 @@ export interface SelectionPoint {
 export interface SelectionRange {
     start: SelectionPoint
     end: SelectionPoint
+    direction: 'forward' | 'backward'
 }
 
 export type SelectionType =
