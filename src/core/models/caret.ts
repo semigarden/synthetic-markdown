@@ -40,7 +40,7 @@ class Caret {
             return
         }
       
-        inlineEl.focus()
+        this.rootElement.focus()
       
         const selection = window.getSelection()
         if (!selection) return
@@ -91,13 +91,11 @@ class Caret {
         
             selection.addRange(range)
         
-            inlineEl.focus()
-        
             inlineEl.scrollIntoView({ block: 'nearest' })
         
         } catch (err) {
             console.warn('failed to restore caret:', err)
-            inlineEl.focus()
+            this.rootElement.focus()
         }
     }
 
