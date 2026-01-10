@@ -1,6 +1,6 @@
 import AST from './ast/ast'
 import Caret from './caret'
-import { EditContext, SelectionRange, SelectionPoint, SelectionType, SelectionEffect, Inline, Block } from '../types'
+import { EditContext, SelectionRange, SelectionPoint, Inline, Block } from '../types'
 
 class Selection {
     private rafId: number | null = null
@@ -43,12 +43,15 @@ class Selection {
             }
     
             const range = selection.getRangeAt(0)
-            
-            const currentInlineEl = this.getInlineElementFromNode(range.startContainer)
-            const currentInlineId = currentInlineEl?.dataset?.inlineId ?? null
-            
-            if (currentInlineId !== this.focusedInlineId) {
-                this.handleInlineTransition(currentInlineId, selection, range)
+            const isCollapsed = range.collapsed
+
+            if (isCollapsed) {
+                const currentInlineEl = this.getInlineElementFromNode(range.startContainer)
+                const currentInlineId = currentInlineEl?.dataset?.inlineId ?? null
+                
+                if (currentInlineId !== this.focusedInlineId) {
+                    this.handleInlineTransition(currentInlineId, selection, range)
+                }
             }
             
             this.resolveRangeFromSelection(selection, range)
@@ -251,7 +254,6 @@ class Selection {
             ? 'forward'
             : 'backward'
     
-        // canonicalize start <= end
         if (this.comparePoints(start, end) > 0) {
             return { start: end, end: start, direction }
         }
@@ -296,26 +298,24 @@ class Selection {
             return
         }
     
-        const direction =
-            selection.anchorNode === selection.focusNode
-                ? selection.anchorOffset <= selection.focusOffset
-                    ? 'forward'
-                    : 'backward'
-                : anchor.position <= focus.position
-                    ? 'forward'
-                    : 'backward'
+        const comparison = this.comparePoints(anchor, focus)
+        const direction = comparison <= 0 ? 'forward' : 'backward'
     
-        const ordered =
-            anchor.position <= focus.position
-                ? { start: anchor, end: focus }
-                : { start: focus, end: anchor }
+        const ordered = comparison <= 0
+            ? { start: anchor, end: focus }
+            : { start: focus, end: anchor }
     
         this.range = {
             ...ordered,
             direction
         }
     
-        if (ordered.start.position === ordered.end.position) {
+        const isSamePoint = 
+            ordered.start.blockId === ordered.end.blockId &&
+            ordered.start.inlineId === ordered.end.inlineId &&
+            ordered.start.position === ordered.end.position
+
+        if (isSamePoint) {
             this.caret.blockId = ordered.start.blockId
             this.caret.inlineId = ordered.start.inlineId
             this.caret.position = ordered.start.position

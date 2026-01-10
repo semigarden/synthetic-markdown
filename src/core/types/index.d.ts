@@ -319,20 +319,3 @@ export interface SelectionRange {
     end: SelectionPoint
     direction: 'forward' | 'backward'
 }
-
-export type SelectionType =
-    | 'caret'
-    | 'inline'
-    | 'block'
-    | 'multiBlock'
-
-export interface SelectionEffect {
-    blocks: {
-        block: Block
-        inlines: {
-            inline: Inline
-            from: number
-            to: number
-        }[]
-    }[]
-}
