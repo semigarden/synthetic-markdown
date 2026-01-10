@@ -45,6 +45,31 @@ class Selection {
             this.resolveRange(range)
 
             console.log('range', JSON.stringify(this.range, null, 2))
+
+            if (!this.range) return
+
+            const type = this.getSelectionType(this.range)
+
+            if (type === 'caret') {
+                this.clearRenderedSelection()
+                return
+            }            
+
+            const effect = this.resolveSelection(this.range)
+
+            const savedRange = this.snapshotSelection()
+
+            this.suppressSelectionChange = true
+
+            requestAnimationFrame(() => {
+                this.renderSelection(effect)
+
+                this.restoreSelection(savedRange)
+
+                requestAnimationFrame(() => {
+                    this.suppressSelectionChange = false
+                })
+            })
         })
     }
 
@@ -574,7 +599,7 @@ class Selection {
     }
 
     public renderSelection(effect: SelectionEffect) {
-        this.clearSelection()
+        this.clearRenderedSelection()
     
         for (const { inlines } of effect.blocks) {
             for (const { inline, from, to } of inlines) {
@@ -587,10 +612,12 @@ class Selection {
                 this.wrapRange(inlineElement, from, to)
             }
         }
-    }
+    }    
 
     private wrapRange(inlineElement: HTMLElement, from: number, to: number) {
         const text = inlineElement.textContent ?? ''
+        if (from >= to || from < 0 || to > text.length) return
+
         inlineElement.textContent = ''
     
         inlineElement.append(
@@ -606,6 +633,21 @@ class Selection {
         span.textContent = text
         return span
     }
+
+    private clearRenderedSelection() {
+        const marks = this.rootElement.querySelectorAll('.selection')
+        for (const mark of Array.from(marks)) {
+            const parent = mark.parentNode
+            if (!parent) continue
+    
+            parent.replaceChild(
+                document.createTextNode(mark.textContent ?? ''),
+                mark
+            )
+    
+            parent.normalize()
+        }
+    }    
     
     private clearSelection() {
         const selection = window.getSelection()
@@ -613,6 +655,22 @@ class Selection {
             selection.removeAllRanges()
         }
     }
+
+    private snapshotSelection(): Range | null {
+        const selection = window.getSelection()
+        if (!selection || selection.rangeCount === 0) return null
+        return selection.getRangeAt(0).cloneRange()
+    }
+    
+    private restoreSelection(range: Range | null) {
+        if (!range) return
+        const selection = window.getSelection()
+        if (!selection) return
+    
+        selection.removeAllRanges()
+        selection.addRange(range)
+    }
+    
 }
 
 export default Selection

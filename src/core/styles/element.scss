@@ -12,6 +12,7 @@
     --color-accent:           #4a9eff;
     --color-code-bg:          #1a1625;
     --color-blockquote-border: #4a9eff;
+    --color-selection-bg:     #2a2340;
 }
 
 .element {
@@ -35,6 +36,15 @@
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     font-size: 16px;
     line-height: 1.6;
+}
+
+.selection {
+    background: var(--color-selection-bg);
+}
+
+::selection {
+    background: transparent;
+    color: inherit;
 }
 
 .block {
