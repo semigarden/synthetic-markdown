@@ -5,7 +5,7 @@ import Timeline from './timeline'
 import { EditContext, EditEffect, AstApplyEffect, Intent } from '../types'
 
 class Editor {
-    private emitChange: () => void
+    public emitChange: () => void
     public timeline: Timeline
 
     constructor(

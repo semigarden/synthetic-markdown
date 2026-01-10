@@ -48,6 +48,7 @@ class Timeline {
         this.editor.ast.blocks = clonedBlocks
         this.editor.render.render(clonedBlocks)
         this.editor.caret.restoreCaret(event.caret.inlineId, event.caret.position)
+        this.editor.emitChange()
     }
 
     private cloneEvent(event: Event): Event {
