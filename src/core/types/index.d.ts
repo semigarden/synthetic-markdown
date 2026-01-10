@@ -301,3 +301,8 @@ export interface OpenBlock {
     indent: number
     marker?: string
 }
+
+export interface Event {
+    blocks: Block[]
+    caret: Caret
+}
