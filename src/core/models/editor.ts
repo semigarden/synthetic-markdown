@@ -331,6 +331,7 @@ class Editor {
                     this.emitChange()
                 }
             })
+            this.timeline.updateEvent({ text: this.ast.text, blocks: this.ast.blocks, caret: { blockId: this.caret.blockId ?? '', inlineId: this.caret.inlineId ?? '', position: this.caret.position ?? 0, affinity: this.caret.affinity } })
         }
     }
 }

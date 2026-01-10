@@ -14,9 +14,12 @@ class Timeline {
         const clonedEvent = this.cloneEvent(event)
         this.undoStack.push(clonedEvent)
         this.redoStack = []
-        this.currentEvent = clonedEvent
 
         // console.log('push', JSON.stringify(event, null, 2), JSON.stringify(this.undoStack, null, 2))
+    }
+
+    public updateEvent(event: Event): void {
+        this.currentEvent = this.cloneEvent(event)
     }
 
     public undo(): void {

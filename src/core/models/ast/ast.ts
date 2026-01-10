@@ -18,7 +18,6 @@ class AST {
     }
 
     setText(text: string) {
-        console.log('setText', text)
         this.text = text
         this.blocks = this.parser.parse(text)
     }
