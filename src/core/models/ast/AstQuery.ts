@@ -252,6 +252,12 @@ class AstQuery {
                 return false
         }
     }
+
+    public getBlockByPosition(position: number): Block | null {
+        const flattenedBlocks = this.flattenBlocks(this.blocks)
+        const flatBlock = flattenedBlocks.find(b => position >= b.block.position.start && position <= b.block.position.end)
+        return flatBlock?.block ?? null
+    }
 }
 
 export default AstQuery

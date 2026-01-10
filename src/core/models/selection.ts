@@ -1,11 +1,13 @@
 import AST from './ast/ast'
 import Caret from './caret'
-import { EditContext } from '../types'
+import { EditContext, SelectionRange, SelectionPoint } from '../types'
 
 class Selection {
     private rafId: number | null = null
     private focusedBlockId: string | null = null
     private focusedInlineId: string | null = null
+    private range: SelectionRange | null = null 
+    private suppressSelectionChange: boolean = false
 
     constructor(
         private ast: AST,
@@ -28,81 +30,95 @@ class Selection {
     }
 
     private onSelectionChange = () => {
-        if (!this.rootElement) return
+        if (this.suppressSelectionChange) return
 
         if (this.rafId !== null) {
             cancelAnimationFrame(this.rafId)
         }
         
         this.rafId = requestAnimationFrame(() => {
+            if (this.suppressSelectionChange) return
+
             const selection = window.getSelection()
             if (!selection || selection.rangeCount === 0) return
-        
             const range = selection.getRangeAt(0)
-
             this.resolveRange(range)
+
+            console.log('range', JSON.stringify(this.range, null, 2))
         })
     }
 
     private onFocusIn = (e: FocusEvent) => {
         const target = e.target as HTMLElement
         if (!target.dataset?.inlineId) return
-        
-        const inline = this.ast.query.getInlineById(target.dataset.inlineId!)
+    
+        const inline = this.ast.query.getInlineById(target.dataset.inlineId)
         if (!inline) return
-
+    
         const block = this.ast.query.getBlockById(inline.blockId)
         if (!block) return
-
+    
         const marker = block.inlines.find(i => i.type === 'marker')
         if (marker && marker.text.symbolic.length > 0 && block.id !== this.focusedBlockId) {
-            const blockElement = this.rootElement.querySelector(`[data-block-id="${block.id}"]`) as HTMLElement
-            if (blockElement) {
-                const markerElement = this.rootElement.querySelector(`[data-inline-id="${marker.id}"]`) as HTMLElement
-                if (markerElement) {
-                    markerElement.innerHTML = ''
-                    const newTextNode = document.createTextNode(marker.text.symbolic)
-                    markerElement.appendChild(newTextNode)
-
-                    this.focusedBlockId = block.id
-                }
+            const markerEl = this.rootElement.querySelector(
+                `[data-inline-id="${marker.id}"]`
+            ) as HTMLElement | null
+    
+            if (markerEl) {
+                markerEl.textContent = marker.text.symbolic
+                this.focusedBlockId = block.id
             }
         }
-
+    
         const selection = window.getSelection()
         if (!selection || selection.rangeCount === 0) return
-
+    
         const range = selection.getRangeAt(0)
-
-        let semanticOffset = 0;
+    
+        let caretAstPosition: number | null = null
+    
         if (target.contains(range.startContainer)) {
             const preRange = document.createRange()
             preRange.selectNodeContents(target)
             preRange.setEnd(range.startContainer, range.startOffset)
-            semanticOffset = preRange.toString().length
+    
+            const inlineLocalOffset = preRange.toString().length
+    
+            caretAstPosition =
+                block.position.start +
+                inline.position.start +
+                inlineLocalOffset
         }
 
-        const semanticVisibleLength = target.textContent?.length ?? 1
-
+        this.suppressSelectionChange = true
+    
         target.innerHTML = ''
-        const newTextNode = document.createTextNode(inline.text.symbolic)
-        target.appendChild(newTextNode)
+        const textNode = document.createTextNode(inline.text.symbolic)
+        target.appendChild(textNode)
 
-        const symbolicOffset = this.mapSemanticOffsetToSymbolic(
-            semanticVisibleLength,
-            inline.text.symbolic.length,
-            semanticOffset
-        )
+        if (caretAstPosition !== null) {
+            const inlineLocalSymbolicOffset =
+                caretAstPosition -
+                block.position.start -
+                inline.position.start
+    
+            const clampedOffset = Math.max(
+                0,
+                Math.min(inlineLocalSymbolicOffset, inline.text.symbolic.length)
+            )
+    
+            const newRange = document.createRange()
+            newRange.setStart(textNode, clampedOffset)
+            newRange.collapse(true)
+    
+            selection.removeAllRanges()
+            selection.addRange(newRange)
+        }
 
-        const clampedOffset = Math.max(0, Math.min(symbolicOffset, inline.text.symbolic.length))
-        
-        const newRange = document.createRange()
-        newRange.setStart(newTextNode, clampedOffset)
-        newRange.collapse(true)
-
-        selection.removeAllRanges()
-        selection.addRange(newRange)
-
+        requestAnimationFrame(() => {
+            this.suppressSelectionChange = false
+        })
+    
         this.focusedInlineId = inline.id
     }
 
@@ -294,38 +310,66 @@ class Selection {
         }
     }
 
-    private resolveRange(range: Range) {
-        const container = range.commonAncestorContainer
-        
-        let inlineEl: HTMLElement | null = null
-    
-        if (container instanceof HTMLElement) {
-            inlineEl = container.closest('[data-inline-id]') ?? null
-        } else if (container instanceof Text) {
-            inlineEl = container.parentElement?.closest('[data-inline-id]') ?? null
+    private resolvePoint(element: Node, position: number, affinity: 'start' | 'end'): SelectionPoint | null {
+        let inlineElement: HTMLElement | null = null
+
+        if (element instanceof Text) {
+            inlineElement = element.parentElement?.closest('[data-inline-id]') ?? null
+        } else if (element instanceof HTMLElement) {
+            inlineElement = element.closest('[data-inline-id]') ?? null
         }
-    
-        if (!inlineEl || !this.rootElement?.contains(inlineEl)) {
-            this.caret?.clear()
-            return
-        }
-    
-        const inlineId = inlineEl.dataset.inlineId!
+
+        if (!inlineElement || !this.rootElement.contains(inlineElement)) return null
+
+        const inlineId = inlineElement.dataset.inlineId!
         const inline = this.ast.query.getInlineById(inlineId)
-        if (!inline) return
+        if (!inline) return null
 
         const block = this.ast.query.getBlockById(inline.blockId)
-        if (!block) return
+        if (!block) return null
 
-        this.caret.blockId = block.id
-        this.caret.inlineId = inlineId
-
-        const preRange = range.cloneRange()
-        preRange.selectNodeContents(inlineEl)
-        preRange.setEnd(range.startContainer, range.startOffset)
-        let position = preRange.toString().length + inline.position.start + block.position.start
+        const range = document.createRange()
+        range.selectNodeContents(inlineElement)
+        range.setEnd(element, position)
     
-        this.caret.position = position
+        const inlinePosition = range.toString().length
+
+        position = block.position.start + inline.position.start + inlinePosition
+
+        return {
+            blockId: block.id,
+            inlineId: inline.id,
+            position,
+            affinity
+        }
+    }
+
+    private resolveRange(range: Range) {
+        const start = this.resolvePoint(range.startContainer, range.startOffset, 'start')
+        const end = this.resolvePoint(range.endContainer, range.endOffset, 'end')
+
+        if (start && end) {
+            this.range = {
+                start,
+                end
+            }
+        }
+
+        if (!start || !end) {
+            this.caret.clear()
+            return
+        }
+
+        this.range = start.position <= end.position ? { start, end } : { start: end, end: start }
+
+        if (this.range.start.position === this.range.end.position) {
+            this.caret.blockId = this.range.start.blockId
+            this.caret.inlineId = this.range.start.inlineId
+            this.caret.position = this.range.start.position
+            this.caret.affinity = this.range.start.affinity
+        } else {
+            this.caret.clear()
+        }
     }
 
     public resolveInlineContext(): EditContext | null {
