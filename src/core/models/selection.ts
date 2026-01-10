@@ -57,14 +57,16 @@ class Selection {
 
             const effect = this.resolveSelection(this.range)
 
-            const savedRange = this.snapshotSelection()
+            const astRange = this.range
 
             this.suppressSelectionChange = true
 
             requestAnimationFrame(() => {
                 this.renderSelection(effect)
 
-                this.restoreSelection(savedRange)
+                if (astRange) {
+                    this.restoreRangeFromAst(astRange)
+                }
 
                 requestAnimationFrame(() => {
                     this.suppressSelectionChange = false
@@ -671,6 +673,85 @@ class Selection {
         selection.addRange(range)
     }
     
+    private restoreRangeFromAst(range: SelectionRange) {
+        const selection = window.getSelection()
+        if (!selection) return
+    
+        const startEl = this.rootElement.querySelector(
+            `[data-inline-id="${range.start.inlineId}"]`
+        ) as HTMLElement | null
+    
+        const endEl = this.rootElement.querySelector(
+            `[data-inline-id="${range.end.inlineId}"]`
+        ) as HTMLElement | null
+    
+        if (!startEl || !endEl) return
+    
+        const startInline = this.ast.query.getInlineById(range.start.inlineId)
+        const endInline = this.ast.query.getInlineById(range.end.inlineId)
+        const startBlock = this.ast.query.getBlockById(range.start.blockId)
+        const endBlock = this.ast.query.getBlockById(range.end.blockId)
+    
+        if (!startInline || !endInline || !startBlock || !endBlock) return
+    
+        const startOffset =
+            range.start.position -
+            startBlock.position.start -
+            startInline.position.start
+    
+        const endOffset =
+            range.end.position -
+            endBlock.position.start -
+            endInline.position.start
+    
+        const start = this.resolveTextNodeAt(startEl, Math.max(0, startOffset))
+        const end = this.resolveTextNodeAt(endEl, Math.max(0, endOffset))
+    
+        if (!start || !end) return
+    
+        const domRange = document.createRange()
+        domRange.setStart(start.node, Math.min(start.offset, start.node.length))
+        domRange.setEnd(end.node, Math.min(end.offset, end.node.length))
+    
+        selection.removeAllRanges()
+        selection.addRange(domRange)
+    }
+    
+    private resolveTextNodeAt(
+        inlineEl: HTMLElement,
+        offset: number
+    ): { node: Text; offset: number } | null {
+        let remaining = offset
+    
+        for (const child of inlineEl.childNodes) {
+            if (child.nodeType === Node.TEXT_NODE) {
+                const text = child as Text
+                if (remaining <= text.length) {
+                    return { node: text, offset: remaining }
+                }
+                remaining -= text.length
+            } else if (child instanceof HTMLElement) {
+                const len = child.textContent?.length ?? 0
+                if (remaining <= len) {
+                    // selection span or similar → descend
+                    const text = child.firstChild
+                    if (text instanceof Text) {
+                        return { node: text, offset: remaining }
+                    }
+                    return null
+                }
+                remaining -= len
+            }
+        }
+    
+        // fallback: end of last text node
+        const last = inlineEl.lastChild
+        if (last instanceof Text) {
+            return { node: last, offset: last.length }
+        }
+    
+        return null
+    }    
 }
 
 export default Selection
