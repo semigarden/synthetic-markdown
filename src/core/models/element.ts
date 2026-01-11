@@ -82,15 +82,6 @@ class Element extends HTMLElement {
         div.classList.add('element')
         div.contentEditable = 'true'
 
-        // div.addEventListener('input', () => {
-        //     console.log('input', div.textContent)
-        //     const context = this.selection?.resolveInlineContext()
-        //     if (!context) return
-
-        //     const effect = this.editor?.resolveInput(context)
-        //     if (effect) this.editor?.apply(effect)
-        // })
-
         div.addEventListener('beforeinput', (e) => {
             const isInsert = e.inputType.startsWith('insert')
             const isDelete = e.inputType.startsWith('delete')
