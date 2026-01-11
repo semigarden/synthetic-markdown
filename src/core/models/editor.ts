@@ -1,4 +1,4 @@
-import AST from './ast/ast'
+import Ast from './ast/ast'
 import Caret from './caret'
 import Render from './render'
 import Timeline from './timeline'
@@ -9,7 +9,7 @@ class Editor {
     public timeline: Timeline
 
     constructor(
-        public ast: AST,
+        public ast: Ast,
         public caret: Caret,
         public render: Render,
         emitChange: () => void

@@ -1,5 +1,5 @@
-import { Block, Inline, TableRow } from "../../types"
-import { uuid } from "../../utils/utils"
+import { Block, TableRow } from '../../types'
+import { uuid } from '../../utils/utils'
 
 class AstNormalizer {
     public text = ''

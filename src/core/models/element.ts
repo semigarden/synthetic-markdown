@@ -1,4 +1,4 @@
-import AST from './ast/ast'
+import Ast from './ast/ast'
 import Caret from './caret'
 import Selection from './selection'
 import Editor from './editor'
@@ -9,7 +9,7 @@ import { onKey } from '../utils/key'
 class Element extends HTMLElement {
     private shadowRootElement: ShadowRoot
     private rootElement?: HTMLElement
-    private ast = new AST()
+    private ast = new Ast()
     private render: Render | null = null
     private caret: Caret | null = null
     private selection: Selection | null = null

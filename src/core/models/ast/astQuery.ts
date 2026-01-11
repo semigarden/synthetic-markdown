@@ -1,4 +1,4 @@
-import { FlatBlockEntry, FlatInlineEntry, Block, Inline, List, ListItem } from "../../types"
+import { FlatBlockEntry, FlatInlineEntry, Block, Inline, List, ListItem } from '../../types'
 
 class AstQuery {
     constructor(private blocks: Block[]) {}

@@ -1,4 +1,4 @@
-import { Block, Inline, RenderEffect } from "../types"
+import { Block, Inline, RenderEffect } from '../types'
 
 class Render {
     constructor(private rootElement: HTMLElement) {}

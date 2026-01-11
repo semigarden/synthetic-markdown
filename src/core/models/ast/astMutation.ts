@@ -1,8 +1,8 @@
-import Ast from "./ast"
-import AstQuery from "./astQuery"
-import AstParser from "../parse/astParser"
-import { Block, Inline } from "../../types"
-import { uuid } from "../../utils/utils"
+import Ast from './ast'
+import AstQuery from './astQuery'
+import AstParser from '../parse/astParser'
+import { Block, Inline } from '../../types'
+import { uuid } from '../../utils/utils'
 
 class AstMutation {
     constructor(private ast: Ast, private parser: AstParser) {}

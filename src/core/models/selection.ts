@@ -1,4 +1,4 @@
-import AST from './ast/ast'
+import Ast from './ast/ast'
 import Caret from './caret'
 import { EditContext, SelectionRange, SelectionPoint, Inline, Block } from '../types'
 
@@ -10,7 +10,7 @@ class Selection {
     private suppressSelectionChange: boolean = false
 
     constructor(
-        private ast: AST,
+        private ast: Ast,
         private caret: Caret,
         private rootElement: HTMLElement,
     ) {}

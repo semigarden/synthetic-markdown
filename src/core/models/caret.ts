@@ -1,4 +1,4 @@
-import { CaretEffect } from "../types"
+import { CaretEffect } from '../types'
 
 class Caret {
     public blockId: string | null = null
