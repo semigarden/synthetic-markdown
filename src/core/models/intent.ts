@@ -30,22 +30,6 @@ class Intent {
         return { preventDefault: false }
     }
 
-    public resolveInput(context: EditContext): EditEffect {
-        console.log('resolveInput', context.inlineElement.textContent)
-        const caretPosition = this.caret.getPositionInInline(context.inlineElement)
-
-        return {
-            preventDefault: false,
-            ast: [{
-                type: 'input',
-                blockId: context.block.id,
-                inlineId: context.inline.id,
-                text: context.inlineElement.textContent ?? '',
-                caretPosition: caretPosition,
-            }],
-        }
-    }
-
     public resolveSplit(context: EditContext): EditEffect {
         const caretPosition = this.caret.getPositionInInline(context.inlineElement)
         
