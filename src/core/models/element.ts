@@ -19,7 +19,7 @@ class Element extends HTMLElement {
 
     private input: Input | null = null
     private intent: Intent | null = null
-
+    
     private styled = false
     private hasAcceptedExternalValue = false
 
@@ -42,7 +42,7 @@ class Element extends HTMLElement {
         this.selection = new Selection(this.ast, this.caret, this.rootElement!)
         this.selection.attach()
 
-        this.input = new Input(this.ast, this.caret, this.selection, this.render)
+        this.input = new Input(this.ast, this.caret, this.selection, this.render, this.emitChange.bind(this))
         this.intent = new Intent(this.ast, this.caret, this.selection, this.render)
 
         this.renderAST()
@@ -92,31 +92,12 @@ class Element extends HTMLElement {
         div.contentEditable = 'true'
 
         div.addEventListener('beforeinput', (e) => {
-            const isInsert = e.inputType.startsWith('insert')
-            const isDelete = e.inputType.startsWith('delete')
-        
-            if (!isInsert && !isDelete) return
-        
-            const range = this.selection?.resolveRange()
-            if (!range) return
+            const effect = this.input?.resolveEffect({ text: e.data ?? '', type: e.inputType })
+            if (effect) {
+                this.input?.apply(effect)
 
-            const isCollapsed = range.start.blockId === range.end.blockId &&
-                range.start.inlineId === range.end.inlineId &&
-                range.start.position === range.end.position
-
-            if (isInsert) {
-                e.preventDefault()
-                this.editor?.applyInsert(range, e.data ?? '')
-            } else if (isDelete) {
-                if (!isCollapsed) {
+                if (effect.preventDefault) {
                     e.preventDefault()
-                    this.editor?.applyInsert(range, '')
-                } else {
-                    const direction = e.inputType.includes('Backward') ? 'backward' : 'forward'
-                    const handled = this.editor?.applyDelete(range, direction)
-                    if (handled) {
-                        e.preventDefault()
-                    }
                 }
             }
         })

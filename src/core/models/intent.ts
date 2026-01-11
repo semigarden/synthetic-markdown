@@ -10,6 +10,10 @@ class Intent {
         public selection: Selection,
         public render: Render
     ) {}
+
+    public handle(event: KeyboardEvent) {
+        console.log('handle', event)
+    }
 }
 
 export default Intent

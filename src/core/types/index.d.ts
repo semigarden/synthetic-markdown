@@ -19,22 +19,22 @@ export type ParseBlockContext = {
 }
 
 type AstEffect = 
- | { type: 'input'; blockId: string; inlineId: string; text: string; caretPosition: number }
- | { type: 'splitBlock'; blockId: string; inlineId: string; caretPosition: number }
- | { type: 'splitListItem'; listItemId: string; blockId: string; inlineId: string; caretPosition: number }
- | { type: 'mergeInline'; leftInlineId: string; rightInlineId: string }
- | { type: 'indentListItem'; listItemId: string }
- | { type: 'outdentListItem'; listItemId: string }
- | { type: 'mergeTableCell'; cellId: string }
- | { type: 'addTableColumn'; cellId: string }
- | { type: 'addTableRow'; cellId: string }
- | { type: 'addTableRowAbove'; cellId: string }
- | { type: 'splitTableCell'; cellId: string; blockId: string; inlineId: string; caretPosition: number }
- | { type: 'splitTableCellAtCaret'; cellId: string; blockId: string; inlineId: string; caretPosition: number }
- | { type: 'mergeBlocksInCell'; cellId: string; blockId: string }
- | { type: 'mergeInlineInCell'; cellId: string; leftInlineId: string; rightInlineId: string }
- | { type: 'insertParagraphAboveTable'; tableId: string }
- | { type: 'insertParagraphBelowTable'; tableId: string }
+    | { type: 'input'; blockId: string; inlineId: string; text: string; caretPosition: number }
+    | { type: 'splitBlock'; blockId: string; inlineId: string; caretPosition: number }
+    | { type: 'splitListItem'; listItemId: string; blockId: string; inlineId: string; caretPosition: number }
+    | { type: 'mergeInline'; leftInlineId: string; rightInlineId: string }
+    | { type: 'indentListItem'; listItemId: string }
+    | { type: 'outdentListItem'; listItemId: string }
+    | { type: 'mergeTableCell'; cellId: string }
+    | { type: 'addTableColumn'; cellId: string }
+    | { type: 'addTableRow'; cellId: string }
+    | { type: 'addTableRowAbove'; cellId: string }
+    | { type: 'splitTableCell'; cellId: string; blockId: string; inlineId: string; caretPosition: number }
+    | { type: 'splitTableCellAtCaret'; cellId: string; blockId: string; inlineId: string; caretPosition: number }
+    | { type: 'mergeBlocksInCell'; cellId: string; blockId: string }
+    | { type: 'mergeInlineInCell'; cellId: string; leftInlineId: string; rightInlineId: string }
+    | { type: 'insertParagraphAboveTable'; tableId: string }
+    | { type: 'insertParagraphBelowTable'; tableId: string }
 
 export type AstApplyEffect = {
     renderEffect: RenderEffect
@@ -72,6 +72,11 @@ type Caret = {
     inlineId: string
     position: number
     affinity?: 'start' | 'end'
+}
+
+export type InputEvent = {
+    text: string
+    type: string
 }
 
 export type Intent =
