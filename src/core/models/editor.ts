@@ -15,7 +15,7 @@ class Editor {
         emitChange: () => void
     ) {
         this.emitChange = emitChange
-        this.timeline = new Timeline(this, { text: ast.text, blocks: ast.blocks, caret: { blockId: caret.blockId ?? '', inlineId: caret.inlineId ?? '', position: caret.position ?? 0, affinity: caret.affinity ?? 'start' } })
+        this.timeline = new Timeline(this, this.snapshot())
     }
 
     public undo() {
@@ -26,8 +26,21 @@ class Editor {
         this.timeline.redo()
     }
 
+    public snapshot() {
+        return {
+            text: this.ast.text,
+            blocks: this.ast.blocks,
+            caret: {
+                blockId: this.caret.blockId ?? '',
+                inlineId: this.caret.inlineId ?? '',
+                position: this.caret.position ?? 0,
+                affinity: this.caret.affinity ?? 'start',
+            },
+        }
+    }
+
     public apply(effect: EditEffect) {
-        this.timeline.push({ text: this.ast.text, blocks: this.ast.blocks, caret: { blockId: this.caret.blockId ?? '', inlineId: this.caret.inlineId ?? '', position: this.caret.position ?? 0, affinity: this.caret.affinity ?? 'start' } })
+        this.timeline.push(this.snapshot())
         
         if (effect.ast) {
             effect.ast.forEach(effect => {
@@ -91,7 +104,7 @@ class Editor {
                 this.caret.apply(caretEffect)
                 this.emitChange()
             })
-            this.timeline.updateEvent({ text: this.ast.text, blocks: this.ast.blocks, caret: { blockId: this.caret.blockId ?? '', inlineId: this.caret.inlineId ?? '', position: this.caret.position ?? 0, affinity: this.caret.affinity ?? 'start' } })
+            this.timeline.updateEvent(this.snapshot())
         }
     }
 }
