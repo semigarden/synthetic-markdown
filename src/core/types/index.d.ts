@@ -86,6 +86,8 @@ export type Intent =
     | 'outdent'
     | 'insertRowAbove'
     | 'splitInCell'
+    | 'undo'
+    | 'redo'
 
 interface BlockType<T extends string = string> {
     id: string

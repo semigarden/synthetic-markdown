@@ -1,12 +1,12 @@
 import Ast from './ast/ast'
 import Caret from './caret'
 import Selection from './selection'
+import Interaction from './interaction'
 import Editor from './editor'
 import Render from './render'
 import Input from './input'
 import Intent from './intent'
 import scss from '../styles/element.scss?inline'
-import { onKey } from '../utils/key'
 
 class Element extends HTMLElement {
     private shadowRootElement: ShadowRoot
@@ -15,6 +15,7 @@ class Element extends HTMLElement {
     private render: Render | null = null
     private caret: Caret | null = null
     private selection: Selection | null = null
+    private interaction: Interaction | null = null
     private editor: Editor | null = null
 
     private input: Input | null = null
@@ -45,10 +46,14 @@ class Element extends HTMLElement {
         this.input = new Input(this.ast, this.caret, this.selection, this.render, this.emitChange.bind(this))
         this.intent = new Intent(this.ast, this.caret, this.selection, this.render)
 
+        this.interaction = new Interaction(this.rootElement!, this.selection, this.input, this.intent, this.editor)
+        this.interaction.attach()
+
         this.renderAST()
     }
 
     disconnectedCallback() {
+        this.interaction?.detach()
         this.selection?.detach()
         this.caret?.clear()
     }
@@ -90,58 +95,6 @@ class Element extends HTMLElement {
         const div = document.createElement('div')
         div.classList.add('element')
         div.contentEditable = 'true'
-
-        div.addEventListener('beforeinput', (event: InputEvent) => {
-            const effect = this.input?.resolveEffect({ text: event.data ?? '', type: event.inputType })
-            if (effect) {
-                this.input?.apply(effect)
-
-                if (effect.preventDefault) {
-                    event.preventDefault()
-                }
-            }
-        })
-
-        div.addEventListener('keydown', (event: KeyboardEvent) => {
-            let intent = onKey[event.key]
-            
-            if (event.key === 'Tab' && event.shiftKey) {
-                intent = 'outdent'
-            }
-
-            if (event.key === 'Backspace' && event.shiftKey) {
-                intent = 'insertRowAbove'
-            }
-
-            if (event.key === 'Enter' && event.shiftKey) {
-                intent = 'splitInCell'
-            }
-
-            const key = event.key.toLowerCase()
-            if (key === 'z' && event.ctrlKey && event.shiftKey) {
-                this.editor?.timeline.redo()
-                return
-            }
-
-            if (key === 'z' && event.ctrlKey) {
-                this.editor?.timeline.undo()
-                return
-            }
-            
-            if (!intent) return
-
-            const context = this.selection?.resolveInlineContext()
-            if (!context) return
-            
-            const effect = this.editor?.onIntent(intent, context)
-            if (effect) {
-                this.editor?.apply(effect)
-
-                if (effect.preventDefault) {
-                    event.preventDefault()
-                }
-            }
-        })
 
         this.shadowRootElement.appendChild(div)
         this.rootElement = div
