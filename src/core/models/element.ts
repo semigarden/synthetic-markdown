@@ -3,6 +3,8 @@ import Caret from './caret'
 import Selection from './selection'
 import Editor from './editor'
 import Render from './render'
+import Input from './input'
+import Intent from './intent'
 import scss from '../styles/element.scss?inline'
 import { onKey } from '../utils/key'
 
@@ -14,8 +16,12 @@ class Element extends HTMLElement {
     private caret: Caret | null = null
     private selection: Selection | null = null
     private editor: Editor | null = null
-    private hasAcceptedExternalValue = false
+
+    private input: Input | null = null
+    private intent: Intent | null = null
+
     private styled = false
+    private hasAcceptedExternalValue = false
 
     constructor() {
         super()
@@ -35,6 +41,9 @@ class Element extends HTMLElement {
         this.editor = new Editor(this.ast, this.caret, this.render, this.emitChange.bind(this))
         this.selection = new Selection(this.ast, this.caret, this.rootElement!)
         this.selection.attach()
+
+        this.input = new Input(this.ast, this.caret, this.selection, this.render)
+        this.intent = new Intent(this.ast, this.caret, this.selection, this.render)
 
         this.renderAST()
     }
