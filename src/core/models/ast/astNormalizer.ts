@@ -186,9 +186,6 @@ class AstNormalizer {
         }
 
         this.text = parts.join('')
-
-        // console.log('blocks', JSON.stringify(blocks, null, 2))
-        // console.log('this.text', this.text)
     }
 }
 

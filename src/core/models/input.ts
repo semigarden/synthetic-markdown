@@ -11,8 +11,6 @@ class Input {
     ) {}
 
     public resolveEffect(event: InputEvent): EditEffect | null {
-        console.log('handle', event.text, event.type)
-    
         const isInsert = event.type.startsWith('insert')
         const isDelete = event.type.startsWith('delete')
     
