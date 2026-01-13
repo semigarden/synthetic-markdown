@@ -1,7 +1,7 @@
 import Input from './input'
 import Intent from './intent'
 import Editor from './editor'
-import Selection from './selection'
+import Selection from './select.ts/selection'
 import { Intent as IntentType } from '../types'
 
 class Interaction {

@@ -1,6 +1,6 @@
 import Ast from './ast/ast'
 import Caret from './caret'
-import Selection from './selection'
+import Selection from './select.ts/selection'
 import Interaction from './interaction'
 import Editor from './editor'
 import Render from './render/render'

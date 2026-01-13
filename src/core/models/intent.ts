@@ -1,7 +1,7 @@
 import Ast from './ast/ast'
 import Caret from './caret'
 import Render from './render/render'
-import Selection from './selection'
+import Selection from './select.ts/selection'
 import { EditContext, EditEffect, Intent as IntentType } from '../types'
 
 class Intent {
