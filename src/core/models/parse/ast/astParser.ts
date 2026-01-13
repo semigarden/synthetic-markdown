@@ -1,4 +1,4 @@
-import BlockParser from '../blockParser'
+import BlockParser from '../block/blockParser'
 import InlineParser from '../inlineParser'
 import LinkReferenceState from '../linkReferenceState'
 import type { OpenBlock, Block, List } from '../../../types'

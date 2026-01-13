@@ -2,8 +2,9 @@ import AstNormalizer from './astNormalizer'
 import AstMutation from './astMutation'
 import AstQuery from './astQuery'
 import AstParser from '../parse/ast/astParser'
-import { AstApplyEffect, DetectedBlock, Block, Inline, List, ListItem, Table, TableRow, TableHeader, TableCell } from '../../types'
+import { detectBlockType } from '../parse/block/blockDetect'
 import { uuid } from '../../utils/utils'
+import type { AstApplyEffect, DetectedBlock, Block, Inline, List, ListItem, Table, TableRow, TableHeader, TableCell } from '../../types'
 
 class Ast {
     public text = ''
@@ -170,7 +171,7 @@ class Ast {
             + caretPosition
 
         const newText = block.inlines.slice(0, inlineIndex).map(i => i.text.symbolic).join('') + text + block.inlines.slice(inlineIndex + 1).map(i => i.text.symbolic).join('')
-        const detectedBlock = this.parser.block.detectType(newText)
+        const detectedBlock = detectBlockType(newText)
 
         const blockTypeChanged =
             detectedBlock.type !== block.type ||
@@ -372,7 +373,7 @@ class Ast {
         + caretPositionInMergedInline
 
         const newText = leftBlock.inlines.map(i => i.text.symbolic).join('')
-        const detectedBlock = this.parser.block.detectType(newText)
+        const detectedBlock = detectBlockType(newText)
 
         const blockTypeChanged =
             detectedBlock.type !== leftBlock.type ||

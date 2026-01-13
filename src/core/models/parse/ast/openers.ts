@@ -1,4 +1,5 @@
-import type BlockParser from '../blockParser'
+import type BlockParser from '../block/blockParser'
+import { detectBlockType } from '../block/blockDetect'
 import type { OpenBlock, Block, List, ListItem } from '../../../types'
 import { uuid } from '../../../utils/utils'
 
@@ -11,7 +12,7 @@ function tryOpenLeafBlock(
     line: string,
     offset: number
 ): boolean {
-    const detected = blockParser.detectType(line)
+    const detected = detectBlockType(line)
 
     const parent = openBlocks.at(-1)?.block
     const attach: AttachFn = (block: Block) => {
