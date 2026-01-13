@@ -154,7 +154,7 @@ class Ast {
                 },
             },
         }
-    } 
+    }
 
     public input(blockId: string, inlineId: string, text: string, caretPosition: number): AstApplyEffect | null {
         const block = this.query.getBlockById(blockId)
