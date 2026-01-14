@@ -1,338 +1,72 @@
-export type EditContext = {
-    block: Block
-    inline: Inline
-    inlineIndex: number
-    inlineElement: HTMLElement
-}
+export type {
+    Block,
+    Paragraph,
+    BlankLine,
+    Heading,
+    BlockQuote,
+    CodeBlock,
+    List,
+    ListItem,
+    ThematicBreak,
+    Table,
+    TableRow,
+    TableCell,
+    TableHeader,
+    HTMLBlock,
+    Footnote,
+    TaskListItem,
+} from './block'
 
-export type ParseBlockContext = {
-    isFencedCodeBlock: boolean
-    codeBlockFence: string
-    currentCodeBlock: Block | null
+export type {
+    Inline,
+    Marker,
+    Text,
+    Emphasis,
+    Strong,
+    CodeSpan,
+    Link,
+    Autolink,
+    Image,
+    Strikethrough,
+    FootnoteRef,
+    Emoji,
+    SoftBreak,
+    HardBreak,
+    RawHTML,
+    Entity,
+} from './inline'
 
-    table?: {
-        start: number
-        headerLine: string
-        dividerLine?: string
-        rows: string[]
-    }
-}
+export type {
+    AstEffectMap,
+    Executors,
+    RenderInsert,
+    Render,
+    RenderEffect,
+    CaretEffect,
+    AstApplyEffect,
+    EditEffect,
+} from './effect'
 
-type AstEffect = 
-    | { type: 'input'; blockId: string; inlineId: string; text: string; caretPosition: number }
-    | { type: 'splitBlock'; blockId: string; inlineId: string; caretPosition: number }
-    | { type: 'splitListItem'; listItemId: string; blockId: string; inlineId: string; caretPosition: number }
-    | { type: 'mergeInline'; leftInlineId: string; rightInlineId: string }
-    | { type: 'indentListItem'; listItemId: string }
-    | { type: 'outdentListItem'; listItemId: string }
-    | { type: 'mergeTableCell'; cellId: string }
-    | { type: 'addTableColumn'; cellId: string }
-    | { type: 'addTableRow'; cellId: string }
-    | { type: 'addTableRowAbove'; cellId: string }
-    | { type: 'splitTableCell'; cellId: string; blockId: string; inlineId: string; caretPosition: number }
-    | { type: 'splitTableCellAtCaret'; cellId: string; blockId: string; inlineId: string; caretPosition: number }
-    | { type: 'mergeBlocksInCell'; cellId: string; blockId: string }
-    | { type: 'mergeInlineInCell'; cellId: string; leftInlineId: string; rightInlineId: string }
-    | { type: 'insertParagraphAboveTable'; tableId: string }
-    | { type: 'insertParagraphBelowTable'; tableId: string }
+export type {
+    EditContext,
+    ParseBlockContext,
+} from './context'
 
-export type AstEffectMap = {
-    [K in AstEffect['type']]: Extract<AstEffect, { type: K }>
-}
+export type {
+    SelectionPoint,
+    SelectionRange,
+} from './selection'
 
-export type Executors = {
-    [K in keyof AstEffectMap]: (effect: AstEffectMap[K]) => AstApplyEffect | null
-}
-
-export type AstApplyEffect = {
-    renderEffect: RenderEffect
-    caretEffect: CaretEffect
-}
-
-type RenderEffect = {
-    type: 'update'
-    render: Render
-}
-
-type CaretEffect = { 
-    type: 'restore'
-    caret: Caret
-}
-
-export type EditEffect = {
-    preventDefault?: boolean
-    ast?: AstEffect[]
-}
-
-type RenderPosition = 'current' | 'previous' | 'next'
-
-type RenderInsert = {
-    at: RenderPosition
-    target: Block
-    current: Block
-}
-
-type Render = {
-    remove: Block[]
-    insert: RenderInsert[]
-}
-
-type Caret = {
-    blockId: string
-    inlineId: string
-    position: number
-    affinity?: 'start' | 'end'
-}
-
-export type InputEvent = {
-    text: string
-    type: string
-}
-
-export type Intent =
-    | 'split'
-    | 'merge'
-    | 'indent'
-    | 'outdent'
-    | 'insertRowAbove'
-    | 'splitInCell'
-    | 'undo'
-    | 'redo'
-
-interface BlockType<T extends string = string> {
-    id: string
-    type: T
-    text: string
-    position: {
-        start: number
-        end: number
-    }
-    inlines: Inline[]
-}
-
-export type Block =
-    | Paragraph
-    | Heading
-    | BlockQuote
-    | CodeBlock
-    | List
-    | ListItem
-    | ThematicBreak
-    | Table
-    | TableRow
-    | TableCell
-    | TableHeader
-    | HTMLBlock
-    | Footnote
-    | TaskListItem
-    | BlankLine
-
-interface Paragraph extends BlockType<'paragraph'> {
-}
-
-interface BlankLine extends BlockType<'blankLine'> {
-}
-
-interface Heading extends BlockType<'heading'> {
-    level: number
-}
-
-interface BlockQuote extends BlockType<'blockQuote'> {
-    blocks: Block[]
-}
-
-interface CodeBlock extends BlockType<'codeBlock'> {
-    language?: string
-    isFenced: boolean
-    fence?: string
-}
-
-interface List extends BlockType<'list'> {
-    ordered: boolean
-    listStart?: number
-    tight: boolean
-    blocks: Block[]
-}
-
-interface ListItem extends BlockType<'listItem'> {
-    checked?: boolean
-    blocks: Block[]
-}
-
-interface ThematicBreak extends BlockType<'thematicBreak'> {
-}
-
-interface Table extends BlockType<'table'> {
-    blocks: Block[]
-}
-
-interface TableRow extends BlockType<'tableRow'> {
-    blocks: Block[]
-}
-
-interface TableCell extends BlockType<'tableCell'> {
-    blocks: Block[]
-}
-
-interface TableHeader extends BlockType<'tableHeader'> {
-    blocks: Block[]
-}
-
-interface HTMLBlock extends BlockType<'htmlBlock'> {
-}
-
-interface Footnote extends BlockType<'footnote'> {
-    label: string
-}
-
-interface TaskListItem extends BlockType<'taskListItem'> {
-    checked: boolean
-    blocks: Block[]
-}
-
-
-interface InlineType<T extends string = string> {
-    id: string
-    blockId: string
-    type: T
-    text: {
-        symbolic: string
-        semantic: string
-    }
-    position: {
-        start: number
-        end: number
-    }
-}
-
-export type Inline =
-    | Marker
-    | Text
-    | Emphasis
-    | Strong
-    | CodeSpan
-    | Link
-    | Autolink
-    | Image
-    | Strikethrough
-    | FootnoteRef
-    | Emoji
-    | SoftBreak
-    | HardBreak
-    | RawHTML
-    | Entity
-
-interface Marker extends InlineType<'marker'> {
-}
-interface Text extends InlineType<'text'> {
-}
-
-interface Emphasis extends InlineType<'emphasis'> {
-}
-
-interface Strong extends InlineType<'strong'> {
-}
-
-interface CodeSpan extends InlineType<'codeSpan'> {
-}
-
-interface Link extends InlineType<'link'> {
-    url: string
-    title?: string
-}
-
-interface Autolink extends InlineType<'autolink'> {
-    url: string
-}
-
-interface Image extends InlineType<'image'> {
-    url: string
-    alt: string
-    title?: string
-}
-
-interface Strikethrough extends InlineType<'strikethrough'> {
-}
-
-interface FootnoteRef extends InlineType<'footnoteRef'> {
-    label: string
-}
-
-interface Emoji extends InlineType<'emoji'> {
-    name: string
-}
-
-interface SoftBreak extends InlineType<'softBreak'> {
-}
-
-interface HardBreak extends InlineType<'hardBreak'> {
-}
-
-interface RawHTML extends InlineType<'rawHTML'> {
-}
-
-interface Entity extends InlineType<'entity'> {
-    decoded: string
-}
-
-interface DetectedBlock {
-    type: Block['type'];
-    level?: number;
-    ordered?: boolean;
-    listStart?: number;
-    language?: string;
-    fence?: string;
-    checked?: boolean;
-    label?: string;
-}
-
-export interface LinkReference {
-    url: string;
-    title?: string;
-}
-
-interface Delimiter {
-    type: '*' | '_' | '~';
-    length: number;
-    position: number;
-    canOpen: boolean;
-    canClose: boolean;
-    active: boolean;
-}
-
-export type FlatBlockEntry = {
-    block: Block
-    parent: Block | null
-    index: number
-}
-
-export type FlatInlineEntry = {
-    inline: Inline
-    block: Block
-    index: number
-}
-
-export interface OpenBlock {
-    block: Block
-    type: Block['type']
-    indent: number
-    marker?: string
-}
-
-export interface TimelineEvent {
-    text: string
-    blocks: Block[]
-    caret: Caret
-}
-
-export interface SelectionPoint {
-    blockId: string
-    inlineId: string
-    position: number
-    affinity?: 'start' | 'end'
-}
-export interface SelectionRange {
-    start: SelectionPoint
-    end: SelectionPoint
-    direction: 'forward' | 'backward'
-}
+export type {
+    DetectedBlock,
+    LinkReference,
+    Delimiter,
+    FlatBlockEntry,
+    FlatInlineEntry,
+    OpenBlock,
+    Caret,
+    TimelineEvent,
+    RenderPosition,
+    Intent,
+    InputEvent,
+} from './common'
