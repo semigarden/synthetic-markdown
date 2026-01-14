@@ -17,8 +17,8 @@ class Ast {
     private normalizer = new AstNormalizer()
     private mutation = new AstMutation(this, this.parser)
     private _query = new AstQuery(this.blocks)
-    private transform!: AstTransform
-    private edit!: Edit
+    private transform: AstTransform
+    private edit: Edit
 
     constructor(text = '') {
         this.text = text
