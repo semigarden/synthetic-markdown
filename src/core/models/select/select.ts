@@ -305,6 +305,17 @@ class Select {
         return this.multiInlineMode
     }
 
+    public clearSelection() {
+        this.range = null
+        this.multiInlineMode = false
+        this.focus.unfocusBlocks(this.focusState.focusedBlockIds, [], [])
+        this.focus.unfocusInlines(this.focusState.focusedInlineIds)
+        this.focusState.focusedBlockIds = []
+        this.focusState.focusedInlineIds = []
+        this.focusState.focusedBlockId = null
+        this.focusState.focusedInlineId = null
+    }
+
     public getSelectedText(): string {
         if (!this.range) return ''
         
@@ -333,9 +344,15 @@ class Select {
     }
 
     public paste(text: string): EditEffect | null {
+        const hasNewlines = text.includes('\n')
+        
         if (!this.range) {
             const context = this.resolveInlineContext()
             if (!context) return null
+            
+            if (hasNewlines) {
+                return this.pasteMultiBlock(text, context.block, context.inline, this.caret.position ?? 0)
+            }
             
             const caretPosition = this.caret.position ?? 0
             const currentText = context.inline.text.symbolic
@@ -361,6 +378,13 @@ class Select {
         const startBlock = this.ast.query.getBlockById(this.range.start.blockId)
         const startInline = this.ast.query.getInlineById(this.range.start.inlineId)
         if (!startBlock || !startInline) return null
+        
+        if (hasNewlines) {
+            return this.pasteMultiBlock(text, startBlock, startInline, this.range.start.position, {
+                inlineId: this.range.end.inlineId,
+                position: this.range.end.position
+            })
+        }
         
         const startInlineIndex = startBlock.inlines.findIndex(i => i.id === startInline.id)
         const endInline = this.ast.query.getInlineById(this.range.end.inlineId)
@@ -407,6 +431,28 @@ class Select {
                 inlineId: startInline.id,
                 text: newText,
                 caretPosition: newCaretPosition,
+            }],
+        }
+    }
+
+    private pasteMultiBlock(
+        text: string,
+        block: import('../../types').Block,
+        inline: import('../../types').Inline,
+        startPosition: number,
+        endRange?: { inlineId: string; position: number }
+    ): EditEffect | null {
+        const endPosition = endRange ? endRange.position : undefined
+        
+        return {
+            preventDefault: true,
+            ast: [{
+                type: 'pasteMultiBlock',
+                blockId: block.id,
+                inlineId: inline.id,
+                text: text,
+                startPosition: startPosition,
+                endPosition: endPosition,
             }],
         }
     }

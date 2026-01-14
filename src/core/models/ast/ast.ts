@@ -81,6 +81,7 @@ class Ast {
     public mergeInlineInCell(...args: Parameters<Edit['mergeInlineInCell']>) { return this.edit.mergeInlineInCell(...args) }
     public insertParagraphAboveTable(...args: Parameters<Edit['insertParagraphAboveTable']>) { return this.edit.insertParagraphAboveTable(...args) }
     public insertParagraphBelowTable(...args: Parameters<Edit['insertParagraphBelowTable']>) { return this.edit.insertParagraphBelowTable(...args) }
+    public pasteMultiBlock(...args: Parameters<Edit['pasteMultiBlock']>) { return this.edit.pasteMultiBlock(...args) }
 }
 
 export default Ast

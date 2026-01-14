@@ -22,6 +22,7 @@ class Editor {
         mergeInlineInCell: (effect) => this.ast.mergeInlineInCell(effect.cellId, effect.leftInlineId, effect.rightInlineId),
         insertParagraphAboveTable: (effect) => this.ast.insertParagraphAboveTable(effect.tableId),
         insertParagraphBelowTable: (effect) => this.ast.insertParagraphBelowTable(effect.tableId),
+        pasteMultiBlock: (effect) => this.ast.pasteMultiBlock(effect.blockId, effect.inlineId, effect.text, effect.startPosition, effect.endPosition),
     }
     public emitChange: () => void
     public timeline: Timeline

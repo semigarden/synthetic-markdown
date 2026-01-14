@@ -51,6 +51,7 @@ class Interaction {
         const effect = this.select.paste(text)
         if (effect) {
             this.editor.apply(effect)
+            this.select.clearSelection()
         }
     }
 

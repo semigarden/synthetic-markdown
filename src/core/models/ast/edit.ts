@@ -1024,6 +1024,90 @@ class Edit {
             effect.caret(paragraph.id, focusInline.id, 0, 'start')
         )
     }
+
+    public pasteMultiBlock(
+        blockId: string,
+        inlineId: string,
+        pastedText: string,
+        startPosition: number,
+        endPosition?: number
+    ): AstApplyEffect | null {
+        const { ast, query, parser, effect } = this.context
+
+        const block = query.getBlockById(blockId)
+        if (!block) return null
+
+        const inline = query.getInlineById(inlineId)
+        if (!inline) return null
+
+        const inlineIndex = block.inlines.findIndex(i => i.id === inlineId)
+        const textBefore = block.inlines
+            .slice(0, inlineIndex)
+            .map(i => i.text.symbolic)
+            .join('') + inline.text.symbolic.slice(0, startPosition)
+        
+        let textAfter = ''
+        if (endPosition !== undefined) {
+            const endInline = query.getInlineById(inlineId)
+            if (endInline && endInline.id === inline.id) {
+                textAfter = inline.text.symbolic.slice(endPosition) +
+                    block.inlines
+                        .slice(inlineIndex + 1)
+                        .map(i => i.text.symbolic)
+                        .join('')
+            } else if (endInline) {
+                const endInlineIndex = block.inlines.findIndex(i => i.id === endInline.id)
+                textAfter = endInline.text.symbolic.slice(endPosition) +
+                    block.inlines
+                        .slice(endInlineIndex + 1)
+                        .map(i => i.text.symbolic)
+                        .join('')
+            }
+        } else {
+            textAfter = inline.text.symbolic.slice(startPosition) +
+                block.inlines
+                    .slice(inlineIndex + 1)
+                    .map(i => i.text.symbolic)
+                    .join('')
+        }
+
+        let currentOffset = block.position.start
+        const leftBlocks = parser.reparseTextFragment(textBefore, currentOffset)
+        if (leftBlocks.length > 0) {
+            currentOffset = leftBlocks[leftBlocks.length - 1].position.end
+        }
+        
+        const pastedBlocks = parser.reparseTextFragment(pastedText, currentOffset)
+        if (pastedBlocks.length > 0) {
+            currentOffset = pastedBlocks[pastedBlocks.length - 1].position.end
+        }
+        
+        const rightBlocks = parser.reparseTextFragment(textAfter, currentOffset)
+
+        const allBlocks = [...leftBlocks, ...pastedBlocks, ...rightBlocks]
+        if (allBlocks.length === 0) return null
+
+        const flat = query.flattenBlocks(ast.blocks)
+        const entry = flat.find(b => b.block.id === block.id)
+        if (!entry) return null
+
+        ast.blocks.splice(entry.index, 1, ...allBlocks)
+
+        const lastBlock = allBlocks[allBlocks.length - 1]
+        const lastInline = query.getFirstInline([lastBlock])
+        if (!lastInline) return null
+
+        const updateEffects = allBlocks.map((b, idx) => ({
+            at: idx === 0 ? 'current' as const : 'next' as const,
+            target: idx === 0 ? block : allBlocks[idx - 1],
+            current: b
+        }))
+
+        return effect.compose(
+            effect.update(updateEffects),
+            effect.caret(lastBlock.id, lastInline.id, lastBlock.text.length, 'start')
+        )
+    }
 }
 
 export default Edit
