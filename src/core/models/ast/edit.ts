@@ -1,4 +1,4 @@
-import { detectBlockType } from '../parse/block/blockDetect'
+import { detectBlockType } from '../parser/block/blockDetect'
 import { uuid } from '../../utils/utils'
 import type { AstContext } from './astContext'
 import type { AstApplyEffect, Block, Inline, List, ListItem, Table, TableRow, TableHeader, TableCell } from '../../types'

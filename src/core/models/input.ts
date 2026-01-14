@@ -1,13 +1,13 @@
 import Ast from './ast/ast'
 import Caret from './caret'
-import Selection from './select.ts/selection'
+import Select from './select/select'
 import { SelectionRange, EditEffect, InputEvent } from '../types'
 
 class Input {
     constructor(
         public ast: Ast,
         public caret: Caret,
-        public selection: Selection,
+        public select: Select,
     ) {}
 
     public resolveEffect(event: InputEvent): EditEffect | null {
@@ -16,7 +16,7 @@ class Input {
     
         if (!isInsert && !isDelete) return null
     
-        const range = this.selection?.resolveRange()
+        const range = this.select?.resolveRange()
         if (!range) return null
 
         const isCollapsed = range.start.blockId === range.end.blockId &&

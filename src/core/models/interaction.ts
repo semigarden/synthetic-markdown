@@ -1,13 +1,13 @@
 import Input from './input'
 import Intent from './intent'
 import Editor from './editor'
-import Selection from './select.ts/selection'
+import Select from './select/select'
 import { Intent as IntentType } from '../types'
 
 class Interaction {
     constructor(
         private rootElement: HTMLElement,
-        private selection: Selection,
+        private select: Select,
         private editor: Editor,
         private input: Input,
         private intent: Intent,
@@ -50,7 +50,7 @@ class Interaction {
             return
         }
 
-        const context = this.selection.resolveInlineContext()
+        const context = this.select.resolveInlineContext()
         if (!context) return
 
         const effect = this.intent.resolveEffect(intent, context)

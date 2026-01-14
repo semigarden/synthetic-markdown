@@ -1,5 +1,5 @@
 import type Ast from './ast'
-import type AstParser from '../parse/ast/astParser'
+import type AstParser from '../parser/ast/astParser'
 import type AstMutation from './astMutation'
 import type AstQuery from './astQuery'
 import type AstTransform from './transform/astTransform'

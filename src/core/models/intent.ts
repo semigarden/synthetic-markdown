@@ -1,14 +1,14 @@
 import Ast from './ast/ast'
 import Caret from './caret'
 import Render from './render/render'
-import Selection from './select.ts/selection'
+import Select from './select/select'
 import { EditContext, EditEffect, Intent as IntentType } from '../types'
 
 class Intent {
     constructor(
         public ast: Ast,
         public caret: Caret,
-        public selection: Selection,
+        public select: Select,
         public render: Render,
     ) {}
 

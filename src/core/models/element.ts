@@ -1,6 +1,6 @@
 import Ast from './ast/ast'
 import Caret from './caret'
-import Selection from './select.ts/selection'
+import Select from './select/select'
 import Interaction from './interaction'
 import Editor from './editor'
 import Render from './render/render'
@@ -14,7 +14,7 @@ class Element extends HTMLElement {
     private ast = new Ast()
     private render: Render | null = null
     private caret: Caret | null = null
-    private selection: Selection | null = null
+    private select: Select | null = null
     private interaction: Interaction | null = null
     private editor: Editor | null = null
 
@@ -40,13 +40,13 @@ class Element extends HTMLElement {
         this.render = new Render(this.rootElement!)
         this.caret = new Caret(this.rootElement!)
         this.editor = new Editor(this.ast, this.caret, this.render, this.emitChange.bind(this))
-        this.selection = new Selection(this.ast, this.caret, this.rootElement!)
-        this.selection.attach()
+        this.select = new Select(this.ast, this.caret, this.rootElement!)
+        this.select.attach()
 
-        this.input = new Input(this.ast, this.caret, this.selection)
-        this.intent = new Intent(this.ast, this.caret, this.selection, this.render)
+        this.input = new Input(this.ast, this.caret, this.select)
+        this.intent = new Intent(this.ast, this.caret, this.select, this.render)
 
-        this.interaction = new Interaction(this.rootElement!, this.selection, this.editor, this.input, this.intent)
+        this.interaction = new Interaction(this.rootElement!, this.select, this.editor, this.input, this.intent)
         this.interaction.attach()
 
         this.renderDOM()
@@ -54,7 +54,7 @@ class Element extends HTMLElement {
 
     disconnectedCallback() {
         this.interaction?.detach()
-        this.selection?.detach()
+        this.select?.detach()
         this.caret?.clear()
     }
 

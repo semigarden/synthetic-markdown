@@ -5,7 +5,7 @@ import { getInlineElementFromNode } from './dom'
 import { resolveRangeFromSelection, resolveInlineContext } from './map'
 import type { EditContext, SelectionRange } from '../../types'
 
-class Selection {
+class Select {
     private rafId: number | null = null
     private range: SelectionRange | null = null
     private suppressSelectionChange = false
@@ -98,4 +98,4 @@ class Selection {
     }
 }
 
-export default Selection
+export default Select

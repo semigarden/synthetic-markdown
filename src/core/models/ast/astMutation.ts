@@ -1,6 +1,6 @@
 import Ast from './ast'
 import AstQuery from './astQuery'
-import AstParser from '../parse/ast/astParser'
+import AstParser from '../parser/ast/astParser'
 import { Block, Inline } from '../../types'
 import { uuid } from '../../utils/utils'
 
