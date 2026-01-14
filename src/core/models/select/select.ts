@@ -362,29 +362,50 @@ class Select {
             }
         }
         
+        if (this.range.start.blockId !== this.range.end.blockId) {
+            return null
+        }
+        
         const startBlock = this.ast.query.getBlockById(this.range.start.blockId)
         const startInline = this.ast.query.getInlineById(this.range.start.inlineId)
         if (!startBlock || !startInline) return null
         
         const startInlineIndex = startBlock.inlines.findIndex(i => i.id === startInline.id)
+        const endInline = this.ast.query.getInlineById(this.range.end.inlineId)
+        if (!endInline) return null
+        
+        if (startInline.id === endInline.id) {
+            const currentText = startInline.text.symbolic
+            const newText = currentText.slice(0, this.range.start.position) + text + currentText.slice(this.range.end.position)
+            const newCaretPosition = this.range.start.position + text.length
+            
+            return {
+                preventDefault: true,
+                ast: [{
+                    type: 'input',
+                    blockId: startBlock.id,
+                    inlineId: startInline.id,
+                    text: newText,
+                    caretPosition: newCaretPosition,
+                }],
+            }
+        }
+        
+        const endInlineIndex = startBlock.inlines.findIndex(i => i.id === endInline.id)
+        
         const textBefore = startBlock.inlines
             .slice(0, startInlineIndex)
             .map(i => i.text.symbolic)
             .join('') + startInline.text.symbolic.slice(0, this.range.start.position)
         
-        const endBlock = this.ast.query.getBlockById(this.range.end.blockId)
-        const endInline = this.ast.query.getInlineById(this.range.end.inlineId)
-        if (!endBlock || !endInline) return null
-        
-        const endInlineIndex = endBlock.inlines.findIndex(i => i.id === endInline.id)
         const textAfter = endInline.text.symbolic.slice(this.range.end.position) +
-            endBlock.inlines
+            startBlock.inlines
                 .slice(endInlineIndex + 1)
                 .map(i => i.text.symbolic)
                 .join('')
         
-        const newText = textBefore + text
-        const newCaretPosition = textBefore.length + text.length
+        const newText = textBefore + text + textAfter
+        const newCaretPosition = this.range.start.position + text.length
         
         return {
             preventDefault: true,

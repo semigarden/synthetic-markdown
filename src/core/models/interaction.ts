@@ -16,14 +16,23 @@ class Interaction {
     attach() {
         this.rootElement.addEventListener('beforeinput', this.onBeforeInput)
         this.rootElement.addEventListener('keydown', this.onKeyDown)
+        this.rootElement.addEventListener('paste', this.onPaste)
+        this.rootElement.addEventListener('copy', this.onCopy)
     }
 
     detach() {
         this.rootElement.removeEventListener('beforeinput', this.onBeforeInput)
         this.rootElement.removeEventListener('keydown', this.onKeyDown)
+        this.rootElement.removeEventListener('paste', this.onPaste)
+        this.rootElement.removeEventListener('copy', this.onCopy)
     }
 
     private onBeforeInput = (event: InputEvent) => {
+        if (event.inputType === 'insertFromPaste') {
+            event.preventDefault()
+            return
+        }
+        
         const effect = this.input.resolveEffect({ text: event.data ?? '', type: event.inputType })
         
         if (!effect) return
@@ -32,6 +41,25 @@ class Interaction {
         }
 
         this.editor.apply(effect)
+    }
+
+    private onPaste = (event: ClipboardEvent) => {
+        event.preventDefault()
+        const text = event.clipboardData?.getData('text/plain') ?? ''
+        if (!text) return
+        
+        const effect = this.select.paste(text)
+        if (effect) {
+            this.editor.apply(effect)
+        }
+    }
+
+    private onCopy = (event: ClipboardEvent) => {
+        const text = this.select.getSelectedText()
+        if (text) {
+            event.clipboardData?.setData('text/plain', text)
+            event.preventDefault()
+        }
     }
 
     private onKeyDown = (event: KeyboardEvent) => {
