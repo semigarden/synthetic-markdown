@@ -3,7 +3,7 @@ import Caret from '../caret'
 import Focus from './focus'
 import { getInlineElementFromNode } from './dom'
 import { resolveRangeFromSelection, resolveInlineContext } from './map'
-import type { EditContext, SelectionRange } from '../../types'
+import type { EditContext, SelectionRange, EditEffect } from '../../types'
 
 class Select {
     private rafId: number | null = null
@@ -303,6 +303,99 @@ class Select {
 
     public isMultiInlineMode(): boolean {
         return this.multiInlineMode
+    }
+
+    public getSelectedText(): string {
+        if (!this.range) return ''
+        
+        const flatInlines = this.ast.query.flattenInlines(this.ast.blocks)
+        const parts: string[] = []
+        let inRange = false
+        
+        for (const entry of flatInlines) {
+            if (entry.inline.type === 'marker') continue
+            
+            const isStart = entry.inline.id === this.range.start.inlineId
+            const isEnd = entry.inline.id === this.range.end.inlineId
+            
+            if (isStart) {
+                inRange = true
+                const startPos = this.range.start.position
+                const endPos = isEnd ? this.range.end.position : entry.inline.text.symbolic.length
+                parts.push(entry.inline.text.symbolic.slice(startPos, endPos))
+                if (isEnd) break
+                continue
+            }
+            
+            if (inRange) {
+                if (isEnd) {
+                    parts.push(entry.inline.text.symbolic.slice(0, this.range.end.position))
+                    break
+                } else {
+                    parts.push(entry.inline.text.symbolic)
+                }
+            }
+        }
+        
+        return parts.join('')
+    }
+
+    public paste(text: string): EditEffect | null {
+        if (!this.range) {
+            const context = this.resolveInlineContext()
+            if (!context) return null
+            
+            const caretPosition = this.caret.position ?? 0
+            const currentText = context.inline.text.symbolic
+            const newText = currentText.slice(0, caretPosition) + text + currentText.slice(caretPosition)
+            const newCaretPosition = caretPosition + text.length
+            
+            return {
+                preventDefault: true,
+                ast: [{
+                    type: 'input',
+                    blockId: context.block.id,
+                    inlineId: context.inline.id,
+                    text: newText,
+                    caretPosition: newCaretPosition,
+                }],
+            }
+        }
+        
+        const startBlock = this.ast.query.getBlockById(this.range.start.blockId)
+        const startInline = this.ast.query.getInlineById(this.range.start.inlineId)
+        if (!startBlock || !startInline) return null
+        
+        const startInlineIndex = startBlock.inlines.findIndex(i => i.id === startInline.id)
+        const textBefore = startBlock.inlines
+            .slice(0, startInlineIndex)
+            .map(i => i.text.symbolic)
+            .join('') + startInline.text.symbolic.slice(0, this.range.start.position)
+        
+        const endBlock = this.ast.query.getBlockById(this.range.end.blockId)
+        const endInline = this.ast.query.getInlineById(this.range.end.inlineId)
+        if (!endBlock || !endInline) return null
+        
+        const endInlineIndex = endBlock.inlines.findIndex(i => i.id === endInline.id)
+        const textAfter = endInline.text.symbolic.slice(this.range.end.position) +
+            endBlock.inlines
+                .slice(endInlineIndex + 1)
+                .map(i => i.text.symbolic)
+                .join('')
+        
+        const newText = textBefore + text
+        const newCaretPosition = textBefore.length + text.length
+        
+        return {
+            preventDefault: true,
+            ast: [{
+                type: 'input',
+                blockId: startBlock.id,
+                inlineId: startInline.id,
+                text: newText,
+                caretPosition: newCaretPosition,
+            }],
+        }
     }
 }
 
