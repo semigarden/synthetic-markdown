@@ -23,6 +23,7 @@ class Editor {
         insertParagraphAboveTable: (effect) => this.ast.insertParagraphAboveTable(effect.tableId),
         insertParagraphBelowTable: (effect) => this.ast.insertParagraphBelowTable(effect.tableId),
         pasteMultiBlock: (effect) => this.ast.pasteMultiBlock(effect.blockId, effect.inlineId, effect.text, effect.startPosition, effect.endPosition),
+        deleteMultiBlock: (effect) => this.ast.deleteMultiBlock(effect.startBlockId, effect.startInlineId, effect.startPosition, effect.endBlockId, effect.endInlineId, effect.endPosition),
     }
     public emitChange: () => void
     public timeline: Timeline

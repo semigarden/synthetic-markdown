@@ -38,21 +38,52 @@ class Input {
     }
 
     private resolveInsert(text: string, range: SelectionRange): EditEffect | null {
+        if (range.start.blockId !== range.end.blockId) {
+            return this.resolveMultiBlockInsert(text, range)
+        }
+
         const block = this.ast.query.getBlockById(range.start.blockId)
         if (!block) return null
 
         const inline = this.ast.query.getInlineById(range.start.inlineId)
         if (!inline) return null
 
-        const localStart = range.start.position
-        const localEnd = range.end.inlineId === range.start.inlineId
-            ? range.end.position
-            : inline.text.symbolic.length
+        const startInlineIndex = block.inlines.findIndex(i => i.id === inline.id)
+        const endInline = this.ast.query.getInlineById(range.end.inlineId)
+        if (!endInline) return null
 
-        const currentText = inline.text.symbolic
-        const newText = currentText.slice(0, localStart) + text + currentText.slice(localEnd)
+        if (inline.id === endInline.id) {
+            const currentText = inline.text.symbolic
+            const newText = currentText.slice(0, range.start.position) + text + currentText.slice(range.end.position)
+            const newCaretPosition = range.start.position + text.length
 
-        const newCaretPosition = localStart + text.length
+            return {
+                preventDefault: true,
+                ast: [{
+                    type: 'input',
+                    blockId: block.id,
+                    inlineId: inline.id,
+                    text: newText,
+                    caretPosition: newCaretPosition,
+                }],
+            }
+        }
+
+        const endInlineIndex = block.inlines.findIndex(i => i.id === endInline.id)
+        
+        const textBefore = block.inlines
+            .slice(0, startInlineIndex)
+            .map(i => i.text.symbolic)
+            .join('') + inline.text.symbolic.slice(0, range.start.position)
+        
+        const textAfter = endInline.text.symbolic.slice(range.end.position) +
+            block.inlines
+                .slice(endInlineIndex + 1)
+                .map(i => i.text.symbolic)
+                .join('')
+        
+        const newText = textBefore + text + textAfter
+        const newCaretPosition = textBefore.length + text.length
 
         return {
             preventDefault: true,
@@ -64,6 +95,33 @@ class Input {
                 caretPosition: newCaretPosition,
             }],
         }
+    }
+
+    private resolveMultiBlockInsert(text: string, range: SelectionRange): EditEffect | null {
+        const startBlock = this.ast.query.getBlockById(range.start.blockId)
+        const startInline = this.ast.query.getInlineById(range.start.inlineId)
+        if (!startBlock || !startInline) return null
+
+        const endBlock = this.ast.query.getBlockById(range.end.blockId)
+        const endInline = this.ast.query.getInlineById(range.end.inlineId)
+        if (!endBlock || !endInline) return null
+
+        if (text === '') {
+            return {
+                preventDefault: true,
+                ast: [{
+                    type: 'deleteMultiBlock',
+                    startBlockId: startBlock.id,
+                    startInlineId: startInline.id,
+                    startPosition: range.start.position,
+                    endBlockId: endBlock.id,
+                    endInlineId: endInline.id,
+                    endPosition: range.end.position,
+                }],
+            }
+        }
+
+        return this.select.paste(text)
     }
 
     private resolveDelete(direction: 'backward' | 'forward', range: SelectionRange): EditEffect | null {

@@ -19,6 +19,7 @@ type AstEffect =
     | { type: 'insertParagraphAboveTable'; tableId: string }
     | { type: 'insertParagraphBelowTable'; tableId: string }
     | { type: 'pasteMultiBlock'; blockId: string; inlineId: string; text: string; startPosition: number; endPosition?: number }
+    | { type: 'deleteMultiBlock'; startBlockId: string; startInlineId: string; startPosition: number; endBlockId: string; endInlineId: string; endPosition: number }
 
 export type AstEffectMap = {
     [K in AstEffect['type']]: Extract<AstEffect, { type: K }>

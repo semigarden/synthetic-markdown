@@ -1108,6 +1108,106 @@ class Edit {
             effect.caret(lastBlock.id, lastInline.id, lastBlock.text.length, 'start')
         )
     }
+
+    public deleteMultiBlock(
+        startBlockId: string,
+        startInlineId: string,
+        startPosition: number,
+        endBlockId: string,
+        endInlineId: string,
+        endPosition: number
+    ): AstApplyEffect | null {
+        const { ast, query, parser, effect } = this.context
+
+        const startBlock = query.getBlockById(startBlockId)
+        const startInline = query.getInlineById(startInlineId)
+        if (!startBlock || !startInline) return null
+
+        const endBlock = query.getBlockById(endBlockId)
+        const endInline = query.getInlineById(endInlineId)
+        if (!endBlock || !endInline) return null
+
+        const flat = query.flattenBlocks(ast.blocks)
+        const startEntry = flat.find(b => b.block.id === startBlockId)
+        const endEntry = flat.find(b => b.block.id === endBlockId)
+        if (!startEntry || !endEntry) return null
+
+        const startInlineIndex = startBlock.inlines.findIndex(i => i.id === startInlineId)
+        const textBefore = startBlock.inlines
+            .slice(0, startInlineIndex)
+            .map(i => i.text.symbolic)
+            .join('') + startInline.text.symbolic.slice(0, startPosition)
+
+        const endInlineIndex = endBlock.inlines.findIndex(i => i.id === endInlineId)
+        const textAfter = endInline.text.symbolic.slice(endPosition) +
+            endBlock.inlines
+                .slice(endInlineIndex + 1)
+                .map(i => i.text.symbolic)
+                .join('')
+
+        const blocksToRemove: Block[] = []
+
+        let currentOffset = startBlock.position.start
+        const leftBlocks = parser.reparseTextFragment(textBefore, currentOffset)
+        if (leftBlocks.length > 0) {
+            currentOffset = leftBlocks[leftBlocks.length - 1].position.end
+        }
+        
+        const rightBlocks = parser.reparseTextFragment(textAfter, currentOffset)
+
+        const allBlocks = [...leftBlocks, ...rightBlocks]
+        if (allBlocks.length === 0) {
+            const emptyBlock: Block = {
+                id: uuid(),
+                type: 'paragraph',
+                text: '',
+                position: { start: startBlock.position.start, end: startBlock.position.start },
+                inlines: [],
+            }
+            emptyBlock.inlines = parser.inline.parseInline('', emptyBlock.id, 'paragraph', 0)
+            emptyBlock.inlines.forEach((i: Inline) => i.blockId = emptyBlock.id)
+            allBlocks.push(emptyBlock)
+        }
+
+        if (startEntry.index === endEntry.index) {
+            if (startEntry.parent && 'blocks' in startEntry.parent) {
+                startEntry.parent.blocks.splice(startEntry.index, 1, ...allBlocks)
+            } else {
+                ast.blocks.splice(startEntry.index, 1, ...allBlocks)
+            }
+        } else {
+            for (let i = startEntry.index + 1; i <= endEntry.index; i++) {
+                blocksToRemove.push(flat[i].block)
+            }
+            
+            if (startEntry.parent && startEntry.parent === endEntry.parent && 'blocks' in startEntry.parent) {
+                startEntry.parent.blocks.splice(startEntry.index, endEntry.index - startEntry.index + 1, ...allBlocks)
+            } else if (!startEntry.parent && !endEntry.parent) {
+                ast.blocks.splice(startEntry.index, endEntry.index - startEntry.index + 1, ...allBlocks)
+            } else {
+                if (!startEntry.parent) {
+                    ast.blocks.splice(startEntry.index, ast.blocks.length - startEntry.index, ...allBlocks)
+                } else if ('blocks' in startEntry.parent) {
+                    startEntry.parent.blocks.splice(startEntry.index, startEntry.parent.blocks.length - startEntry.index, ...allBlocks)
+                }
+            }
+        }
+
+        const lastBlock = allBlocks[allBlocks.length - 1]
+        const lastInline = query.getFirstInline([lastBlock])
+        if (!lastInline) return null
+
+        const updateEffects = allBlocks.map((b, idx) => ({
+            at: idx === 0 ? 'current' as const : 'next' as const,
+            target: idx === 0 ? startBlock : allBlocks[idx - 1],
+            current: b
+        }))
+
+        return effect.compose(
+            effect.update(updateEffects, blocksToRemove),
+            effect.caret(lastBlock.id, lastInline.id, lastBlock.text.length, 'start')
+        )
+    }
 }
 
 export default Edit

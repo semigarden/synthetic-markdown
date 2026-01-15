@@ -27,15 +27,20 @@ class Render {
     public apply(effect: RenderEffect) {
         switch (effect.type) {
             case 'update':
-                effect.render.insert.forEach(render => {
-                    this.renderBlock(render.current, this.rootElement, render.at, render.target)
-                })
-
+                const removedIds = new Set<string>()
                 effect.render.remove.forEach(block => {
+                    if (removedIds.has(block.id)) return
                     const removeBlockElement = this.rootElement.querySelector(
                         `[data-block-id="${block.id}"]`
-                    )
-                    if (removeBlockElement) removeBlockElement.remove()
+                    ) as HTMLElement | null
+                    if (removeBlockElement) {
+                        removeBlockElement.remove()
+                        removedIds.add(block.id)
+                    }
+                })
+
+                effect.render.insert.forEach(render => {
+                    this.renderBlock(render.current, this.rootElement, render.at, render.target)
                 })
 
                 normalizeTables(this.rootElement)

@@ -82,6 +82,7 @@ class Ast {
     public insertParagraphAboveTable(...args: Parameters<Edit['insertParagraphAboveTable']>) { return this.edit.insertParagraphAboveTable(...args) }
     public insertParagraphBelowTable(...args: Parameters<Edit['insertParagraphBelowTable']>) { return this.edit.insertParagraphBelowTable(...args) }
     public pasteMultiBlock(...args: Parameters<Edit['pasteMultiBlock']>) { return this.edit.pasteMultiBlock(...args) }
+    public deleteMultiBlock(...args: Parameters<Edit['deleteMultiBlock']>) { return this.edit.deleteMultiBlock(...args) }
 }
 
 export default Ast
