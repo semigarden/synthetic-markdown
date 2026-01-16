@@ -27,19 +27,28 @@ function renderInlines(inlines: Inline[], parent: HTMLElement) {
     parent.replaceChildren()
 
     for (const inline of inlines) {
-        parent.appendChild(renderInline(inline))
+        const { symbolic, semantic } = renderInline(inline)
+        parent.appendChild(symbolic)
+        parent.appendChild(semantic)
     }
 }
 
-function renderInline(inline: Inline): Node {
+function renderInline(inline: Inline): { symbolic: Node; semantic: Node } {
     const tag = getInlineTag(inline)
     const inlineElement = document.createElement(tag)
+    const inlineSymbolicElement = document.createElement(tag)
+
+    inlineSymbolicElement.id = inline.id
+    inlineSymbolicElement.dataset.inlineId = inline.id
+    inlineSymbolicElement.textContent = inline.text.symbolic
+    inlineSymbolicElement.contentEditable = 'false'
+    inlineSymbolicElement.classList.add('inline', inline.type, 'symbolic')
 
     inlineElement.id = inline.id
     inlineElement.dataset.inlineId = inline.id
     inlineElement.textContent = inline.text.semantic
     inlineElement.contentEditable = 'false'
-    inlineElement.classList.add('inline', inline.type)
+    inlineElement.classList.add('inline', inline.type, 'semantic')
 
     if (inline.type === 'link') {
         ;(inlineElement as HTMLAnchorElement).href = inline.url || ''
@@ -57,7 +66,7 @@ function renderInline(inline: Inline): Node {
         inlineElement.textContent = '';
     }
 
-    return inlineElement
+    return { symbolic: inlineSymbolicElement, semantic: inlineElement }
 }
 
 export { renderInlines }

@@ -66,6 +66,23 @@
     text-align: left;
     outline: none;
     border: 1px solid blue;
+
+    &.symbolic {
+        // color: var(--color-muted);
+        display: none;
+
+        &.focused {
+            display: inline;
+        }
+    }
+
+    &.semantic {
+        display: inline;
+
+        &.focused {
+            display: none;
+        }
+    }
 }
 
 .paragraph {
