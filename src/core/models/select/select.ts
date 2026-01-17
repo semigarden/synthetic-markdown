@@ -1,7 +1,7 @@
 import Ast from '../ast/ast'
 import Caret from '../caret'
 import Focus from './focus'
-import { getAllSelectedElements, resolveRangeFromSelection, resolveInlineContext } from './map'
+import { getSelectedElements, resolveRange, resolveInlineContext } from './map'
 import type { EditContext, SelectionRange, EditEffect } from '../../types'
 
 class Select {
@@ -65,47 +65,37 @@ class Select {
                 return
             }
 
-            const range = resolveRangeFromSelection(this.ast, this.caret, selection)
-            this.range = range
-
-            const domSelectedElements = getAllSelectedElements(this.rootElement, selection)
-            
-            let astSelectedElements: { inlineElements: HTMLElement[]; blockElements: HTMLElement[]; allElements: HTMLElement[] } = { 
-                inlineElements: [] as HTMLElement[], 
-                blockElements: [] as HTMLElement[], 
-                allElements: [] as HTMLElement[] 
-            }
-            if (range && !this.isRangeCollapsed(range)) {
-                astSelectedElements = this.getAllSelectedElementsFromRange(range)
-            }
-
-            const selectedInlineIds: string[] = []
-            const selectedBlockIds: string[] = []
-
-            for (const el of domSelectedElements.blockElements) {
-                const blockId = el.dataset?.blockId ?? ''
-                const block = this.ast.query.getBlockById(blockId)
-                if (block) {
-                    selectedBlockIds.push(block.id)
-                }
-            }
-
-            for (const el of domSelectedElements.inlineElements) {
-                const inlineId = el.dataset?.inlineId ?? ''
-                const inline = this.ast.query.getInlineById(inlineId)
-                if (inline) {
-                    selectedInlineIds.push(inline.id)
-                }
-            }
+            const selectedElements = getSelectedElements(this.rootElement, selection)
 
             this.focus.unfocusBlocks(this.focusState.focusedBlockIds)
             this.focus.unfocusInlines(this.focusState.focusedInlineIds)
+            this.focusState.focusedBlockIds = []
+            this.focusState.focusedInlineIds = []
 
-            this.focusState.focusedBlockIds = selectedBlockIds
-            this.focusState.focusedInlineIds = selectedInlineIds
+            for (const el of selectedElements.blockElements) {
+                const blockId = el.dataset?.blockId ?? ''
+                const block = this.ast.query.getBlockById(blockId)
+                if (block) {
+                    this.focusState.focusedBlockIds.push(block.id)
+                }
+            }
 
-            this.focus.focusBlocks(selectedBlockIds)
-            this.focus.focusInlines(selectedInlineIds)
+            for (const el of selectedElements.inlineElements) {
+                const inlineId = el.dataset?.inlineId ?? ''
+                const inline = this.ast.query.getInlineById(inlineId)
+                if (inline) {
+                    this.focusState.focusedInlineIds.push(inline.id)
+                }
+            }
+
+            this.focus.focusBlocks(this.focusState.focusedBlockIds)
+            this.focus.focusInlines(this.focusState.focusedInlineIds)
+
+            const range = resolveRange(this.ast, this.caret, this.rootElement, selection)
+            this.range = range
+
+            console.log('range', range?.start.position, range?.end.position)
+
         })
     }
 

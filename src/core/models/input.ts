@@ -19,6 +19,7 @@ class Input {
         const range = this.select?.resolveRange()
         if (!range) return null
 
+        // const [startBlockId, startInlineId] = [this.select.focusState.focusedBlockIds[0], this.select.focusState.focusedBlockIds[-1]]
         const isCollapsed = range.start.blockId === range.end.blockId &&
             range.start.inlineId === range.end.inlineId &&
             range.start.position === range.end.position
@@ -38,6 +39,7 @@ class Input {
     }
 
     private resolveInsert(text: string, range: SelectionRange): EditEffect | null {
+        console.log('resolveInsert', text, JSON.stringify(range, null, 2))
         if (range.start.blockId !== range.end.blockId) {
             return this.resolveMultiBlockInsert(text, range)
         }
@@ -105,6 +107,8 @@ class Input {
         const endBlock = this.ast.query.getBlockById(range.end.blockId)
         const endInline = this.ast.query.getInlineById(range.end.inlineId)
         if (!endBlock || !endInline) return null
+
+        console.log('resolveMultiBlockInsert', startBlock.id, startInline.id, range.start.position, endBlock.id, endInline.id, range.end.position)
 
         if (text === '') {
             return {

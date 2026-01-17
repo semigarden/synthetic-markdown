@@ -38,7 +38,7 @@ function renderInline(inline: Inline): HTMLElement {
 
     inlineElement.id = inline.id
     inlineElement.dataset.inlineId = inline.id
-    inlineElement.contentEditable = 'false'
+    // inlineElement.contentEditable = 'false'
     inlineElement.classList.add('inline', inline.type)
 
     const symbolicText = document.createElement('span')

@@ -73,7 +73,6 @@ class Focus {
     public focusInline(
         inlineId: string
     ) {
-        console.log('focusInline', inlineId)
         const inlineElement = this.rootElement.querySelector(
             `[data-inline-id="${inlineId}"]`
         ) as HTMLElement | null
@@ -83,7 +82,6 @@ class Focus {
     }
 
     public unfocusInline(inlineId: string) {
-        console.log('unfocusInline', inlineId)
         const inline = this.ast.query.getInlineById(inlineId)
         if (!inline) return
 

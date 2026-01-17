@@ -63,7 +63,7 @@ class BlockRender {
             element.dataset.blockId = block.id
             element.id = block.id
             element.classList.add('block')
-            element.contentEditable = 'false'
+            // element.contentEditable = 'false'
         }
 
         return { element, isNew }
