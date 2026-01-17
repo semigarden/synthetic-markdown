@@ -180,8 +180,6 @@ class Input {
             newCaretPosition = position
         }
 
-        // console.log('resolveDelete', JSON.stringify(newText, null, 2))
-
         return {
             preventDefault: true,
             ast: [{
