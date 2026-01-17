@@ -93,9 +93,6 @@ class Select {
 
             const range = resolveRange(this.ast, this.caret, this.rootElement, selection)
             this.range = range
-
-            console.log('range', range?.start.position, range?.end.position)
-
         })
     }
 

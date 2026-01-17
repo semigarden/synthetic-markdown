@@ -19,7 +19,6 @@ class Input {
         const range = this.select?.resolveRange()
         if (!range) return null
 
-        // const [startBlockId, startInlineId] = [this.select.focusState.focusedBlockIds[0], this.select.focusState.focusedBlockIds[-1]]
         const isCollapsed = range.start.blockId === range.end.blockId &&
             range.start.inlineId === range.end.inlineId &&
             range.start.position === range.end.position
@@ -39,8 +38,8 @@ class Input {
     }
 
     private resolveInsert(text: string, range: SelectionRange): EditEffect | null {
-        console.log('resolveInsert', text, JSON.stringify(range, null, 2))
         if (range.start.blockId !== range.end.blockId) {
+            console.log('resolveInsert', JSON.stringify(text, null, 2))
             return this.resolveMultiBlockInsert(text, range)
         }
 
@@ -87,6 +86,9 @@ class Input {
         const newText = textBefore + text + textAfter
         const newCaretPosition = textBefore.length + text.length
 
+        console.log('resolveInsert', JSON.stringify(newText, null, 2))
+        console.log('resolveInsert', JSON.stringify(newCaretPosition, null, 2))
+
         return {
             preventDefault: true,
             ast: [{
@@ -108,7 +110,7 @@ class Input {
         const endInline = this.ast.query.getInlineById(range.end.inlineId)
         if (!endBlock || !endInline) return null
 
-        console.log('resolveMultiBlockInsert', startBlock.id, startInline.id, range.start.position, endBlock.id, endInline.id, range.end.position)
+        // console.log('resolveMultiBlockInsert', startBlock.id, startInline.id, range.start.position, endBlock.id, endInline.id, range.end.position)
 
         if (text === '') {
             return {
@@ -135,24 +137,24 @@ class Input {
         const inline = this.ast.query.getInlineById(range.start.inlineId)
         if (!inline) return null
 
-        const localPos = range.start.position
+        const position = range.start.position - block.position.start - inline.position.start
         const currentText = inline.text.symbolic
 
         let newText: string
         let newCaretPosition: number
 
         if (direction === 'backward') {
-            if (localPos === 0) {
+            if (position === 0) {
                 return null
             }
-            newText = currentText.slice(0, localPos - 1) + currentText.slice(localPos)
-            newCaretPosition = localPos - 1
+            newText = currentText.slice(0, position - 1) + currentText.slice(position)
+            newCaretPosition = position - 1
         } else {
-            if (localPos >= currentText.length) {
+            if (position >= currentText.length) {
                 return null
             }
-            newText = currentText.slice(0, localPos) + currentText.slice(localPos + 1)
-            newCaretPosition = localPos
+            newText = currentText.slice(0, position) + currentText.slice(position + 1)
+            newCaretPosition = position
         }
 
         return {
