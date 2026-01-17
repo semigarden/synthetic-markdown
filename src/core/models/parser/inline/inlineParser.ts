@@ -74,7 +74,7 @@ class InlineParser {
                 id: uuid(),
                 type: 'text',
                 blockId,
-                text: { symbolic: '', semantic: '' },
+                text: { symbolic: '\u200B', semantic: '' },
                 position: { start: position, end: position }
             })
 
