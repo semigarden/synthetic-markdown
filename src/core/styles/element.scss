@@ -42,16 +42,11 @@
     background: var(--color-selection-bg);
 }
 
-// ::selection {
-//     background: transparent;
-//     color: inherit;
-// }
-
 .block {
     margin: 0;
     padding: 0;
     min-height: 1.2em;
-    border: 1px solid red;
+    // border: 1px solid red;
 }
 
 .inline {
@@ -66,7 +61,7 @@
     display: inline-block;
     text-align: left;
     outline: none;
-    border: 1px solid blue;
+    // border: 1px solid blue;
 
     .symbolic {
         position: relative;

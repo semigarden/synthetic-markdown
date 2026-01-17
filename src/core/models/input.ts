@@ -140,7 +140,9 @@ class Input {
         const inline = this.ast.query.getInlineById(range.start.inlineId)
         if (!inline) return null
 
-        if (isZwspOnly(inline.text.symbolic)) {
+        inline.text.symbolic = inline.text.symbolic.replace(ZWSP, '')
+
+        if (isZwspOnly(inline.text.symbolic) || inline.text.symbolic === '') {
             const list = this.ast.query.getListFromBlock(block)
             const previousInline = list && list.blocks.length > 1 ? this.ast.query.getPreviousInlineInList(inline) ?? this.ast.query.getPreviousInline(inline.id) : this.ast.query.getPreviousInline(inline.id)
 
@@ -177,6 +179,8 @@ class Input {
             newText = currentText.slice(0, position) + currentText.slice(position + 1)
             newCaretPosition = position
         }
+
+        // console.log('resolveDelete', JSON.stringify(newText, null, 2))
 
         return {
             preventDefault: true,
