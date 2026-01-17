@@ -131,11 +131,30 @@ class Input {
     }
 
     private resolveDelete(direction: 'backward' | 'forward', range: SelectionRange): EditEffect | null {
+        const ZWSP = '\u200B'
+        const isZwspOnly = (s: string) => s === ZWSP
+
         const block = this.ast.query.getBlockById(range.start.blockId)
         if (!block) return null
 
         const inline = this.ast.query.getInlineById(range.start.inlineId)
         if (!inline) return null
+
+        if (isZwspOnly(inline.text.symbolic)) {
+            const list = this.ast.query.getListFromBlock(block)
+            const previousInline = list && list.blocks.length > 1 ? this.ast.query.getPreviousInlineInList(inline) ?? this.ast.query.getPreviousInline(inline.id) : this.ast.query.getPreviousInline(inline.id)
+
+            if (previousInline) {
+                return {
+                    preventDefault: true,
+                    ast: [{
+                        type: 'mergeInline',
+                        leftInlineId: previousInline.id,
+                        rightInlineId: inline.id,
+                    }],
+                }
+            }
+        }
 
         const inlineIndex = block.inlines.findIndex(i => i.id === inline.id)
 
