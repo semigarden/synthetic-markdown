@@ -1,6 +1,9 @@
 import type { DetectedBlock } from '../../../types'
 
 function detectBlockType(line: string): DetectedBlock {
+    const ZWSP = '\u200B'
+    line = line.replace(ZWSP, '')
+
     const trimmed = line.trim()
 
     if (trimmed === '') return { type: 'blankLine' }

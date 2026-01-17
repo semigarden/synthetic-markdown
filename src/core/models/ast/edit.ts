@@ -28,9 +28,10 @@ class Edit {
         const blockTypeChanged =
             detectedBlock.type !== block.type ||
             (detectedBlock.type === 'heading' && block.type === 'heading' && detectedBlock.level !== block.level)
-        
+            console.log('input', block.type, detectedBlock.type)
         const ignoreTypes = ['blankLine', 'codeBlock', 'table']
         if (blockTypeChanged && !ignoreTypes.includes(detectedBlock.type)) {
+            console.log('input', JSON.stringify(detectedBlock, null, 2))
             if (detectedBlock.type === 'listItem') caretPosition = 0
             return transform.transformBlock(newText, block, detectedBlock, caretPosition)
         }
