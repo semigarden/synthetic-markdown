@@ -425,7 +425,7 @@ class Edit {
             if (!focusInline) return null
 
             return effect.compose(
-                effect.update(insertEffects, blocksToRemove),
+                effect.update(insertEffects),
                 effect.caret(focusBlock.id, focusInline.id, 0, 'start')
             )
         }
