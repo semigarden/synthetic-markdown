@@ -196,7 +196,56 @@ class Select {
         return Array.from(blockIds)
     }
 
-    private onRootFocusIn = (_e: FocusEvent) => {}
+    private onRootFocusIn = (_e: FocusEvent) => {
+        const selection = window.getSelection()
+        if (!selection || selection.rangeCount === 0) {
+            this.range = null
+            this.caret.clear()
+            this.multiInlineMode = false
+
+            this.focus.unfocusBlocks(this.focusState.focusedBlockIds)
+            this.focus.unfocusInlines(this.focusState.focusedInlineIds)
+            this.focusState.focusedBlockIds = []
+            this.focusState.focusedInlineIds = []
+            return
+        }
+
+        if (
+            !this.rootElement.contains(selection.anchorNode) ||
+            !this.rootElement.contains(selection.focusNode)
+        ) {
+            return
+        }
+
+        const selectedElements = getSelectedElements(this.rootElement, selection)
+
+        this.focus.unfocusBlocks(this.focusState.focusedBlockIds)
+        this.focus.unfocusInlines(this.focusState.focusedInlineIds)
+        this.focusState.focusedBlockIds = []
+        this.focusState.focusedInlineIds = []
+
+        for (const el of selectedElements.blockElements) {
+            const blockId = el.dataset?.blockId ?? ''
+            const block = this.ast.query.getBlockById(blockId)
+            if (block) {
+                this.focusState.focusedBlockIds.push(block.id)
+            }
+        }
+
+        for (const el of selectedElements.inlineElements) {
+            const inlineId = el.dataset?.inlineId ?? ''
+            const inline = this.ast.query.getInlineById(inlineId)
+            if (inline) {
+                this.focusState.focusedInlineIds.push(inline.id)
+            }
+        }
+
+        this.focus.focusBlocks(this.focusState.focusedBlockIds)
+        this.focus.focusInlines(this.focusState.focusedInlineIds)
+
+        const range = resolveRange(this.ast, this.caret, this.rootElement, selection)
+        this.range = range
+    }
 
     private onRootFocusOut = (e: FocusEvent) => {
         if (!this.rootElement.contains(e.relatedTarget as Node)) {

@@ -47,25 +47,17 @@ class Focus {
     }
 
     public focusBlock(blockId: string) {
+        console.log('focusBlock', blockId)
         const blockElement = this.rootElement.querySelector(
             `[data-block-id="${blockId}"]`
         ) as HTMLElement | null
         if (!blockElement) return
         blockElement.classList.add('focused')
 
-        // this.rootElement.focus()
-
-        // // const markerElement = blockElement.querySelector('.marker') as HTMLElement | null
-        // // if (markerElement) {
-        // //     markerElement.classList.add('focused')
-
-        // //     if (blockElement.classList.contains('thematicBreak')) {
-        // //         const markerSymbolicElement = markerElement.querySelector('.symbolic') as HTMLElement | null
-        // //         if (markerSymbolicElement) {
-        // //             this.placeCaret(markerSymbolicElement, 'end')
-        // //         }
-        // //     }
-        // // }
+        const markerElement = blockElement.querySelector('.marker') as HTMLElement | null
+        if (markerElement) {
+            markerElement.classList.add('focused')
+        }
     }
 
     public unfocusBlocks(blockIds: string[]) {
@@ -75,6 +67,7 @@ class Focus {
     }
 
     public unfocusBlock(blockId: string) {
+        console.log('unfocusBlock', blockId)
         const blockElement = this.rootElement.querySelector(
             `[data-block-id="${blockId}"]`
         ) as HTMLElement | null
