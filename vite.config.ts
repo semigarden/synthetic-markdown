@@ -31,3 +31,27 @@ export default defineConfig({
     },
   },
 })
+
+// import { defineConfig } from "vite"
+// import { resolve } from "node:path"
+// import dts from "vite-plugin-dts"
+
+// export default defineConfig({
+//   plugins: [dts({ entryRoot: "src", outDir: "dist" })],
+//   build: {
+//     lib: {
+//       entry: resolve(__dirname, "src/index.ts"),
+//       formats: ["es"],
+//       fileName: () => "synthetic.min.js",
+//     },
+//     outDir: "dist",
+//     emptyOutDir: true,
+//     sourcemap: true,
+//     minify: "esbuild",
+//     rollupOptions: {
+//       output: {
+//         inlineDynamicImports: true,
+//       },
+//     },
+//   },
+// })
