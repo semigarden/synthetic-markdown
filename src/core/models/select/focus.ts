@@ -33,21 +33,7 @@ class Focus {
         }
     }
 
-    private placeCaret(el: HTMLElement, at: 'start' | 'end' = 'end') {
-        const sel = el.ownerDocument.getSelection();
-        console.log('placeCaret', sel)
-        if (!sel) return;
-      
-        const range = el.ownerDocument.createRange();
-        range.selectNodeContents(el);
-        range.collapse(at === 'start');
-      
-        sel.removeAllRanges();
-        sel.addRange(range);
-    }
-
     public focusBlock(blockId: string) {
-        console.log('focusBlock', blockId)
         const blockElement = this.rootElement.querySelector(
             `[data-block-id="${blockId}"]`
         ) as HTMLElement | null
@@ -67,7 +53,6 @@ class Focus {
     }
 
     public unfocusBlock(blockId: string) {
-        console.log('unfocusBlock', blockId)
         const blockElement = this.rootElement.querySelector(
             `[data-block-id="${blockId}"]`
         ) as HTMLElement | null
