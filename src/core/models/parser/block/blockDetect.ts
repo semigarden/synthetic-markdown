@@ -14,10 +14,7 @@ function detectBlockType(line: string): DetectedBlock {
 
     if (/^>/.test(line)) return { type: 'blockQuote' }
 
-    if (/^\s{0,3}([-*_])(?:\s*\1){2,}\s*$/.test(line)) {
-        console.log('detectBlockType', line)
-        return { type: 'thematicBreak' }
-    }
+    if (/^\s{0,3}([-*_])(?:\s*\1){2,}\s*$/.test(line)) return { type: 'thematicBreak' }
 
     if (/^\s{0,3}(```+|~~~+)/.test(line)) return { type: 'codeBlock' }
 
