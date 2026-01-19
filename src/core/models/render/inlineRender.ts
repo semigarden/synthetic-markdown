@@ -53,7 +53,7 @@ function renderInline(inline: Inline): HTMLElement {
     inlineElement.appendChild(semanticText)
 
     if (inline.type === 'link') {
-        ;(inlineElement as HTMLAnchorElement).href = inline.url || ''
+        ;(inlineElement as HTMLAnchorElement).href = inline.url.replace(/[\u200B\u200C\u200D\uFEFF]/g, '') || ''
         ;(inlineElement as HTMLAnchorElement).title = inline.title || ''
     }
 
