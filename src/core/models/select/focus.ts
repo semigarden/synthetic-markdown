@@ -91,58 +91,6 @@ class Focus {
         if (!inlineElement) return
 
         inlineElement.classList.remove('focused')
-
-        if (inline.type === 'image') {
-            // const imageElement = document.createElement('img')
-            // imageElement.id = inline.id
-            // imageElement.dataset.inlineId = inline.id
-            // imageElement.classList.add('inline', 'image')
-            // ;(imageElement as HTMLImageElement).src = (inline as any).url || ''
-            // ;(imageElement as HTMLImageElement).alt = (inline as any).alt || ''
-            // ;(imageElement as HTMLImageElement).title = (inline as any).title || ''
-            // inlineElement.replaceWith(imageElement)
-        } else {
-            // inlineElement.classList.remove('focused')
-        }
-
-        // const block = this.ast.query.getBlockById(inline.blockId)
-        // if (!block) return
-
-        // const marker = block.inlines.find(i => i.type === 'marker') as Inline | undefined
-        // if (marker && marker.text.symbolic.length) {
-        //     const markerEl = this.rootElement.querySelector(
-        //         `[data-inline-id="${marker.id}"]`
-        //     ) as HTMLElement | null
-
-        //     if (markerEl && marker.id !== inlineId) {
-        //         if (markerEl.textContent === marker.text.symbolic) {
-        //             const hasOtherFocusedInlines = block.inlines.some(i => {
-        //                 if (i.type === 'marker' || i.id === inlineId) return false
-        //                 const otherInlineEl = this.rootElement.querySelector(
-        //                     `[data-inline-id="${i.id}"]`
-        //                 ) as HTMLElement | null
-        //                 return otherInlineEl && otherInlineEl.textContent === i.text.symbolic
-        //             })
-                    
-        //             if (!hasOtherFocusedInlines) {
-        //                 markerEl.textContent = marker.text.semantic
-        //             }
-        //         }
-        //     }
-
-        //     if (block.type === 'thematicBreak') {
-        //         const blockEl = this.rootElement.querySelector(
-        //             `[data-block-id="${block.id}"]`
-        //         ) as HTMLElement | null
-        //         if (blockEl) {
-        //             const hrEl = document.createElement('hr')
-        //             hrEl.classList.add('block', 'thematicBreak')
-        //             hrEl.id = block.id
-        //             hrEl.dataset.blockId = block.id
-        //             blockEl.replaceWith(hrEl)
-        //         }
-        //     }
-        // }
     }
 }
 
