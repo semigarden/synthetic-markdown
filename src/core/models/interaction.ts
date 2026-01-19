@@ -30,14 +30,12 @@ class Interaction {
     }
 
     private onBeforeInput = (event: InputEvent) => {
-        console.log('onBeforeInput', event.inputType)
         if (event.inputType === 'insertFromPaste') {
             event.preventDefault()
             return
         }
         
         const effect = this.input.resolveEffect({ text: event.data ?? '', type: event.inputType })
-        console.log('effect', effect)
         if (!effect) return
         if (effect.preventDefault) {
             event.preventDefault()
@@ -50,6 +48,8 @@ class Interaction {
         event.preventDefault()
         const text = event.clipboardData?.getData('text/plain') ?? ''
         if (!text) return
+
+        console.log('paste', JSON.stringify(text, null, 2))
         
         const effect = this.select.paste(text)
         if (effect) {
