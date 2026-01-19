@@ -14,8 +14,8 @@ function getInlineTag(inline: Inline): string {
             return 'a'
         case 'autolink':
             return 'a'
-        case 'image':
-            return 'img'
+        // case 'image':
+        //     return 'img'
         case 'strikethrough':
             return 's'
         default:
@@ -62,13 +62,20 @@ function renderInline(inline: Inline): HTMLElement {
     }
 
     if (inline.type === 'image') {
-        ;(inlineElement as HTMLImageElement).src = inline.url || ''
-        ;(inlineElement as HTMLImageElement).alt = inline.alt || ''
-        ;(inlineElement as HTMLImageElement).title = inline.title || ''
-        inlineElement.textContent = '';
+        const img = document.createElement('img')
+        img.classList.add('inline', 'image')
+        img.src = clean(inline.url)
+        img.alt = inline.alt || ''
+        img.title = inline.title || ''
+        semanticText.textContent = ''
+        inlineElement.prepend(img)
     }
 
     return inlineElement
+}
+
+function clean(text?: string): string {
+    return (text ?? '').replace(/[\u200B\u200C\u200D\uFEFF]/g, '')
 }
 
 export { renderInlines }

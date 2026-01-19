@@ -98,6 +98,10 @@
         user-select: none;
         pointer-events: none;
     }
+
+    &.focused .image {
+        display: none;
+    }
 }
 
 .paragraph {
