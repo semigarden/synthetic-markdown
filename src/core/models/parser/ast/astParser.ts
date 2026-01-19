@@ -24,7 +24,7 @@ class AstParser {
         this.reset()
         parseLinkReferenceDefinitions(text, this.linkReferences)
 
-        const lines = text.split('\n')
+        const lines = text.replace(/[\u200B\u200C\u200D\uFEFF]/g, '').replace(/\r$/, '').split('\n')
         let offset = 0
 
         for (const line of lines) {
