@@ -83,7 +83,6 @@ class Edit {
         if (!block) return null
 
         const parent = query.getParentBlock(block)
-        if (!parent) return null
 
         if (parent.type === 'blockQuote') {
             const quote = parent as BlockQuote

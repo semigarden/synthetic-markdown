@@ -21,57 +21,57 @@ class AstParser {
     }
 
     public parse(text: string): Block[] {
-        this.reset()
-        parseLinkReferenceDefinitions(text, this.linkReferences)
-
-        const lines = text.replace(/[\u200B\u200C\u200D\uFEFF]/g, '').replace(/\r$/, '').split('\n')
-        let offset = 0
-
-        for (const line of lines) {
-            this.parseLine(line, offset)
-            offset += line.length + 1
-        }
-
-        this.closeAll(offset)
-
-        for (const block of this.blocks) {
-            this.inline.applyRecursive(block)
-        }
-
-        // console.log('blocks', JSON.stringify(this.blocks, null, 2))
-
-        return this.blocks
-
         // this.reset()
         // parseLinkReferenceDefinitions(text, this.linkReferences)
 
-        // // match paste sanitization behavior (or vice versa)
-        // text = text.replace(/[\u200B\u200C\u200D\uFEFF]/g, '').replace(/\r$/, '')
-
-        // // use the same logic as reparseTextFragment
-        // this.block.reset()
-
-        // const blocks: Block[] = []
+        // const lines = text.replace(/[\u200B\u200C\u200D\uFEFF]/g, '').replace(/\r$/, '').split('\n')
         // let offset = 0
 
-        // for (const line of text.split('\n')) {
-        //     const produced = this.block.line(line, offset)
-        //     if (produced) blocks.push(...produced)
+        // for (const line of lines) {
+        //     this.parseLine(line, offset)
         //     offset += line.length + 1
         // }
 
-        // const flushed = this.block.flush(offset)
-        // if (flushed) blocks.push(...flushed)
+        // this.closeAll(offset)
 
-        // for (const block of blocks) {
+        // for (const block of this.blocks) {
         //     this.inline.applyRecursive(block)
         // }
 
-        // this.blocks = blocks
-
-        // console.log('blocks', JSON.stringify(this.blocks, null, 2))
+        // // console.log('blocks', JSON.stringify(this.blocks, null, 2))
 
         // return this.blocks
+
+        this.reset()
+        parseLinkReferenceDefinitions(text, this.linkReferences)
+
+        // match paste sanitization behavior (or vice versa)
+        text = text.replace(/[\u200B\u200C\u200D\uFEFF]/g, '').replace(/\r$/, '')
+
+        // use the same logic as reparseTextFragment
+        this.block.reset()
+
+        const blocks: Block[] = []
+        let offset = 0
+
+        for (const line of text.split('\n')) {
+            const produced = this.block.line(line, offset)
+            if (produced) blocks.push(...produced)
+            offset += line.length + 1
+        }
+
+        const flushed = this.block.flush(offset)
+        if (flushed) blocks.push(...flushed)
+
+        for (const block of blocks) {
+            this.inline.applyRecursive(block)
+        }
+
+        this.blocks = blocks
+
+        console.log('blocks', JSON.stringify(this.blocks, null, 2))
+
+        return this.blocks
     }
 
     private parseLine(line: string, offset: number) {
