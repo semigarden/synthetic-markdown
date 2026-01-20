@@ -54,9 +54,32 @@ class AstParser {
         const blocks: Block[] = []
         let offset = 0
 
+        // for (const line of text.split('\n')) {
+        //     const produced = this.block.line(line, offset)
+        //     if (produced) blocks.push(...produced)
+        //     offset += line.length + 1
+        // }
+
         for (const line of text.split('\n')) {
             const produced = this.block.line(line, offset)
-            if (produced) blocks.push(...produced)
+            if (produced) {
+              for (const b of produced) {
+                const last = blocks[blocks.length - 1]
+          
+                if (
+                  last &&
+                  last.type === 'list' &&
+                  b.type === 'list' &&
+                  last.ordered === (b as List).ordered
+                  // optionally also ensure same indent/listStart if you track it
+                ) {
+                  ;(last as List).blocks.push(...(b as List).blocks)
+                  last.position.end = b.position.end
+                } else {
+                  blocks.push(b)
+                }
+              }
+            }
             offset += line.length + 1
         }
 

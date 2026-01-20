@@ -94,32 +94,34 @@ class MarkerResolver {
         if (blockType === 'listItem') {
             const unorderedListMatch = /^\s*([-*+])\s+/.exec(text);
             if (unorderedListMatch) {
-                stream.advance(text.length)
+                const marker = unorderedListMatch[0]
+                stream.advance(marker.length)
 
                 return {
                     id: uuid(),
                     type: 'marker',
                     blockId,
-                    text: { symbolic: unorderedListMatch[0], semantic: '' },
+                    text: { symbolic: marker, semantic: '' },
                     position: {
                         start: position,
-                        end: position + text.length
+                        end: position + marker.length
                     }
                 }
             }
         
             const orderedListMatch = /^\s*(\d{1,9})([.)])\s+/.exec(text);
             if (orderedListMatch) {
-                stream.advance(text.length)
+                const marker = orderedListMatch[0]
+                stream.advance(marker.length)
 
                 return {
                     id: uuid(),
                     type: 'marker',
                     blockId,
-                    text: { symbolic: orderedListMatch[0], semantic: '' },
+                    text: { symbolic: marker, semantic: '' },
                     position: {
                         start: position,
-                        end: position + text.length
+                        end: position + marker.length
                     }
                 }
             }
