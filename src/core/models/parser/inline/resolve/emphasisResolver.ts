@@ -4,13 +4,16 @@ import { uuid } from '../../../../utils/utils'
 class EmphasisResolver {
     public apply(nodes: Inline[], delimiters: Delimiter[], blockId: string) {
         if (!delimiters.length) return
-        if (delimiters.some(d => d.type !== '*' && d.type !== '_')) return
 
         let current = 0
 
         while (current < delimiters.length) {
             const closer = delimiters[current]
-            if (!closer.canClose || !closer.active) {
+            if (
+                (closer.type !== '*' && closer.type !== '_') ||
+                !closer.canClose ||
+                !closer.active
+            ) {
                 current++
                 continue
             }
@@ -68,6 +71,18 @@ class EmphasisResolver {
                 }
             } as Inline
 
+            if (
+                opener.position < 0 ||
+                closer.position < 0 ||
+                opener.position >= nodes.length ||
+                closer.position >= nodes.length ||
+                opener.position > closer.position
+            ) {
+                closer.active = false
+                current++
+                continue
+            }
+
             const deleteCount = endNodeIndex - startNodeIndex + 1
             nodes.splice(startNodeIndex, deleteCount, emphasisNode)
 
@@ -78,6 +93,15 @@ class EmphasisResolver {
             for (const d of delimiters) {
                 if (d.position > startNodeIndex) {
                     d.position -= removed
+                }
+            }
+
+            const start = startNodeIndex
+            const end = endNodeIndex
+
+            for (const d of delimiters) {
+                if (d.position >= start && d.position <= end) {
+                    d.active = false
                 }
             }
 

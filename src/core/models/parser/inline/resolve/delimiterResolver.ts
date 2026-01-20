@@ -17,6 +17,23 @@ class DelimiterResolver {
         const char = stream.next()!
         let count = 1
 
+        const prev = stream.peekBack() ?? null
+        const next = stream.peek() ?? null
+
+        const leftFlanking =
+        !this.isWhitespace(next) &&
+        !(this.isPunctuation(next) && !this.isWhitespace(prev) && !this.isPunctuation(prev))
+
+        const rightFlanking =
+        !this.isWhitespace(prev) &&
+        !(this.isPunctuation(prev) && !this.isWhitespace(next) && !this.isPunctuation(next))
+
+        const canOpen =
+            char === '_' ? leftFlanking && (!rightFlanking || this.isPunctuation(prev)) : leftFlanking
+
+        const canClose =
+            char === '_' ? rightFlanking && (!leftFlanking || this.isPunctuation(next)) : rightFlanking
+
         while (stream.peek() === char) {
             stream.next()
             count++
@@ -42,12 +59,20 @@ class DelimiterResolver {
             type: char,
             length: count,
             position: inlinePos,
-            canOpen: true,
-            canClose: true,
+            canOpen,
+            canClose,
             active: true,
         } as Delimiter)
 
         return true
+    }
+
+    private isWhitespace(ch: string | null) {
+        return ch === null || /\s/.test(ch)
+    }
+
+    private isPunctuation(ch: string | null) {
+        return ch !== null && /[!-/:-@[-`{-~]/.test(ch)
     }
 }
 

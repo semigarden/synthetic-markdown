@@ -21,6 +21,11 @@ class InlineStream {
         return i < this.input.length ? this.input[i] : null
     }
 
+    public peekBack(offset = 0): string | null {
+        const i = this.currentPosition - 1 - offset
+        return i >= 0 ? this.input[i] : null
+    }
+
     public next(): string | null {
         if (this.end()) return null
         return this.input[this.currentPosition++]

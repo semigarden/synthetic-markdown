@@ -188,7 +188,9 @@ class InlineParser {
         flushText()
 
         this.emphasisResolver.apply(result, delimiterStack, blockId)
+        this.pruneDelimiters(delimiterStack, result)
         this.strikethroughResolver.apply(result, delimiterStack, blockId)
+        this.pruneDelimiters(delimiterStack, result)
 
         return result
     }
@@ -200,6 +202,19 @@ class InlineParser {
         const closingPattern = new RegExp(`^\\s{0,3}${fence.charAt(0)}{${fence.length},}\\s*$`)
         if (closingPattern.test(content[content.length - 1])) content.pop()
         return content.join('\n')
+    }
+
+    private pruneDelimiters(delimiters: Delimiter[], nodes: Inline[]) {
+        for (const d of delimiters) {
+            if (
+                !d.active ||
+                d.position < 0 ||
+                d.position >= nodes.length ||
+                nodes[d.position].type !== 'text'
+            ) {
+                d.active = false
+            }
+        }
     }
 }
 

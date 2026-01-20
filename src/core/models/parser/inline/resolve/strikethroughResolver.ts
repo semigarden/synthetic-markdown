@@ -4,13 +4,18 @@ import { uuid } from '../../../../utils/utils'
 class StrikethroughResolver {
     public apply(nodes: Inline[], delimiters: Delimiter[], blockId: string) {
         if (!delimiters.length) return
-        if (delimiters.some(d => d.type !== '~')) return
 
         let current = 0
 
         while (current < delimiters.length) {
             const closer = delimiters[current]
-            if (!closer.canClose || !closer.active) {
+            if (
+                closer.type !== '~' ||
+                !closer.canClose ||
+                !closer.active ||
+                closer.position >= nodes.length ||
+                nodes[closer.position].type !== 'text'
+            ) {
                 current++
                 continue
             }
@@ -19,9 +24,11 @@ class StrikethroughResolver {
             for (let i = current - 1; i >= 0; i--) {
                 const opener = delimiters[i]
                 if (
-                    opener.type !== closer.type ||
+                    opener.type !== '~' ||
                     !opener.canOpen ||
-                    !opener.active
+                    !opener.active ||
+                    opener.position >= nodes.length ||
+                    nodes[opener.position].type !== 'text'
                 ) continue
 
                 if ((opener.length + closer.length) % 3 === 0 &&
@@ -42,6 +49,19 @@ class StrikethroughResolver {
 
             const startNodeIndex = opener.position
             const endNodeIndex = closer.position
+
+            if (
+                opener.position < 0 ||
+                closer.position < 0 ||
+                opener.position >= nodes.length ||
+                closer.position >= nodes.length ||
+                opener.position > closer.position
+            ) {
+                opener.active = false
+                closer.active = false
+                current++
+                continue
+            }
 
             const affected = nodes.slice(startNodeIndex, endNodeIndex + 1)
 
@@ -78,6 +98,15 @@ class StrikethroughResolver {
             for (const d of delimiters) {
                 if (d.position > startNodeIndex) {
                     d.position -= removed
+                }
+            }
+
+            const start = startNodeIndex
+            const end = endNodeIndex
+
+            for (const d of delimiters) {
+                if (d.position >= start && d.position <= end) {
+                    d.active = false
                 }
             }
 
