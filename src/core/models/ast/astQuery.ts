@@ -58,12 +58,12 @@ class AstQuery {
         return acc
     }
 
-    public getParentBlock(block: Block): Block {
+    public getParentBlock(block: Block): Block | null {
         const flattenedBlocks = this.flattenBlocks(this.blocks)
         const flatParentBlock = flattenedBlocks.find(b => 
             'blocks' in b.block && b.block.blocks?.some(child => child.id === block.id)
         )
-        return flatParentBlock?.block ?? block
+        return flatParentBlock?.block ?? null
     }
 
     public getFirstInline(blocks: Block[]): Inline | null {

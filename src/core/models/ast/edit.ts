@@ -84,7 +84,7 @@ class Edit {
 
         const parent = query.getParentBlock(block)
 
-        if (parent.type === 'blockQuote') {
+        if (parent?.type === 'blockQuote') {
             const quote = parent as BlockQuote
             const split = mutation.splitBlockPure(block, inlineId, caretPosition)
             if (!split) return null
