@@ -107,17 +107,35 @@ class AstNormalizer {
 
             if (block.type === 'blockQuote') {
                 const parts: string[] = []
-
+            
+                const markerInline = block.inlines?.find(i => i.type === 'marker')
+                if (markerInline) {
+                    markerInline.text.symbolic = '> '
+                }
+            
                 for (let i = 0; i < block.blocks.length; i++) {
                     const childText = updateBlock(block.blocks[i], listDepth)
-                    parts.push('> ' + childText)
-
+                    const lines = childText.split('\n')
+            
+                    for (let li = 0; li < lines.length; li++) {
+                        parts.push('> ')
+                        globalPos += 2
+            
+                        parts.push(lines[li])
+                        globalPos += lines[li].length
+            
+                        if (li < lines.length - 1) {
+                            parts.push('\n')
+                            globalPos += 1
+                        }
+                    }
+            
                     if (i < block.blocks.length - 1) {
                         parts.push('\n')
                         globalPos += 1
                     }
                 }
-
+            
                 text = parts.join('')
                 block.text = text
                 block.position = { start, end: globalPos }

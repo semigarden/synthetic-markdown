@@ -82,39 +82,6 @@ class Edit {
         const block = query.getBlockById(blockId)
         if (!block) return null
 
-        const parent = query.getParentBlock(block)
-
-        if (parent?.type === 'blockQuote') {
-            const quote = parent as BlockQuote
-            const split = mutation.splitBlockPure(block, inlineId, caretPosition)
-            if (!split) return null
-
-            const leftChild  = split.left
-            const rightChild = split.right
-
-            const leftQuoteText  = query.prefixAsBlockQuote(leftChild.text)
-            const rightQuoteText = query.prefixAsBlockQuote(rightChild.text)
-
-            const newLeftQuote  = parser.reparseTextFragment(leftQuoteText,  quote.position.start)
-            const newRightQuote = parser.reparseTextFragment(rightQuoteText, newLeftQuote[0].position.end)
-
-            const quoteIndex = ast.blocks.findIndex(b => b.id === quote.id)
-            ast.blocks.splice(quoteIndex, 1, ...newLeftQuote, ...newRightQuote)
-
-            const rightQuoteBlock = newRightQuote[0] as BlockQuote
-            const rightParagraph = rightQuoteBlock.blocks?.[0]
-            const rightInline = rightParagraph?.inlines?.[0]
-            if (!rightParagraph || !rightInline) return null
-
-            return effect.compose(
-                effect.update([
-                    { at: 'current', target: quote, current: newLeftQuote[0] },
-                    { at: 'next', target: newLeftQuote[0], current: newRightQuote[0] },
-                ]),
-                effect.caret(rightParagraph.id, rightInline.id, 0, 'start')
-            )
-        }
-
         const result = mutation.splitBlockPure(block, inlineId, caretPosition, {
             rightType: block.type === 'blockQuote' ? 'blockQuote' : undefined,
         })
@@ -354,6 +321,126 @@ class Edit {
             effect.caret(newListItem.blocks[0].id, newListItem.blocks[0].inlines[0].id, 0, 'start')
         )
     }
+
+    public splitBlockQuote(
+        blockQuoteId: string,
+        blockId: string,
+        inlineId: string,
+        caretPosition: number
+    ): AstApplyEffect | null {
+        const { ast, query, parser, mutation, effect } = this.context
+    
+        const rootQuote = query.getBlockById(blockQuoteId) as BlockQuote | null
+        if (!rootQuote || rootQuote.type !== 'blockQuote') return null
+    
+        let block = query.getBlockById(blockId)
+        if (!block) return null
+
+        console.log('block', JSON.stringify(block, null, 2))
+        console.log('rootQuote', JSON.stringify(rootQuote, null, 2))
+
+        {
+            let p: Block | null = block
+            const chain: string[] = []
+            while (p) {
+                chain.push(`${p.type}:${p.id}`)
+                p = query.getParentBlock(p) as Block | null
+            }
+            console.log('ancestorChain', JSON.stringify(chain, null, 2))
+        }
+    
+        if (block.type === 'blockQuote') {
+            let q = block as BlockQuote
+    
+            while (true) {
+                const last = q.blocks?.[q.blocks.length - 1]
+                if (last && last.type === 'blockQuote') {
+                    q = last as BlockQuote
+                    continue
+                }
+                break
+            }
+    
+            let p = q.blocks?.find(b => b.type === 'paragraph') as Block | undefined
+            if (!p) {
+                const created = parser.reparseTextFragment('\u200B', q.position.start)
+                const para = created.find(b => b.type === 'paragraph') as Block | undefined
+                if (!para) return null
+    
+                q.blocks = q.blocks ?? []
+                q.blocks.push(para)
+                parser.inline.applyRecursive(q)
+    
+                const i0 = (para as any).inlines?.[0]
+                if (!i0) return null
+    
+                return effect.compose(
+                    effect.update([
+                        { at: 'current', target: q, current: q },
+                        { at: 'current', target: rootQuote, current: rootQuote },
+                    ] as any[]),
+                    effect.caret(para.id, i0.id, 0, 'start')
+                )
+            }
+    
+            block = p
+            inlineId = (p as any).inlines?.[0]?.id ?? inlineId
+            caretPosition = 0
+        }
+    
+        let container = query.getParentBlock(block) as Block | null
+        if (!container) return null
+    
+        while (container && container.type !== 'blockQuote') {
+            container = query.getParentBlock(container) as Block | null
+        }
+        if (!container || container.type !== 'blockQuote') return null
+    
+        if (container.id !== rootQuote.id) {
+            let p = query.getParentBlock(container) as Block | null
+            let insideRoot = false
+            while (p) {
+                if (p.id === rootQuote.id) { insideRoot = true; break }
+                p = query.getParentBlock(p) as Block | null
+            }
+            if (!insideRoot) return null
+        }
+    
+        const blockQuote = container as BlockQuote
+    
+        const split = mutation.splitBlockPure(block, inlineId, caretPosition)
+        if (!split) return null
+    
+        const leftChild = split.left
+        const rightChild = split.right
+    
+        const i = blockQuote.blocks.findIndex(b => b.id === block.id)
+        if (i === -1) return null
+    
+        blockQuote.blocks.splice(i, 1, leftChild, rightChild)
+    
+        parser.inline.applyRecursive(leftChild)
+        parser.inline.applyRecursive(rightChild)
+    
+        const rightParagraph = rightChild
+        const rightInline = rightParagraph.inlines?.[0]
+        if (!rightInline) return null
+    
+        const updates = [
+            { at: 'current', target: block, current: leftChild },
+            { at: 'next', target: leftChild, current: rightChild },
+            { at: 'current', target: blockQuote, current: blockQuote },
+        ] as any[]
+    
+        if (blockQuote.id !== rootQuote.id) {
+            updates.push({ at: 'current', target: rootQuote, current: rootQuote })
+        }
+    
+        return effect.compose(
+            effect.update(updates),
+            effect.caret(rightParagraph.id, rightInline.id, 0, 'start')
+        )
+    }    
 
     public indentListItem(listItemId: string): AstApplyEffect | null {
         const { query, effect } = this.context

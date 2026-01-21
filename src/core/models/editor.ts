@@ -10,6 +10,7 @@ class Editor {
         splitBlock: (effect) => this.ast.split(effect.blockId, effect.inlineId, effect.caretPosition),
         splitListItem: (effect) => this.ast.splitListItem(effect.listItemId, effect.blockId, effect.inlineId, effect.caretPosition),
         splitTaskListItem: (effect) => this.ast.splitTaskListItem(effect.taskListItemId, effect.blockId, effect.inlineId, effect.caretPosition),
+        splitBlockQuote: (effect) => this.ast.splitBlockQuote(effect.blockQuoteId, effect.blockId, effect.inlineId, effect.caretPosition),
         mergeInline: (effect) => this.ast.mergeInline(effect.leftInlineId, effect.rightInlineId),
         indentListItem: (effect) => this.ast.indentListItem(effect.listItemId),
         indentTaskListItem: (effect) => this.ast.indentTaskListItem(effect.taskListItemId),

@@ -6,6 +6,7 @@ type AstEffect =
     | { type: 'splitBlock'; blockId: string; inlineId: string; caretPosition: number }
     | { type: 'splitListItem'; listItemId: string; blockId: string; inlineId: string; caretPosition: number }
     | { type: 'splitTaskListItem'; taskListItemId: string; blockId: string; inlineId: string; caretPosition: number }
+    | { type: 'splitBlockQuote'; blockQuoteId: string; blockId: string; inlineId: string; caretPosition: number }
     | { type: 'mergeInline'; leftInlineId: string; rightInlineId: string }
     | { type: 'indentListItem'; listItemId: string }
     | { type: 'indentTaskListItem'; taskListItemId: string }

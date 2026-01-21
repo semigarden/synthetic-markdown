@@ -73,6 +73,13 @@ class Intent {
             }
         }
 
+        if (parentBlock?.type === 'blockQuote') {
+            return {
+                preventDefault: true,
+                ast: [{ type: 'splitBlockQuote', blockQuoteId: parentBlock.id, blockId: context.block.id, inlineId: context.inline.id, caretPosition: caretPosition }],
+            }
+        }
+
         return {
             preventDefault: true,
             ast: [{
