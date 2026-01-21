@@ -1,7 +1,7 @@
 import BlockParser from '../block/blockParser'
 import InlineParser from '../inline/inlineParser'
 import LinkReferenceState from './linkReferenceState'
-import type { OpenBlock, Block, List } from '../../../types'
+import type { OpenBlock, Block, List, BlockQuote } from '../../../types'
 
 import { parseLinkReferenceDefinitions } from './linkReferences'
 import { continueBlocks } from './blockState'
@@ -45,10 +45,8 @@ class AstParser {
         this.reset()
         parseLinkReferenceDefinitions(text, this.linkReferences)
 
-        // match paste sanitization behavior (or vice versa)
         text = text.replace(/[\u200B\u200C\u200D\uFEFF]/g, '').replace(/\r$/, '')
 
-        // use the same logic as reparseTextFragment
         this.block.reset()
 
         const blocks: Block[] = []
@@ -63,22 +61,23 @@ class AstParser {
         for (const line of text.split('\n')) {
             const produced = this.block.line(line, offset)
             if (produced) {
-              for (const b of produced) {
-                const last = blocks[blocks.length - 1]
-          
-                if (
-                  last &&
-                  last.type === 'list' &&
-                  b.type === 'list' &&
-                  last.ordered === (b as List).ordered
-                  // optionally also ensure same indent/listStart if you track it
-                ) {
-                  ;(last as List).blocks.push(...(b as List).blocks)
-                  last.position.end = b.position.end
-                } else {
-                  blocks.push(b)
+                for (const b of produced) {
+                    const last = blocks[blocks.length - 1]
+            
+                    if (last && last.type === 'list' && b.type === 'list' && last.ordered === (b as List).ordered) {
+                        ;(last as List).blocks.push(...(b as List).blocks)
+                        last.position.end = b.position.end
+                        continue
+                    }
+                    
+                    if (last && last.type === 'blockQuote' && b.type === 'blockQuote') {
+                        ;(last as BlockQuote).blocks.push(...(b as BlockQuote).blocks)
+                        last.position.end = b.position.end
+                        continue
+                    }
+
+                    blocks.push(b)
                 }
-              }
             }
             offset += line.length + 1
         }
