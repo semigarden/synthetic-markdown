@@ -98,7 +98,7 @@ class AstParser {
 
         this.mergeAdjacent(blocks)
 
-        this.hydrateCodeBlocks(blocks)
+        // this.hydrateCodeBlocks(blocks)
 
         for (const block of blocks) {
             this.inline.applyRecursive(block)
@@ -204,16 +204,18 @@ class AstParser {
     private hydrateCodeBlocks(blocks: Block[]) {
         for (const block of blocks) {
             if (block.type === 'codeBlock') {
-                const len = block.text.length
-    
-                block.inlines = [{
-                    id: uuid(),
-                    type: 'text',
-                    blockId: block.id,
-                    text: { symbolic: block.text, semantic: block.text },
-                    position: { start: 0, end: len },
-                }]
-    
+                const code = block as any
+                if (!code.isFenced) continue
+
+                const fence = code.fence || '```'
+                const lang = code.language ? String(code.language) : ''
+                const open = lang ? `${fence}${lang}\n` : `${fence}\n`
+                const close = `\n${fence}`
+
+                const full = open + block.text + close
+
+                block.text = full
+                block.inlines = []
                 continue
             }
     

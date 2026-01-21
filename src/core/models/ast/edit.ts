@@ -33,7 +33,7 @@ class Edit {
             detectedBlock.type !== block.type ||
             (detectedBlock.type === 'heading' && block.type === 'heading' && detectedBlock.level !== block.level)
     
-        const ignoreTypes = ['blankLine', 'codeBlock', 'table']
+        const ignoreTypes = ['blankLine', 'table']
     
         const inListItem = (() => {
             const flat = query.flattenBlocks(this.context.ast.blocks)
@@ -199,7 +199,7 @@ class Edit {
             detectedBlock.type !== leftBlock.type ||
             (detectedBlock.type === 'heading' && leftBlock.type === 'heading' && detectedBlock.level !== leftBlock.level)
 
-        const ignoreTypes = ['blankLine', 'codeBlock', 'table']
+        const ignoreTypes = ['blankLine', 'table']
         if (blockTypeChanged && !ignoreTypes.includes(detectedBlock.type)) {
             return transform.transformBlock(newText, leftBlock, detectedBlock, caretPosition, removedBlocks)
         }

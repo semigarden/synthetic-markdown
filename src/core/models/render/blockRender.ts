@@ -142,7 +142,8 @@ class BlockRender {
             case 'codeBlock': {
                 const existing = element.querySelector('code') as HTMLElement | null
                 const code = existing || document.createElement('code')
-                code.textContent = block.text
+                code.innerHTML = ''
+                this.deps.renderInlines(block.inlines, code)
                 if (!existing) element.appendChild(code)
                 break
             }

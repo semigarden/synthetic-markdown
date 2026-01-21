@@ -40,8 +40,8 @@ class Focus {
         if (!blockElement) return
         blockElement.classList.add('focused')
 
-        const markerElement = blockElement.querySelector('.marker') as HTMLElement | null
-        if (markerElement) {
+        const markerElements = blockElement.querySelectorAll('.marker') as NodeListOf<HTMLElement>
+        for (const markerElement of markerElements) {
             markerElement.classList.add('focused')
         }
     }
@@ -59,8 +59,8 @@ class Focus {
         if (!blockElement) return
         blockElement.classList.remove('focused')
 
-        const markerElement = blockElement.querySelector('.marker') as HTMLElement | null
-        if (markerElement) {
+        const markerElements = blockElement.querySelectorAll('.marker') as NodeListOf<HTMLElement>
+        for (const markerElement of markerElements) {
             markerElement.classList.remove('focused')
         }
     }

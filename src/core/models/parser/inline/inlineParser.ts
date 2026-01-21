@@ -32,17 +32,69 @@ class InlineParser {
 
         if (block.type === 'codeBlock') {
             const codeBlock = block as CodeBlock
-            const semantic = codeBlock.isFenced
-                ? this.extractFencedCodeContent(text, codeBlock.fence!)
-                : text
+        
+            if (codeBlock.isFenced) {
+              const fence = codeBlock.fence || '```'
+              const lang = codeBlock.language ? String(codeBlock.language).trim() : ''
+        
+              // NOTE: marker is OPEN ONLY (single marker inline)
+              const open = lang ? `${fence}${lang}\n` : `${fence}\n`
+        
+              const base = block.position?.start ?? 0
+              const openStart = base
+              const openEnd = openStart + open.length
+        
+              // NOTE: content stays in block.text; for empty, keep caret target
+              const contentSymbolic = text.length === 0 ? '\u200B' : text
+              const contentSemantic = text // '' when empty
+        
+              const contentStart = openEnd
+              const contentEnd = contentStart + contentSymbolic.length
+        
+              // IMPORTANT: do NOT overwrite block.text (keep content-only)
+              // IMPORTANT: do NOT add close fence into any inline
+        
+              return [
+                {
+                  id: uuid(),
+                  type: 'marker',
+                  blockId: block.id,
+                  text: { symbolic: open, semantic: '' },
+                  position: { start: openStart, end: openEnd },
+                },
+                {
+                  id: uuid(),
+                  type: 'text',
+                  blockId: block.id,
+                  text: { symbolic: contentSymbolic, semantic: contentSemantic },
+                  position: { start: contentStart, end: contentEnd },
+                },
+              ]
+            }  
 
-            return [{
-                id: uuid(),
-                type: 'text',
-                blockId: block.id,
-                text: { symbolic: text, semantic },
-                position: { start: 0, end: text.length },
-            }]
+            const base = block.position?.start ?? 0
+            const open = '    '
+            const openStart = base
+            const openEnd = openStart + open.length
+            const codeStart = openEnd
+            const codeEnd = codeStart + text.length
+
+            return [
+                {
+                    id: uuid(),
+                    type: 'marker',
+                    blockId: block.id,
+                    text: { symbolic: open, semantic: '' },
+                    position: { start: openStart, end: openEnd }
+                },
+                {
+                    id: uuid(),
+                    type: 'text',
+                    blockId: block.id,
+                    text: { symbolic: text, semantic: text },
+                    position: { start: codeStart, end: codeEnd }
+                }
+            ]
         }
 
         let parseText = text
@@ -53,7 +105,7 @@ class InlineParser {
     }
 
     public applyRecursive(block: Block) {
-        if (block.type === 'codeBlock') return
+        // if (block.type === 'codeBlock') return
 
         if (block.type === 'tableCell' || block.type === 'listItem' || block.type === 'taskListItem' || block.type === 'blockQuote') {
             block.inlines = this.apply(block)
@@ -104,6 +156,19 @@ class InlineParser {
             // Marker
             if (stream.position() === 0) {
                 const marker = this.markerResolver.tryParse(stream, text, blockId, blockType, position)
+                // if (marker && blockType === 'codeBlock') {
+                //     const rest = text.slice(stream.position())
+                //     if (rest.length) {
+                //         result.push({
+                //             id: uuid(),
+                //             type: 'text',
+                //             blockId,
+                //             text: { symbolic: rest, semantic: rest },
+                //             position: { start: position + stream.position(), end: position + text.length }
+                //         })
+                //     }
+                //     return result
+                // }
                 if (marker) {
                     result.push(marker)
                     textStart = stream.position()
@@ -204,15 +269,6 @@ class InlineParser {
         }
 
         return result
-    }
-
-    private extractFencedCodeContent(text: string, fence: string): string {
-        const lines = text.split('\n')
-        if (lines.length <= 1) return ''
-        const content = lines.slice(1)
-        const closingPattern = new RegExp(`^\\s{0,3}${fence.charAt(0)}{${fence.length},}\\s*$`)
-        if (closingPattern.test(content[content.length - 1])) content.pop()
-        return content.join('\n')
     }
 
     private pruneDelimiters(delimiters: Delimiter[], nodes: Inline[]) {

@@ -73,6 +73,27 @@ class MarkerResolver {
             }
         }
 
+        if (blockType === 'codeBlock') {
+            const match = text.match(/^(\s{0,3}(```+|~~~+)[^\n]*\n?)/)
+            if (!match) return null
+
+            const markerText = match[1]
+            const length = markerText.length
+
+            stream.advance(length)
+
+            return {
+                id: uuid(),
+                type: 'marker',
+                blockId,
+                text: { symbolic: markerText, semantic: '' },
+                position: {
+                    start: position,
+                    end: position + length
+                }
+            }
+        }
+
         if (blockType === "taskListItem") {
             const taskMatch = /^\s*([-*+])\s+\[([ xX])\](?:\s+|$)/.exec(text)
             if (!taskMatch) return null
