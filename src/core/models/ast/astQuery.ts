@@ -109,7 +109,6 @@ class AstQuery {
 
     public getPreviousInline(inlineId: string): Inline | null {
         const flat = this.flattenInlines(this.blocks)
-    
         const flatIndex = flat.findIndex(e => e.inline.id === inlineId)
         if (flatIndex === -1) return null
     

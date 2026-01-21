@@ -38,10 +38,16 @@ function buildBlockQuote(
     end: number,
     innerBlocks: Block[]
 ): Block {
+    const match = /^(\s{0,3}>\s?)/.exec(originalLine)
+    if (!match) throw new Error('Invalid block quote line')
+
+    const markerText = match[1]
+    // const contentText = originalLine.slice(markerText.length)
+
     return {
         id: uuid(),
         type: 'blockQuote',
-        text: originalLine,
+        text: markerText,
         position: { start, end },
         blocks: innerBlocks,
         inlines: [],

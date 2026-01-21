@@ -87,7 +87,7 @@ class AstMutation {
             const owner = leftOwner
             let mergedText = leftInline.text.symbolic.slice(0, -1) + rightInline.text.symbolic
 
-            if (leftInline.type === 'marker' && leftBlock.type === 'blockQuote') {
+            if (leftInline.type === 'marker' && leftOwner.type === 'blockQuote') {
                 mergedText = rightInline.text.symbolic
 
                 return {

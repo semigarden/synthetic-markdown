@@ -156,6 +156,14 @@ class Edit {
         let removedBlocks: Block[] = []
         if (removedBlock) {
             removedBlocks = mutation.removeBlockCascade(removedBlock)
+            if (removedBlock.type === 'blockQuote') {
+                ast.blocks.splice(ast.blocks.findIndex(b => b.id === removedBlock.id), 1, leftBlock)
+
+                return effect.compose(
+                    effect.update([{ at: 'current', target: leftBlock, current: leftBlock }], removedBlocks),
+                    effect.caret(leftBlock.id, mergedInline.id, 0, 'start')
+                )
+            }
         }
 
         const caretPositionInMergedInline = removedBlock ? leftInline.text.symbolic.length : leftInline.text.symbolic.length - 1
