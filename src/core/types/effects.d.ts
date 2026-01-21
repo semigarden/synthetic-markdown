@@ -13,7 +13,7 @@ type AstEffect =
     | { type: 'indentBlockQuote'; blockQuoteId: string, blockId: string, inlineId: string }
     | { type: 'outdentListItem'; listItemId: string }
     | { type: 'outdentTaskListItem'; taskListItemId: string }
-    | { type: 'outdentBlockQuote'; blockQuoteId: string }
+    | { type: 'outdentBlockQuote'; blockQuoteId: string, blockId: string, inlineId: string }
     | { type: 'mergeTableCell'; cellId: string }
     | { type: 'addTableColumn'; cellId: string }
     | { type: 'addTableRow'; cellId: string }

@@ -161,7 +161,7 @@ class Intent {
                 if (isFirstChild && isFirstInline) {
                     return {
                         preventDefault: true,
-                        ast: [{ type: 'outdentBlockQuote', blockQuoteId: quote.id }],
+                        ast: [{ type: 'outdentBlockQuote', blockQuoteId: quote.id, blockId: context.block.id, inlineId: context.inline.id }],
                     }
                 }
             }
@@ -272,7 +272,7 @@ class Intent {
         if (blockQuote?.type === 'blockQuote') {
             return {
                 preventDefault: true,
-                ast: [{ type: 'outdentBlockQuote', blockQuoteId: blockQuote.id }],
+                ast: [{ type: 'outdentBlockQuote', blockQuoteId: blockQuote.id, blockId: context.block.id, inlineId: context.inline.id }],
             }
         }
 

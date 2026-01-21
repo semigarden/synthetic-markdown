@@ -1025,71 +1025,96 @@ class Edit {
         )
     }
 
-    public outdentBlockQuote(blockQuoteId: string): AstApplyEffect | null {
+    public outdentBlockQuote(blockQuoteId: string, blockId: string, inlineId: string): AstApplyEffect | null {
         const { ast, query, effect } = this.context
     
         const blockQuote = query.getBlockById(blockQuoteId) as BlockQuote | null
         if (!blockQuote || blockQuote.type !== 'blockQuote') return null
     
-        const lifted = blockQuote.blocks ?? []
+        blockQuote.blocks = blockQuote.blocks ?? []
     
-        const mergeAdjacentIn = (arr: Block[]) => {
-            let i = 0
-            while (i < arr.length - 1) {
-                const a = arr[i]
-                const b = arr[i + 1]
-        
-                if (a.type === 'blockQuote' && b.type === 'blockQuote') {
-                    ;(a as BlockQuote).blocks = (a as BlockQuote).blocks ?? []
-                    ;(a as BlockQuote).blocks.push(...((b as BlockQuote).blocks ?? []))
-                    a.position.end = b.position.end
-                    arr.splice(i + 1, 1)
-                    continue
-                }
-        
-                i++
+        const childIndex = blockQuote.blocks.findIndex(b => b.id === blockId)
+        if (childIndex === -1) return null
+    
+        const before = blockQuote.blocks.slice(0, childIndex)
+        const liftedBlock = blockQuote.blocks[childIndex]
+        const after = blockQuote.blocks.slice(childIndex + 1)
+    
+        const makeQuote = (blocks: Block[]): BlockQuote => {
+            const q: BlockQuote = {
+                ...blockQuote,
+                id: uuid(),
+                blocks: blocks,
             }
+            ;(q.inlines as any)?.forEach((i: Inline) => i.blockId = q.id)
+            return q
+        }
+    
+        const parts: Block[] = []
+    
+        if (before.length > 0) {
+            blockQuote.blocks = before
+            parts.push(blockQuote)
+        }
+    
+        parts.push(liftedBlock)
+    
+        if (after.length > 0) {
+            const afterQuote = makeQuote(after)
+            parts.push(afterQuote)
         }
     
         const parent = query.getParentBlock(blockQuote) as Block | null
     
+        let container: Block[]
+        let index: number
+    
         if (parent && parent.type === 'blockQuote') {
             const p = parent as BlockQuote
             p.blocks = p.blocks ?? []
+            container = p.blocks
+            index = container.findIndex(b => b.id === blockQuote.id)
+            if (index === -1) return null
     
-            const idx = p.blocks.findIndex(b => b.id === blockQuote.id)
-            if (idx === -1) return null
+            container.splice(index, 1, ...parts)
     
-            p.blocks.splice(idx, 1, ...lifted)
+            const inserts: Array<{ at: 'current' | 'next'; target: Block; current: Block }> = []
     
-            mergeAdjacentIn(p.blocks)
-    
-            const caretBlock = (lifted[0] as any) ?? (p.blocks[idx] as any) ?? blockQuote
-            const caretInline =
-                (caretBlock as any)?.inlines?.[0] ??
-                (blockQuote.inlines?.[0] as any)
-    
+            if (before.length > 0) {
+                inserts.push({ at: 'current', target: blockQuote, current: blockQuote })
+                inserts.push({ at: 'next', target: blockQuote, current: liftedBlock })
+                if (after.length > 0) inserts.push({ at: 'next', target: liftedBlock, current: parts[2] })
+            } else {
+                inserts.push({ at: 'current', target: blockQuote, current: liftedBlock })
+                if (after.length > 0) inserts.push({ at: 'next', target: liftedBlock, current: parts[1] })
+            }
+
             return effect.compose(
-                effect.update([{ at: 'current', target: p, current: p }], [blockQuote]),
-                effect.caret(caretBlock.id, caretInline.id, 0, 'start')
+                effect.update(inserts, [liftedBlock]),
+                effect.caret(liftedBlock.id, inlineId, 0, 'start')
             )
         }
     
-        const idx = ast.blocks.findIndex(b => b.id === blockQuote.id)
-        if (idx === -1) return null
+        container = ast.blocks
+        index = container.findIndex(b => b.id === blockQuote.id)
+        if (index === -1) return null
     
-        ast.blocks.splice(idx, 1, ...lifted)
+        container.splice(index, 1, ...parts)
     
-        mergeAdjacentIn(ast.blocks)
+        const inserts: Array<{ at: 'current' | 'next'; target: Block; current: Block }> = []
     
-        const caretBlock = (lifted[0] as any) ?? (ast.blocks[idx] as any) ?? blockQuote
-        const caretInline =
-            (caretBlock as any)?.inlines?.[0] ??
-            (blockQuote.inlines?.[0] as any)
-    
+        if (before.length > 0) {
+            inserts.push({ at: 'current', target: blockQuote, current: blockQuote })
+            inserts.push({ at: 'next', target: blockQuote, current: liftedBlock })
+            if (after.length > 0) inserts.push({ at: 'next', target: liftedBlock, current: parts[2] })
+        } else {
+            inserts.push({ at: 'current', target: blockQuote, current: liftedBlock })
+            if (after.length > 0) inserts.push({ at: 'next', target: liftedBlock, current: parts[1] })
+        }
+
         return effect.compose(
-            effect.update([{ at: 'current', target: caretBlock, current: caretBlock }], [blockQuote]),
-            effect.caret(caretBlock.id, caretInline.id, 0, 'start')
+            effect.update(inserts, [liftedBlock]),
+            effect.caret(liftedBlock.id, inlineId, 0, 'start')
         )
     }
 

@@ -17,7 +17,7 @@ class Editor {
         indentBlockQuote: (effect) => this.ast.indentBlockQuote(effect.blockQuoteId, effect.blockId, effect.inlineId),
         outdentListItem: (effect) => this.ast.outdentListItem(effect.listItemId),
         outdentTaskListItem: (effect) => this.ast.outdentTaskListItem(effect.taskListItemId),
-        outdentBlockQuote: (effect) => this.ast.outdentBlockQuote(effect.blockQuoteId),
+        outdentBlockQuote: (effect) => this.ast.outdentBlockQuote(effect.blockQuoteId, effect.blockId, effect.inlineId),
         mergeTableCell: (effect) => this.ast.mergeTableCell(effect.cellId),
         addTableColumn: (effect) => this.ast.addTableColumn(effect.cellId),
         addTableRow: (effect) => this.ast.addTableRow(effect.cellId),
