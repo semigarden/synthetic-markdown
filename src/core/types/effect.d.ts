@@ -27,6 +27,12 @@ type AstEffect =
     | { type: 'pasteMultiBlock'; blockId: string; inlineId: string; text: string; startPosition: number; endPosition?: number }
     | { type: 'deleteMultiBlock'; startBlockId: string; startInlineId: string; startPosition: number; endBlockId: string; endInlineId: string; endPosition: number }
     | { type: 'toggleTask'; blockId: string; inlineId: string; caretPosition: number }
+    | { type: 'inputCodeBlock'; blockId: string; inlineId: string; text: string; caretPosition: number }
+    | { type: 'splitCodeBlock'; blockId: string; inlineId: string; caretPosition: number }
+    | { type: 'mergeCodeBlockContent'; blockId: string; inlineId: string; caretPosition: number }
+    | { type: 'exitCodeBlock'; blockId: string; direction: 'above' | 'below' }
+    | { type: 'unwrapCodeBlock'; blockId: string }
+    | { type: 'setCodeBlockLanguage'; blockId: string; language: string | undefined }
 
 export type AstEffectMap = {
     [K in AstEffect['type']]: Extract<AstEffect, { type: K }>

@@ -47,6 +47,10 @@ class Input {
         const inline = this.ast.query.getInlineById(range.start.inlineId)
         if (!inline) return null
 
+        if (block.type === 'codeBlock') {
+            return this.resolveCodeBlockInsert(text, block, inline, range)
+        }
+
         const startInlineIndex = block.inlines.findIndex(i => i.id === inline.id)
         const endInline = this.ast.query.getInlineById(range.end.inlineId)
         if (!endInline) return null
@@ -96,6 +100,45 @@ class Input {
         }
     }
 
+    private resolveCodeBlockInsert(text: string, block: any, inline: any, range: SelectionRange): EditEffect | null {
+        if (inline.type !== 'text') {
+            const textInline = block.inlines.find((i: any) => i.type === 'text')
+            if (!textInline) return null
+            
+            const currentText = textInline.text.symbolic
+            const hasLeadingNewline = currentText.startsWith('\n')
+            const insertPos = hasLeadingNewline ? 1 : 0
+            const newText = currentText.slice(0, insertPos) + text + currentText.slice(insertPos)
+            const newCaretPosition = insertPos + text.length
+            
+            return {
+                preventDefault: true,
+                ast: [{
+                    type: 'inputCodeBlock',
+                    blockId: block.id,
+                    inlineId: textInline.id,
+                    text: newText,
+                    caretPosition: newCaretPosition,
+                }],
+            }
+        }
+
+        const currentText = inline.text.symbolic
+        const newText = currentText.slice(0, range.start.position) + text + currentText.slice(range.end.position)
+        const newCaretPosition = range.start.position + text.length
+
+        return {
+            preventDefault: true,
+            ast: [{
+                type: 'inputCodeBlock',
+                blockId: block.id,
+                inlineId: inline.id,
+                text: newText,
+                caretPosition: newCaretPosition,
+            }],
+        }
+    }
+
     private resolveMultiBlockInsert(text: string, range: SelectionRange): EditEffect | null {
         const startBlock = this.ast.query.getBlockById(range.start.blockId)
         const startInline = this.ast.query.getInlineById(range.start.inlineId)
@@ -129,6 +172,10 @@ class Input {
 
         const inline = this.ast.query.getInlineById(range.start.inlineId)
         if (!inline) return null
+
+        if (block.type === 'codeBlock') {
+            return this.resolveCodeBlockDelete(direction, block, inline, range)
+        }
 
         inline.text.symbolic = inline.text.symbolic
             .replace(/[\u200B\u200C\u200D\uFEFF]/g, '')
@@ -181,6 +228,53 @@ class Input {
                 text: newText,
                 caretPosition: newCaretPosition,
             }],
+        }
+    }
+
+    private resolveCodeBlockDelete(direction: 'backward' | 'forward', block: any, inline: any, range: SelectionRange): EditEffect | null {
+        if (inline.type !== 'text') {
+            return { preventDefault: true }
+        }
+
+        const position = range.start.position
+        const currentText = inline.text.symbolic
+        const hasLeadingNewline = currentText.startsWith('\n')
+        const contentStart = hasLeadingNewline ? 1 : 0
+
+        const cleanedText = currentText
+            .replace(/[\u200B\u200C\u200D\uFEFF]/g, '')
+            .replace(/\r$/, '')
+
+        if (direction === 'backward') {
+            if (position <= contentStart) {
+                return { preventDefault: true }
+            }
+
+            return {
+                preventDefault: true,
+                ast: [{
+                    type: 'mergeCodeBlockContent',
+                    blockId: block.id,
+                    inlineId: inline.id,
+                    caretPosition: position,
+                }],
+            }
+        } else {
+            if (position >= cleanedText.length) {
+                return { preventDefault: true }
+            }
+
+            const newText = cleanedText.slice(0, position) + cleanedText.slice(position + 1)
+            return {
+                preventDefault: true,
+                ast: [{
+                    type: 'inputCodeBlock',
+                    blockId: block.id,
+                    inlineId: inline.id,
+                    text: newText,
+                    caretPosition: position,
+                }],
+            }
         }
     }
 }

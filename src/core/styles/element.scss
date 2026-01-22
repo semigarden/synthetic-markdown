@@ -159,6 +159,8 @@
     padding: 0 1em;
     margin: 0.5em 0;
     overflow-x: auto;
+    position: relative;
+    transition: border-color 0.15s ease;
 
     code {
         display: flex;
@@ -169,8 +171,67 @@
         color: var(--color-text);
     }
 
-    .marker:not(.focused) .symbolic {
-        position: relative;
+    .marker {
+        color: var(--color-muted);
+        opacity: 0.6;
+        user-select: none;
+        
+        &.focused {
+            opacity: 1;
+            color: var(--color-text);
+        }
+
+        .symbolic {
+            position: relative;
+            color: inherit;
+        }
+
+        .semantic {
+            display: none;
+        }
+    }
+
+    .inline[data-type="text"] {
+        white-space: pre-wrap;
+        word-break: break-all;
+        
+        &.focused {
+            background: transparent;
+            outline: none;
+            caret-color: var(--color-accent);
+        }
+
+        .symbolic {
+            position: relative;
+            color: inherit;
+        }
+
+        .semantic {
+            display: none;
+        }
+    }
+
+    &.focused {
+        .marker {
+            opacity: 0.8;
+        }
+    }
+
+    &[data-language]::before {
+        content: attr(data-language);
+        position: absolute;
+        top: 0.5em;
+        right: 0.75em;
+        font-size: 0.75em;
+        color: var(--color-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        pointer-events: none;
+        opacity: 0.6;
+    }
+
+    &.focused[data-language]::before {
+        opacity: 0.3;
     }
 }
 

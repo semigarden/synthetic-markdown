@@ -11,6 +11,7 @@ export type EditContext = {
 export type ParseBlockContext = {
     isFencedCodeBlock: boolean
     codeBlockFence: string
+    codeBlockIndent: number
     currentCodeBlock: Block | null
 
     table?: {

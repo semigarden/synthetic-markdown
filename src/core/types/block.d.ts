@@ -49,6 +49,7 @@ export interface CodeBlock extends BlockType<'codeBlock'> {
     fenceLength?: number
     openIndent?: number
     close?: string
+    infoString?: string
 }
 
 export interface List extends BlockType<'list'> {

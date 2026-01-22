@@ -44,6 +44,13 @@ class Focus {
         for (const markerElement of markerElements) {
             markerElement.classList.add('focused')
         }
+
+        if (blockElement.classList.contains('codeBlock')) {
+            const inlineElements = blockElement.querySelectorAll('.inline') as NodeListOf<HTMLElement>
+            for (const inlineElement of inlineElements) {
+                inlineElement.classList.add('focused')
+            }
+        }
     }
 
     public unfocusBlocks(blockIds: string[]) {
@@ -62,6 +69,13 @@ class Focus {
         const markerElements = blockElement.querySelectorAll('.marker') as NodeListOf<HTMLElement>
         for (const markerElement of markerElements) {
             markerElement.classList.remove('focused')
+        }
+
+        if (blockElement.classList.contains('codeBlock')) {
+            const inlineElements = blockElement.querySelectorAll('.inline') as NodeListOf<HTMLElement>
+            for (const inlineElement of inlineElements) {
+                inlineElement.classList.remove('focused')
+            }
         }
     }
 

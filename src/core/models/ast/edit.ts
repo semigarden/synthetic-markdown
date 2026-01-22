@@ -1,7 +1,7 @@
 import { detectBlockType } from '../parser/block/blockDetect'
 import { uuid } from '../../utils/utils'
 import type { AstContext } from './astContext'
-import type { AstApplyEffect, Block, Inline, List, ListItem, Table, TableRow, TableHeader, TableCell, TaskListItem, BlockQuote, Paragraph } from '../../types'
+import type { AstApplyEffect, Block, Inline, List, ListItem, Table, TableRow, TableHeader, TableCell, TaskListItem, BlockQuote, Paragraph, CodeBlock } from '../../types'
 
 class Edit {
     constructor(private context: AstContext) {}
@@ -83,20 +83,6 @@ class Edit {
 
         const block = query.getBlockById(blockId)
         if (!block) return null
-
-        if (block.type === 'codeBlock') {
-            const inline = query.getInlineById(inlineId)
-            if (!inline) return null
-
-            inline.text.symbolic = inline.text.symbolic.slice(0, caretPosition) + '\n' + inline.text.symbolic.slice(caretPosition)
-            inline.text.semantic = inline.text.semantic.slice(0, caretPosition) + '\n' + inline.text.semantic.slice(caretPosition)
-            inline.position.end = inline.position.start + inline.text.symbolic.length
-
-            return effect.compose(
-                effect.update([{ at: 'current', target: block, current: block }]),
-                effect.caret(block.id, inline.id, caretPosition, 'start')
-            )
-        }
 
         const result = mutation.splitBlockPure(block, inlineId, caretPosition, {
             rightType: block.type === 'blockQuote' ? 'blockQuote' : undefined,
@@ -1884,6 +1870,255 @@ class Edit {
 
         block.checked = !block.checked
         return effect.compose(effect.update([{ at: 'current', target: block, current: block }]), effect.caret(blockId, inlineId, caretPosition, 'start'))
+    }
+
+    public inputCodeBlock(blockId: string, inlineId: string, text: string, caretPosition: number): AstApplyEffect | null {
+        const { query, effect } = this.context
+
+        const block = query.getBlockById(blockId) as CodeBlock
+        if (!block || block.type !== 'codeBlock') return null
+
+        const inline = query.getInlineById(inlineId)
+        if (!inline) return null
+
+        if (inline.type === 'text') {
+            const hasLeadingNewline = text.startsWith('\n')
+            const contentStart = hasLeadingNewline ? 1 : 0
+            
+            let newSymbolic = text
+            if (!hasLeadingNewline && block.isFenced) {
+                newSymbolic = '\n' + text
+            }
+            
+            const content = newSymbolic.slice(contentStart)
+            if (content.length === 0) {
+                newSymbolic = (block.isFenced ? '\n' : '') + '\u200B'
+            }
+            
+            inline.text.symbolic = newSymbolic
+            inline.text.semantic = newSymbolic.slice(contentStart)
+            inline.position.end = inline.position.start + newSymbolic.length
+
+            block.text = inline.text.semantic.replace(/^\u200B$/, '')
+            block.position.end = block.position.start + this.calculateCodeBlockLength(block)
+
+            return effect.compose(
+                effect.update([{ at: 'current', target: block, current: block }]),
+                effect.caret(block.id, inline.id, caretPosition, 'start')
+            )
+        }
+
+        return null
+    }
+
+    public splitCodeBlock(blockId: string, inlineId: string, caretPosition: number): AstApplyEffect | null {
+        const { query, effect } = this.context
+
+        const block = query.getBlockById(blockId) as CodeBlock
+        if (!block || block.type !== 'codeBlock') return null
+
+        const inline = query.getInlineById(inlineId)
+        if (!inline || inline.type !== 'text') return null
+
+        const symbolicText = inline.text.symbolic
+        const hasLeadingNewline = symbolicText.startsWith('\n')
+        const contentStart = hasLeadingNewline ? 1 : 0
+        const actualPosition = Math.max(caretPosition, contentStart)
+
+        const beforeCaret = symbolicText.slice(0, actualPosition)
+        const afterCaret = symbolicText.slice(actualPosition)
+        const newSymbolic = beforeCaret + '\n' + afterCaret
+
+        inline.text.symbolic = newSymbolic
+        inline.text.semantic = newSymbolic.slice(contentStart)
+        inline.position.end = inline.position.start + newSymbolic.length
+
+        block.text = inline.text.semantic.replace(/^\u200B$/, '')
+        block.position.end = block.position.start + this.calculateCodeBlockLength(block)
+
+        const newCaretPosition = actualPosition + 1
+
+        return effect.compose(
+            effect.update([{ at: 'current', target: block, current: block }]),
+            effect.caret(block.id, inline.id, newCaretPosition, 'start')
+        )
+    }
+
+    public mergeCodeBlockContent(blockId: string, inlineId: string, caretPosition: number): AstApplyEffect | null {
+        const { query, parser, effect } = this.context
+
+        const block = query.getBlockById(blockId) as CodeBlock
+        if (!block || block.type !== 'codeBlock') return null
+
+        const inline = query.getInlineById(inlineId)
+        if (!inline || inline.type !== 'text') return null
+
+        const symbolicText = inline.text.symbolic
+        const hasLeadingNewline = symbolicText.startsWith('\n')
+        const contentStart = hasLeadingNewline ? 1 : 0
+
+        if (caretPosition <= contentStart) {
+            return null
+        }
+
+        const beforeCaret = symbolicText.slice(0, caretPosition - 1)
+        const afterCaret = symbolicText.slice(caretPosition)
+        const newSymbolic = beforeCaret + afterCaret
+
+        inline.text.symbolic = newSymbolic
+        inline.text.semantic = newSymbolic.slice(contentStart)
+        inline.position.end = inline.position.start + newSymbolic.length
+
+        block.text = inline.text.semantic.replace(/^\u200B$/, '')
+        block.position.end = block.position.start + this.calculateCodeBlockLength(block)
+
+        const newCaretPosition = caretPosition - 1
+
+        return effect.compose(
+            effect.update([{ at: 'current', target: block, current: block }]),
+            effect.caret(block.id, inline.id, newCaretPosition, 'start')
+        )
+    }
+
+    public exitCodeBlock(blockId: string, direction: 'above' | 'below'): AstApplyEffect | null {
+        const { ast, query, parser, effect } = this.context
+
+        const block = query.getBlockById(blockId) as CodeBlock
+        if (!block || block.type !== 'codeBlock') return null
+
+        const blockIndex = ast.blocks.findIndex(b => b.id === blockId)
+        if (blockIndex === -1) return null
+
+        const paragraph: Block = {
+            id: uuid(),
+            type: 'paragraph',
+            text: '',
+            position: { start: 0, end: 0 },
+            inlines: [],
+        }
+        paragraph.inlines = parser.inline.parseInline('', paragraph.id, 'paragraph', 0)
+        paragraph.inlines.forEach((i: Inline) => i.blockId = paragraph.id)
+
+        if (direction === 'above') {
+            ast.blocks.splice(blockIndex, 0, paragraph)
+            const focusInline = paragraph.inlines[0]
+            return effect.compose(
+                effect.update([{ at: 'previous', target: block, current: paragraph }]),
+                effect.caret(paragraph.id, focusInline.id, 0, 'start')
+            )
+        } else {
+            ast.blocks.splice(blockIndex + 1, 0, paragraph)
+            const focusInline = paragraph.inlines[0]
+            return effect.compose(
+                effect.update([{ at: 'next', target: block, current: paragraph }]),
+                effect.caret(paragraph.id, focusInline.id, 0, 'start')
+            )
+        }
+    }
+
+    public unwrapCodeBlock(blockId: string): AstApplyEffect | null {
+        const { ast, query, parser, effect } = this.context
+
+        const block = query.getBlockById(blockId) as CodeBlock
+        if (!block || block.type !== 'codeBlock') return null
+
+        const blockIndex = ast.blocks.findIndex(b => b.id === blockId)
+        if (blockIndex === -1) return null
+
+        const content = block.text || ''
+        const lines = content.split('\n')
+        
+        const newBlocks: Block[] = []
+        for (const line of lines) {
+            const para: Block = {
+                id: uuid(),
+                type: 'paragraph',
+                text: line,
+                position: { start: 0, end: line.length },
+                inlines: [],
+            }
+            para.inlines = parser.inline.parseInline(line, para.id, 'paragraph', 0)
+            para.inlines.forEach((i: Inline) => i.blockId = para.id)
+            newBlocks.push(para)
+        }
+
+        if (newBlocks.length === 0) {
+            const para: Block = {
+                id: uuid(),
+                type: 'paragraph',
+                text: '',
+                position: { start: 0, end: 0 },
+                inlines: [],
+            }
+            para.inlines = parser.inline.parseInline('', para.id, 'paragraph', 0)
+            para.inlines.forEach((i: Inline) => i.blockId = para.id)
+            newBlocks.push(para)
+        }
+
+        ast.blocks.splice(blockIndex, 1, ...newBlocks)
+
+        const firstBlock = newBlocks[0]
+        const focusInline = firstBlock.inlines[0]
+        if (!focusInline) return null
+
+        const updateEffects = newBlocks.map((b, idx) => ({
+            at: idx === 0 ? 'current' as const : 'next' as const,
+            target: idx === 0 ? block : newBlocks[idx - 1],
+            current: b
+        }))
+
+        return effect.compose(
+            effect.update(updateEffects, [block]),
+            effect.caret(firstBlock.id, focusInline.id, 0, 'start')
+        )
+    }
+
+    public setCodeBlockLanguage(blockId: string, language: string | undefined): AstApplyEffect | null {
+        const { query, effect } = this.context
+
+        const block = query.getBlockById(blockId) as CodeBlock
+        if (!block || block.type !== 'codeBlock') return null
+
+        block.language = language
+        block.infoString = language
+
+        const markerInline = block.inlines.find(i => i.type === 'marker')
+        if (markerInline && block.isFenced) {
+            const fenceChar = block.fenceChar ?? '`'
+            const fenceLength = block.fenceLength ?? 3
+            const indent = block.openIndent ?? 0
+            const fence = fenceChar.repeat(fenceLength)
+            markerInline.text.symbolic = ' '.repeat(indent) + fence + (language || '')
+        }
+
+        const textInline = block.inlines.find(i => i.type === 'text')
+        if (!textInline) return null
+
+        return effect.compose(
+            effect.update([{ at: 'current', target: block, current: block }]),
+            effect.caret(block.id, textInline.id, 1, 'start')
+        )
+    }
+
+    private calculateCodeBlockLength(block: CodeBlock): number {
+        if (!block.isFenced) {
+            const lines = block.text.split('\n')
+            return lines.reduce((sum, line, idx) => {
+                return sum + 4 + line.length + (idx < lines.length - 1 ? 1 : 0)
+            }, 0)
+        }
+
+        const fenceChar = block.fenceChar ?? '`'
+        const fenceLength = block.fenceLength ?? 3
+        const indent = block.openIndent ?? 0
+        const fence = fenceChar.repeat(fenceLength)
+        const lang = block.language || ''
+        
+        const open = ' '.repeat(indent) + fence + lang
+        const content = '\n' + (block.text || '\u200B')
+        const close = block.close || fence
+        
+        return open.length + content.length + (close ? close.length : 0)
     }
 }
 

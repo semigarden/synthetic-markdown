@@ -74,7 +74,7 @@ class MarkerResolver {
         }
 
         if (blockType === 'codeBlock') {
-            const match = text.match(/^(\s{0,3}(```+|~~~+)[^\n]*\n?)/)
+            const match = text.match(/^(\s{0,3}(?:```+|~~~+)[^\n]*)/)
             if (!match) return null
 
             const markerText = match[1]

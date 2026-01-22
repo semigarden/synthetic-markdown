@@ -148,6 +148,18 @@ class Interaction {
             if (key === 'backspace') return 'insertRowAbove'
         }
 
+        const context = this.select.resolveInlineContext()
+        const isInCodeBlock = context?.block?.type === 'codeBlock'
+
+        if (isInCodeBlock) {
+            if (event.ctrlKey && key === 'enter') {
+                return 'exitCodeBlockBelow'
+            }
+            if (key === 'escape' || (event.ctrlKey && event.shiftKey && key === 'enter')) {
+                return 'exitCodeBlockAbove'
+            }
+        }
+
         switch (key) {
             case 'tab': return 'indent'
             case 'enter': return 'split'

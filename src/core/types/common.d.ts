@@ -70,6 +70,8 @@ export type Intent =
     | 'undo'
     | 'redo'
     | 'toggleTask'
+    | 'exitCodeBlockAbove'
+    | 'exitCodeBlockBelow'
 
 export type InputEvent = {
     text: string

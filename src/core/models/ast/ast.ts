@@ -90,6 +90,12 @@ class Ast {
     public pasteMultiBlock(...args: Parameters<Edit['pasteMultiBlock']>) { return this.edit.pasteMultiBlock(...args) }
     public deleteMultiBlock(...args: Parameters<Edit['deleteMultiBlock']>) { return this.edit.deleteMultiBlock(...args) }
     public toggleTask(...args: Parameters<Edit['toggleTask']>) { return this.edit.toggleTask(...args) }
+    public inputCodeBlock(...args: Parameters<Edit['inputCodeBlock']>) { return this.edit.inputCodeBlock(...args) }
+    public splitCodeBlock(...args: Parameters<Edit['splitCodeBlock']>) { return this.edit.splitCodeBlock(...args) }
+    public mergeCodeBlockContent(...args: Parameters<Edit['mergeCodeBlockContent']>) { return this.edit.mergeCodeBlockContent(...args) }
+    public exitCodeBlock(...args: Parameters<Edit['exitCodeBlock']>) { return this.edit.exitCodeBlock(...args) }
+    public unwrapCodeBlock(...args: Parameters<Edit['unwrapCodeBlock']>) { return this.edit.unwrapCodeBlock(...args) }
+    public setCodeBlockLanguage(...args: Parameters<Edit['setCodeBlockLanguage']>) { return this.edit.setCodeBlockLanguage(...args) }
 }
 
 export default Ast

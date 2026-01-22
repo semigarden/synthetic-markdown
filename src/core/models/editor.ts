@@ -31,6 +31,12 @@ class Editor {
         pasteMultiBlock: (effect) => this.ast.pasteMultiBlock(effect.blockId, effect.inlineId, effect.text, effect.startPosition, effect.endPosition),
         deleteMultiBlock: (effect) => this.ast.deleteMultiBlock(effect.startBlockId, effect.startInlineId, effect.startPosition, effect.endBlockId, effect.endInlineId, effect.endPosition),
         toggleTask: (effect) => this.ast.toggleTask(effect.blockId, effect.inlineId, effect.caretPosition),
+        inputCodeBlock: (effect) => this.ast.inputCodeBlock(effect.blockId, effect.inlineId, effect.text, effect.caretPosition),
+        splitCodeBlock: (effect) => this.ast.splitCodeBlock(effect.blockId, effect.inlineId, effect.caretPosition),
+        mergeCodeBlockContent: (effect) => this.ast.mergeCodeBlockContent(effect.blockId, effect.inlineId, effect.caretPosition),
+        exitCodeBlock: (effect) => this.ast.exitCodeBlock(effect.blockId, effect.direction),
+        unwrapCodeBlock: (effect) => this.ast.unwrapCodeBlock(effect.blockId),
+        setCodeBlockLanguage: (effect) => this.ast.setCodeBlockLanguage(effect.blockId, effect.language),
     }
     public emitChange: () => void
     public timeline: Timeline

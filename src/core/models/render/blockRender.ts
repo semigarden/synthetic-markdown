@@ -65,7 +65,6 @@ class BlockRender {
             element.dataset.blockId = block.id
             element.id = block.id
             element.classList.add('block')
-            // element.contentEditable = 'false'
         }
 
         return { element, isNew }
@@ -145,6 +144,13 @@ class BlockRender {
                 code.innerHTML = ''
                 this.deps.renderInlines(block.inlines, code)
                 if (!existing) element.appendChild(code)
+
+                const codeBlock = block as any
+                if (codeBlock.language) {
+                    element.setAttribute('data-language', codeBlock.language)
+                } else {
+                    element.removeAttribute('data-language')
+                }
                 break
             }
 

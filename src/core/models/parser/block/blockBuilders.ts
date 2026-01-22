@@ -58,7 +58,8 @@ function buildFencedCodeBlock(
     end: number,
     fence: string,
     language: string | undefined,
-    indent: number
+    indent: number,
+    infoString?: string
 ): CodeBlock {
     return {
         id: uuid(),
@@ -69,6 +70,7 @@ function buildFencedCodeBlock(
         fenceChar: fence.charAt(0) as '`' | '~',
         fenceLength: fence.length,
         openIndent: indent,
+        infoString,
         position: { start, end },
         inlines: [],
     }

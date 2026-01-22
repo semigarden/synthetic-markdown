@@ -1,4 +1,4 @@
-import { Block, TableRow } from '../../types'
+import { Block, CodeBlock, TableRow } from '../../types'
 import { uuid } from '../../utils/utils'
 
 class AstNormalizer {
@@ -7,11 +7,147 @@ class AstNormalizer {
     public apply(blocks: Block[]) {
         let globalPos = 0
 
+        const stripFencedPayload = (raw: string, open: string, close: string) => {
+            let t = raw
+
+            if (t.startsWith(open + '\n')) {
+                t = t.slice(open.length + 1)
+            } else if (t.startsWith(open)) {
+                t = t.slice(open.length)
+                if (t.startsWith('\n')) t = t.slice(1)
+            }
+
+            if (close.length > 0) {
+                if (t.endsWith('\n' + close)) {
+                    t = t.slice(0, t.length - (close.length + 1))
+                } else if (t.endsWith(close)) {
+                    t = t.slice(0, t.length - close.length)
+                }
+            }
+
+            if (t.startsWith('\n')) t = t.slice(1)
+
+            return t
+        }
+
         const updateBlock = (block: Block, listDepth: number = 0): string => {
             const start = globalPos
             let text = ''
 
             if (!('blocks' in block) || !block.blocks) {
+                if (block.type === 'codeBlock') {
+                    const codeBlock = block as CodeBlock
+
+                    if (codeBlock.isFenced) {
+                        const fenceChar = codeBlock.fenceChar ?? '`'
+                        const fenceLength = codeBlock.fenceLength ?? 3
+                        const fence = fenceChar.repeat(fenceLength)
+                        const indent = codeBlock.openIndent ?? 0
+                        const lang = codeBlock.infoString 
+                            ? String(codeBlock.infoString).trim() 
+                            : (codeBlock.language ? String(codeBlock.language).trim() : '')
+                        const open = `${' '.repeat(indent)}${fence}${lang ? lang : ''}`
+
+                        const closeRaw = (codeBlock as any).close ? String((codeBlock as any).close) : ''
+                        const close = closeRaw.length > 0 ? closeRaw : ''
+
+                        const raw0 = String(codeBlock.text ?? '')
+                        const raw = stripFencedPayload(raw0, open, close)
+                        codeBlock.text = raw
+
+                        const body = raw.length === 0 ? '\u200B' : raw
+                        const contentSymbolic = `\n${body}`
+                        const contentSemantic = `\n${raw}`
+
+                        const openInline = block.inlines.find(i => i.type === 'marker') ?? null
+                        const textInline = block.inlines.find(i => i.type === 'text') ?? null
+                        const markers = block.inlines.filter(i => i.type === 'marker')
+                        const closeInline = markers.length >= 2 ? markers[markers.length - 1] : null
+
+                        const nextInlines = []
+
+                        const m0 = openInline ?? {
+                            id: uuid(),
+                            type: 'marker',
+                            blockId: block.id,
+                            text: { symbolic: '', semantic: '' },
+                            position: { start: 0, end: 0 },
+                        }
+
+                        m0.text.symbolic = open
+                        m0.text.semantic = ''
+                        nextInlines.push(m0)
+
+                        const t0 = textInline ?? {
+                            id: uuid(),
+                            type: 'text',
+                            blockId: block.id,
+                            text: { symbolic: '', semantic: '' },
+                            position: { start: 0, end: 0 },
+                        }
+
+                        t0.text.symbolic = contentSymbolic
+                        t0.text.semantic = contentSemantic
+                        nextInlines.push(t0)
+
+                        if (close.length > 0) {
+                            const m1 = closeInline ?? {
+                                id: uuid(),
+                                type: 'marker',
+                                blockId: block.id,
+                                text: { symbolic: '', semantic: '' },
+                                position: { start: 0, end: 0 },
+                            }
+
+                            m1.text.symbolic = '\n' + close
+                            m1.text.semantic = ''
+                            nextInlines.push(m1)
+                        }
+
+                        block.inlines = nextInlines as any
+
+                        let localPos = start
+                        for (const inline of block.inlines) {
+                            if (!inline.id) inline.id = uuid()
+                            const len = inline.text.symbolic.length
+                            inline.position = { start: localPos, end: localPos + len }
+                            localPos += len
+                        }
+
+                        const serialized = open + contentSymbolic + (close.length > 0 ? '\n' + close : '')
+                        block.position = { start, end: start + serialized.length }
+                        globalPos += serialized.length
+
+                        block.text = raw
+                        return serialized
+                    }
+
+                    if (!codeBlock.isFenced) {
+                        const raw = String(codeBlock.text ?? '')
+                        const lines = raw.split('\n')
+                        const serialized = lines.map(line => '    ' + line).join('\n')
+
+                        const markerInline = block.inlines.find(i => i.type === 'marker')
+                        const textInline = block.inlines.find(i => i.type === 'text')
+                        
+                        if (markerInline) {
+                            markerInline.text.symbolic = '    '
+                            markerInline.position = { start, end: start + 4 }
+                        }
+                        
+                        if (textInline) {
+                            textInline.text.symbolic = raw.length === 0 ? '\u200B' : raw
+                            textInline.text.semantic = raw
+                            textInline.position = { start: start + 4, end: start + 4 + (raw.length === 0 ? 1 : raw.length) }
+                        }
+                        
+                        block.position = { start, end: start + serialized.length }
+                        globalPos += serialized.length
+                        
+                        return serialized
+                    }
+                }
+
                 let localPos = 0
 
                 for (const inline of block.inlines) {
@@ -107,35 +243,35 @@ class AstNormalizer {
 
             if (block.type === 'blockQuote') {
                 const parts: string[] = []
-            
+
                 const markerInline = block.inlines?.find(i => i.type === 'marker')
                 if (markerInline) {
                     markerInline.text.symbolic = '> '
                 }
-            
+
                 for (let i = 0; i < block.blocks.length; i++) {
                     const childText = updateBlock(block.blocks[i], listDepth)
                     const lines = childText.split('\n')
-            
+
                     for (let li = 0; li < lines.length; li++) {
                         parts.push('> ')
                         globalPos += 2
-            
+
                         parts.push(lines[li])
                         globalPos += lines[li].length
-            
+
                         if (li < lines.length - 1) {
                             parts.push('\n')
                             globalPos += 1
                         }
                     }
-            
+
                     if (i < block.blocks.length - 1) {
                         parts.push('\n')
                         globalPos += 1
                     }
                 }
-            
+
                 text = parts.join('')
                 block.text = text
                 block.position = { start, end: globalPos }
@@ -204,7 +340,7 @@ class AstNormalizer {
                 for (let i = 0; i < block.blocks.length; i++) {
                     const childText = updateBlock(block.blocks[i])
                     parts.push(childText)
-                    
+
                     if (i < block.blocks.length - 1) {
                         parts.push('<br>')
                         globalPos += 4
@@ -214,7 +350,7 @@ class AstNormalizer {
                 const cellText = parts.join('')
                 block.text = cellText
                 block.position = { start, end: globalPos }
-            
+
                 return cellText
             }
 
@@ -234,6 +370,9 @@ class AstNormalizer {
         }
 
         this.text = parts.join('')
+
+        console.log('text', this.text)
+        console.log('blocks', JSON.stringify(blocks, null, 2))
     }
 }
 

@@ -39,17 +39,23 @@ class InlineParser {
                 const fence = fenceChar.repeat(fenceLength)
                 const indent = codeBlock.openIndent ?? 0
                 const lang = codeBlock.language ? String(codeBlock.language).trim() : ''
-                const open = `${' '.repeat(indent)}${fence}${lang ? lang : ''}\n`
-            
+
+                const open = `${' '.repeat(indent)}${fence}${lang ? lang : ''}`
+                const closeRaw = (codeBlock as any).close ? String((codeBlock as any).close) : ''
+                const close = closeRaw.length > 0 ? closeRaw : ''
+
+                const raw = text
+                const body = raw.length === 0 ? '\u200B' : raw
+                const contentSymbolic = `\n${body}`
+                const contentSemantic = `\n${raw}`
+
                 const base = block.position?.start ?? 0
                 const openStart = base
                 const openEnd = openStart + open.length
-            
-                const contentSymbolic = text.length === 0 ? '\u200B' : text
-                const contentSemantic = text
+
                 const contentStart = openEnd
                 const contentEnd = contentStart + contentSymbolic.length
-            
+
                 const inlines: Inline[] = [
                     {
                         id: uuid(),
@@ -66,11 +72,11 @@ class InlineParser {
                         position: { start: contentStart, end: contentEnd },
                     },
                 ]
-            
-                const close = (codeBlock as any).close ? String((codeBlock as any).close) : ''
-                if (close) {
+
+                if (close.length > 0) {
                     const closeStart = contentEnd
                     const closeEnd = closeStart + close.length
+
                     inlines.push({
                         id: uuid(),
                         type: 'marker',
@@ -79,7 +85,7 @@ class InlineParser {
                         position: { start: closeStart, end: closeEnd },
                     })
                 }
-            
+
                 return inlines
             }
 

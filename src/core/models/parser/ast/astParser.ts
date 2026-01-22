@@ -22,27 +22,6 @@ class AstParser {
     }
 
     public parse(text: string): Block[] {
-        // this.reset()
-        // parseLinkReferenceDefinitions(text, this.linkReferences)
-
-        // const lines = text.replace(/[\u200B\u200C\u200D\uFEFF]/g, '').replace(/\r$/, '').split('\n')
-        // let offset = 0
-
-        // for (const line of lines) {
-        //     this.parseLine(line, offset)
-        //     offset += line.length + 1
-        // }
-
-        // this.closeAll(offset)
-
-        // for (const block of this.blocks) {
-        //     this.inline.applyRecursive(block)
-        // }
-
-        // // console.log('blocks', JSON.stringify(this.blocks, null, 2))
-
-        // return this.blocks
-
         this.reset()
         parseLinkReferenceDefinitions(text, this.linkReferences)
 
@@ -52,12 +31,6 @@ class AstParser {
 
         const blocks: Block[] = []
         let offset = 0
-
-        // for (const line of text.split('\n')) {
-        //     const produced = this.block.line(line, offset)
-        //     if (produced) blocks.push(...produced)
-        //     offset += line.length + 1
-        // }
 
         for (const line of text.split('\n')) {
             const produced = this.block.line(line, offset)
@@ -98,8 +71,6 @@ class AstParser {
 
         this.mergeAdjacent(blocks)
 
-        // this.hydrateCodeBlocks(blocks)
-
         for (const block of blocks) {
             this.inline.applyRecursive(block)
         }
@@ -109,65 +80,6 @@ class AstParser {
         console.log('blocks', JSON.stringify(this.blocks, null, 2))
 
         return this.blocks
-    }
-
-    private parseLine(line: string, offset: number) {
-        // if (line.trim().length === 0) {
-        //     resolveBlankLine(this.openBlocks)
-        //     return
-        // }
-
-        if (this.block.hasPendingTable) {
-            const produced = this.block.line(line, offset)
-            if (produced) this.blocks.push(...produced)
-            return
-        }
-
-        if (/\|/.test(line.trim()) && !this.isTableDivider(line)) {
-            const produced = this.block.line(line, offset)
-            if (produced) this.blocks.push(...produced)
-            if (this.block.hasPendingTable) return
-        }
-
-        const state = continueBlocks(this.openBlocks, line)
-
-        if (tryOpenBlockQuote(this.parseLine.bind(this), this.openBlocks, this.blocks, state.line, offset)) return
-
-        if (
-            tryOpenList(
-                this.openBlocks,
-                this.blocks,
-                (text, off) => addParagraph(this.openBlocks, this.blocks, text, off),
-                state.line,
-                offset
-            )
-        )
-            return
-
-        if (tryOpenLeafBlock(this.block, this.openBlocks, this.blocks, state.line, offset)) return
-
-        const openParagraph = getOpenParagraph(this.openBlocks)
-        const openListItem = this.openBlocks.findLast(b => b.type === 'listItem')
-        const openBlockQuote = hasOpenBlockQuote(this.openBlocks)
-
-        if (openParagraph && (openListItem || openBlockQuote)) {
-            openParagraph.text += '\n' + state.line
-            openParagraph.position.end = offset + state.line.length
-            return
-        }
-
-        addParagraph(this.openBlocks, this.blocks, state.line, offset)
-    }
-
-    private isTableDivider(line: string): boolean {
-        return /^\s*\|?\s*[-:]+(\s*\|\s*[-:]+)+\s*\|?\s*$/.test(line)
-    }
-
-    private closeAll(offset: number) {
-        this.openBlocks = []
-
-        const flushed = this.block.flush(offset)
-        if (flushed) this.blocks.push(...flushed)
     }
 
     private mergeAdjacent(blocks: Block[]) {
@@ -200,51 +112,29 @@ class AstParser {
             }
         }
     }
-    
-    private hydrateCodeBlocks(blocks: Block[]) {
-        for (const block of blocks) {
-            if (block.type === 'codeBlock') {
-                const code = block as any
-                if (!code.isFenced) continue
-
-                const fence = code.fence || '```'
-                const lang = code.language ? String(code.language) : ''
-                const open = lang ? `${fence}${lang}\n` : `${fence}\n`
-                const close = `\n${fence}`
-
-                const full = open + block.text + close
-
-                block.text = full
-                block.inlines = []
-                continue
-            }
-    
-            if ('blocks' in block && Array.isArray(block.blocks)) {
-                this.hydrateCodeBlocks(block.blocks)
-            }
-        }
-    }    
 
     public reparseTextFragment(text: string, offset: number): Block[] {
         this.block.reset()
-
+    
+        text = text.replace(/[\u200B\u200C\u200D\uFEFF]/g, '').replace(/\r$/, '')
+    
         const blocks: Block[] = []
-
+    
         for (const line of text.split('\n')) {
             const produced = this.block.line(line, offset)
             if (produced) blocks.push(...produced)
             offset += line.length + 1
         }
-
+    
         const flushed = this.block.flush(offset)
         if (flushed) blocks.push(...flushed)
-
+    
         for (const block of blocks) {
             this.inline.applyRecursive(block)
         }
-
+    
         return blocks
-    }
+    }    
 
     private reset() {
         this.openBlocks = []

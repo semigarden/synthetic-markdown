@@ -2,7 +2,7 @@ import Ast from './ast/ast'
 import Caret from './caret'
 import Render from './render/render'
 import Select from './select/select'
-import { BlockQuote, EditContext, EditEffect, Intent as IntentType } from '../types'
+import { BlockQuote, CodeBlock, EditContext, EditEffect, Intent as IntentType } from '../types'
 
 class Intent {
     constructor(
@@ -27,6 +27,10 @@ class Intent {
             return this.resolveSplitInCell(context)
         } else if (intent === 'toggleTask') {
             return this.resolveToggleTask(context)
+        } else if (intent === 'exitCodeBlockAbove') {
+            return this.resolveExitCodeBlock(context, 'above')
+        } else if (intent === 'exitCodeBlockBelow') {
+            return this.resolveExitCodeBlock(context, 'below')
         }
 
         return { preventDefault: false }
@@ -36,6 +40,18 @@ class Intent {
         const caretPosition = this.caret.getPositionInInline(context.inlineElement)
         
         const parentBlock = this.ast.query.getParentBlock(context.block)
+
+        if (context.block.type === 'codeBlock') {
+            return {
+                preventDefault: true,
+                ast: [{
+                    type: 'splitCodeBlock',
+                    blockId: context.block.id,
+                    inlineId: context.inline.id,
+                    caretPosition: caretPosition,
+                }],
+            }
+        }
 
         if (parentBlock?.type === 'tableCell' || parentBlock?.type === 'tableHeader') {
             return {
@@ -185,6 +201,26 @@ class Intent {
     }
 
     private resolveIndent(context: EditContext): EditEffect {
+        if (context.block.type === 'codeBlock') {
+            const caretPosition = this.caret.getPositionInInline(context.inlineElement)
+            const tabSpaces = '  '
+            
+            const currentText = context.inline.text.symbolic
+            const newText = currentText.slice(0, caretPosition) + tabSpaces + currentText.slice(caretPosition)
+            const newCaretPosition = caretPosition + tabSpaces.length
+            
+            return {
+                preventDefault: true,
+                ast: [{
+                    type: 'inputCodeBlock',
+                    blockId: context.block.id,
+                    inlineId: context.inline.id,
+                    text: newText,
+                    caretPosition: newCaretPosition,
+                }],
+            }
+        }
+
         const parentBlock = this.ast.query.getParentBlock(context.block)
         if (parentBlock?.type === 'tableCell' || parentBlock?.type === 'tableHeader') {
             const caretPosition = this.caret.getPositionInInline(context.inlineElement)
@@ -323,6 +359,21 @@ class Intent {
         return {
             preventDefault: true,
             ast: [{ type: 'toggleTask', blockId: context.block.id, inlineId: context.inline.id, caretPosition: this.caret.getPositionInInline(context.inlineElement) }],
+        }
+    }
+
+    private resolveExitCodeBlock(context: EditContext, direction: 'above' | 'below'): EditEffect {
+        if (context.block.type !== 'codeBlock') {
+            return { preventDefault: false }
+        }
+
+        return {
+            preventDefault: true,
+            ast: [{
+                type: 'exitCodeBlock',
+                blockId: context.block.id,
+                direction: direction,
+            }],
         }
     }
 }
