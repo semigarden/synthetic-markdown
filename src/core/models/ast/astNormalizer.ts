@@ -56,8 +56,8 @@ class AstNormalizer {
                         codeBlock.text = raw
 
                         const body = raw.length === 0 ? '\u200B' : raw
-                        const contentSymbolic = `\n${body}`
-                        const contentSemantic = `\n${raw}`
+                        const contentSymbolic = body
+                        const contentSemantic = raw
 
                         const openInline = block.inlines.find(i => i.type === 'marker') ?? null
                         const textInline = block.inlines.find(i => i.type === 'text') ?? null
@@ -74,7 +74,7 @@ class AstNormalizer {
                             position: { start: 0, end: 0 },
                         }
 
-                        m0.text.symbolic = open
+                        m0.text.symbolic = open + '\n'
                         m0.text.semantic = ''
                         nextInlines.push(m0)
 
@@ -114,7 +114,7 @@ class AstNormalizer {
                             localPos += len
                         }
 
-                        const serialized = open + contentSymbolic + (close.length > 0 ? '\n' + close : '')
+                        const serialized = (open + '\n') + contentSymbolic + (close.length > 0 ? '\n' + close : '')
                         block.position = { start, end: start + serialized.length }
                         globalPos += serialized.length
 

@@ -40,14 +40,14 @@ class InlineParser {
                 const indent = codeBlock.openIndent ?? 0
                 const lang = codeBlock.language ? String(codeBlock.language).trim() : ''
 
-                const open = `${' '.repeat(indent)}${fence}${lang ? lang : ''}`
+                const open = `${' '.repeat(indent)}${fence}${lang ? lang : ''}\n`
                 const closeRaw = (codeBlock as any).close ? String((codeBlock as any).close) : ''
-                const close = closeRaw.length > 0 ? closeRaw : ''
+                const close = closeRaw.length > 0 ? '\n' + closeRaw : ''
 
                 const raw = text
                 const body = raw.length === 0 ? '\u200B' : raw
-                const contentSymbolic = `\n${body}`
-                const contentSemantic = `\n${raw}`
+                const contentSymbolic = body
+                const contentSemantic = raw
 
                 const base = block.position?.start ?? 0
                 const openStart = base
