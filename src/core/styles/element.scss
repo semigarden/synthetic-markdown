@@ -172,13 +172,13 @@
     }
 
     .marker {
-        color: var(--color-muted);
-        opacity: 0.6;
-        user-select: none;
+        // color: var(--color-muted);
+        opacity: 0;
+        // user-select: none;
         
         &.focused {
             opacity: 1;
-            color: var(--color-text);
+            // color: var(--color-text);
         }
 
         .symbolic {
@@ -186,9 +186,9 @@
             color: inherit;
         }
 
-        .semantic {
-            display: none;
-        }
+        // .semantic {
+        //     display: none;
+        // }
     }
 
     .inline[data-type="text"] {
@@ -198,7 +198,7 @@
         &.focused {
             background: transparent;
             outline: none;
-            caret-color: var(--color-accent);
+            // caret-color: var(--color-accent);
         }
 
         .symbolic {
@@ -211,11 +211,11 @@
         }
     }
 
-    &.focused {
-        .marker {
-            opacity: 0.8;
-        }
-    }
+    // &.focused {
+    //     .marker {
+    //         opacity: 0.8;
+    //     }
+    // }
 
     &[data-language]::before {
         content: attr(data-language);
@@ -223,16 +223,16 @@
         top: 0.5em;
         right: 0.75em;
         font-size: 0.75em;
-        color: var(--color-muted);
+        // color: var(--color-muted);
         text-transform: uppercase;
         letter-spacing: 0.05em;
         pointer-events: none;
-        opacity: 0.6;
+        // opacity: 0.6;
     }
 
-    &.focused[data-language]::before {
-        opacity: 0.3;
-    }
+    // &.focused[data-language]::before {
+    //     opacity: 0.3;
+    // }
 }
 
 .list {
