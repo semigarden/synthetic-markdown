@@ -103,7 +103,7 @@ class AstNormalizer {
                                 position: { start: 0, end: 0 },
                             }
 
-                            m1.text.symbolic = '\n' + close
+                            m1.text.symbolic = close
                             m1.text.semantic = ''
                             nextInlines.push(m1)
                         }

@@ -42,7 +42,7 @@ class InlineParser {
 
                 const open = `${' '.repeat(indent)}${fence}${lang ? lang : ''}\n`
                 const closeRaw = (codeBlock as any).close ? String((codeBlock as any).close) : ''
-                const close = closeRaw.length > 0 ? '\n' + closeRaw : ''
+                const close = closeRaw.length > 0 ? closeRaw : ''
 
                 const raw = text
                 const body = raw.length === 0 ? '\u200B' : raw
