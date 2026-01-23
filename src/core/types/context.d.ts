@@ -13,6 +13,7 @@ export type ParseBlockContext = {
     codeBlockFence: string
     codeBlockIndent: number
     currentCodeBlock: Block | null
+    codeBlockLineCount: number
 
     table?: {
         start: number

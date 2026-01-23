@@ -10,11 +10,15 @@ class AstNormalizer {
         const stripFencedPayload = (raw: string, open: string, close: string) => {
             let t = raw
 
+            let strippedOpen = false
+
             if (t.startsWith(open + '\n')) {
                 t = t.slice(open.length + 1)
+                strippedOpen = true
             } else if (t.startsWith(open)) {
                 t = t.slice(open.length)
                 if (t.startsWith('\n')) t = t.slice(1)
+                strippedOpen = true
             }
 
             if (close.length > 0) {
@@ -25,7 +29,7 @@ class AstNormalizer {
                 }
             }
 
-            if (t.startsWith('\n')) t = t.slice(1)
+            if (strippedOpen && t.startsWith('\n')) t = t.slice(1)
 
             return t
         }
@@ -371,8 +375,8 @@ class AstNormalizer {
 
         this.text = parts.join('')
 
-        // console.log('text', this.text)
-        // console.log('blocks', JSON.stringify(blocks, null, 2))
+        console.log('text', this.text)
+        console.log('blocks', JSON.stringify(blocks, null, 2))
     }
 }
 

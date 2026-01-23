@@ -1964,17 +1964,25 @@ public mergeInline(inlineAId: string, inlineBId: string): AstApplyEffect | null 
         const symbolicText = inline.text.symbolic
         const hasLeadingNewline = symbolicText.startsWith('\n')
         const contentStart = hasLeadingNewline ? 1 : 0
-        const actualPosition = Math.max(caretPosition, contentStart)
+
+        let actualPosition = caretPosition
+
+        if (hasLeadingNewline && caretPosition === 0) {
+            actualPosition = 1
+        } else {
+            actualPosition = Math.max(caretPosition, contentStart)
+        }
 
         const beforeCaret = symbolicText.slice(0, actualPosition)
         const afterCaret = symbolicText.slice(actualPosition)
+
         const newSymbolic = beforeCaret + '\n' + afterCaret
 
         inline.text.symbolic = newSymbolic
-        inline.text.semantic = newSymbolic.slice(contentStart)
+        inline.text.semantic = newSymbolic.replace(/^\u200B$/, '')
         inline.position.end = inline.position.start + newSymbolic.length
 
-        block.text = inline.text.semantic.replace(/^\u200B$/, '')
+        block.text = inline.text.semantic
         block.position.end = block.position.start + this.calculateCodeBlockLength(block)
 
         const newCaretPosition = actualPosition + 1
@@ -1984,6 +1992,7 @@ public mergeInline(inlineAId: string, inlineBId: string): AstApplyEffect | null 
             effect.caret(block.id, inline.id, newCaretPosition, 'start')
         )
     }
+
 
     private syncFencedCodeBlockFromOpenMarker(block: CodeBlock) {
         if (!block.isFenced) return
@@ -2111,17 +2120,26 @@ public mergeCodeBlockContent(blockId: string, inlineId: string, caretPosition: n
     }
 
     public splitCodeBlockFromMarker(blockId: string, inlineId: string, caretPosition: number): AstApplyEffect | null {
-        const { ast, query, parser, mutation, transform, effect } = this.context
+        const { query, transform, effect } = this.context
 
         const block = query.getBlockById(blockId) as CodeBlock
         if (!block || block.type !== 'codeBlock') return null
+        if (!block.isFenced) return null
 
         const inline = query.getInlineById(inlineId)
         if (!inline || inline.type !== 'marker') return null
 
-        const markerText = inline.text.symbolic
+        const markerInline = inline
+        const textInline = block.inlines?.find(i => i.type === 'text') ?? null
+        if (!textInline) return null
+
+        const markerText = markerInline.text.symbolic ?? ''
+        if (caretPosition < 0 || caretPosition > markerText.length) return null
+
         const before = markerText.slice(0, caretPosition)
         const after = markerText.slice(caretPosition)
+
+        const beforeNoNl = before.endsWith('\n') ? before.slice(0, -1) : before
 
         const merged = (block.inlines ?? []).map(i => i.text.symbolic).join('')
         const newText = before + '\n' + after + merged.slice(markerText.length)
@@ -2133,40 +2151,42 @@ public mergeCodeBlockContent(blockId: string, inlineId: string, caretPosition: n
             return transform.transformBlock(newText, block as any, detected, caretPosition + 1, [])
         }
 
-        const leftText = before
-        const rightText = after + merged.slice(markerText.length)
+        const m = beforeNoNl.match(/^(\s{0,3})(```+|~~~+)(.*)$/)
+        if (!m) {
+            return transform.transformBlock(newText, block as any, { type: 'paragraph' } as any, caretPosition + 1, [])
+        }
 
-        const left = {
-            ...block,
-            inlines: parser.inline.parseInline(leftText, block.id, block.type, block.position.start),
-        } as any
+        const moved = after.replace(/\n$/, '')
 
-        left.text = leftText
-        left.position = { start: block.position.start, end: block.position.start + leftText.length }
+        const current = textInline.text.semantic === '\u200B' ? '' : (textInline.text.semantic ?? '')
+        const next = moved + current
 
-        const rightId = uuid()
-        const right = {
-            id: rightId,
-            type: block.type,
-            inlines: parser.inline.parseInline(rightText, rightId, block.type, 0),
-            text: rightText,
-            position: { start: left.position.end, end: left.position.end + rightText.length },
-        } as any
+        markerInline.text.symbolic = beforeNoNl + '\n'
+        markerInline.text.semantic = ''
+        markerInline.position.end = markerInline.position.start + markerInline.text.symbolic.length
 
-        const index = ast.blocks.findIndex(b => b.id === block.id)
-        if (index === -1) return null
+        const rawInfo = m[3] ?? ''
+        const info = rawInfo.trim()
 
-        const newLeft = parser.reparseTextFragment(left.text, left.position.start)
-        const newRight = parser.reparseTextFragment(right.text, right.position.start)
+        if (info.length > 0) {
+            block.infoString = info
+            block.language = info
+        } else {
+            block.infoString = undefined
+            block.language = undefined
+        }
 
-        ast.blocks.splice(index, 1, ...newLeft, ...newRight)
+        textInline.text.symbolic = next.length === 0 ? '\u200B' : next
+        textInline.text.semantic = next
+        textInline.position.start = markerInline.position.end
+        textInline.position.end = textInline.position.start + textInline.text.symbolic.length
+
+        block.text = next
+        block.position.end = block.position.start + this.calculateCodeBlockLength(block)
 
         return effect.compose(
-            effect.update([
-                { at: 'current', target: block as any, current: newLeft[0] },
-                { at: 'next', target: newLeft[0], current: newRight[0] },
-            ]),
-            effect.caret(newRight[0].id, newRight[0].inlines[0].id, 0, 'start')
+            effect.update([{ at: 'current', target: block, current: block }]),
+            effect.caret(block.id, textInline.id, 0, 'start')
         )
     }
 

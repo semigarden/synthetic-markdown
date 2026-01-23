@@ -38,6 +38,8 @@ class Intent {
 
     public resolveSplit(context: EditContext): EditEffect {
         const caretPosition = this.caret.getPositionInInline(context.inlineElement)
+
+        console.log('resolveSplit caretPosition', caretPosition)
         
         const parentBlock = this.ast.query.getParentBlock(context.block)
 

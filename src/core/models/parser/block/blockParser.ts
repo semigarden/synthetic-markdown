@@ -21,6 +21,7 @@ class BlockParser {
             codeBlockFence: '',
             codeBlockIndent: 0,
             currentCodeBlock: null,
+            codeBlockLineCount: 0,
             table: undefined,
         }
     }
@@ -31,6 +32,7 @@ class BlockParser {
             codeBlockFence: '',
             codeBlockIndent: 0,
             currentCodeBlock: null,
+            codeBlockLineCount: 0,
             table: undefined,
         }
         this.tableParser.reset()
@@ -49,6 +51,7 @@ class BlockParser {
             this.context.codeBlockFence = ''
             this.context.codeBlockIndent = 0
             this.context.currentCodeBlock = null
+            this.context.codeBlockLineCount = 0
         }
 
         return this.tableParser.flush()
@@ -62,23 +65,30 @@ class BlockParser {
 
         if (isFencedCodeBlock && currentCodeBlock) {
             const fenceChar = codeBlockFence.charAt(0)
+          
             const closeMatch = line.match(
                 new RegExp(`^\\s{0,3}${this.escapeRegex(fenceChar)}{${codeBlockFence.length},}\\s*$`)
             )
-
+          
             if (closeMatch) {
-                const closeFenceMatch = line.match(new RegExp(`^(\\s{0,3})(${this.escapeRegex(fenceChar)}{${codeBlockFence.length},})`))
-                const closeFence = closeFenceMatch ? closeFenceMatch[2] : fenceChar.repeat(codeBlockFence.length)
+                const closeFenceMatch = line.match(
+                    new RegExp(`^(\\s{0,3})(${this.escapeRegex(fenceChar)}{${codeBlockFence.length},})`)
+                )
+                const closeFence = closeFenceMatch
+                    ? closeFenceMatch[2]
+                    : fenceChar.repeat(codeBlockFence.length)
+            
                 ;(currentCodeBlock as CodeBlock).close = closeFence
-
+            
                 currentCodeBlock.position.end = end
                 this.context.isFencedCodeBlock = false
                 this.context.codeBlockFence = ''
                 this.context.codeBlockIndent = 0
                 this.context.currentCodeBlock = null
+                this.context.codeBlockLineCount = 0
                 return null
             }
-
+        
             let contentLine = line
             if (codeBlockIndent > 0) {
                 const indentMatch = line.match(new RegExp(`^\\s{0,${codeBlockIndent}}`))
@@ -86,10 +96,15 @@ class BlockParser {
                     contentLine = line.slice(indentMatch[0].length)
                 }
             }
-
-            currentCodeBlock.text =
-                currentCodeBlock.text.length === 0 ? contentLine : currentCodeBlock.text + '\n' + contentLine
-
+          
+            const isFirst = this.context.codeBlockLineCount === 0
+            if (isFirst) {
+                currentCodeBlock.text = contentLine
+            } else {
+                currentCodeBlock.text = currentCodeBlock.text + '\n' + contentLine
+            }
+            this.context.codeBlockLineCount++
+          
             currentCodeBlock.position.end = end + 1
             return null
         }
@@ -172,6 +187,7 @@ class BlockParser {
                     this.context.isFencedCodeBlock = true
                     this.context.codeBlockFence = fence
                     this.context.currentCodeBlock = block
+                    this.context.codeBlockLineCount = 0
                 } else {
                     blocks.push(buildIndentedCodeBlock(line, start, end))
                 }
