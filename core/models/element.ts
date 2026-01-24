@@ -6,7 +6,7 @@ import Editor from './editor'
 import Render from './render/render'
 import Input from './input'
 import Intent from './intent'
-import css from '../styles/element.css'
+// import css from '../styles/element.css'
 
 class Element extends HTMLElement {
     private shadowRootElement: ShadowRoot
@@ -79,13 +79,34 @@ class Element extends HTMLElement {
         this.render.renderBlocks(this.ast.blocks, this.rootElement)
     }
 
-    private addStyles() {
-        if (this.styled) return
-        console.log("injecting styles, length =", (css as any)?.length);
-        const style = document.createElement('style')
-        style.textContent = css
-        this.shadowRootElement.appendChild(style)
+    // private addStyles() {
+    //     if (this.styled) return
+    //     console.log("injecting styles, length =", (css as any)?.length);
+    //     const style = document.createElement('style')
+    //     style.textContent = css
+    //     this.shadowRootElement.appendChild(style)
     
+    //     this.styled = true
+    // }
+
+    private getCssUrl(): string {
+        try {
+            return new URL('./index.css', import.meta.url).toString()
+        } catch {
+            return '/index.css'
+        }
+    }
+
+    private async addStyles() {
+        if (this.styled) return
+      
+        const url = this.getCssUrl()
+        const cssText = await fetch(url).then(r => r.text())
+      
+        const style = document.createElement('style')
+        style.textContent = cssText
+        this.shadowRootElement.appendChild(style)
+      
         this.styled = true
     }
 

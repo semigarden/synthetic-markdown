@@ -44,13 +44,20 @@
     "scripts": {
         "build:css": "sass styles/element.scss styles/element.css --no-source-map",
         "build:distcss": "node -e \"require('fs').copyFileSync('styles/element.css','dist/index.css')\"",
+
         "build": "npm run build:css && tsup && npm run build:distcss",
-        "dev": "npm run build:css && tsup index.ts --watch",
+
+        "watch:css": "sass styles/element.scss styles/element.css --no-source-map --watch",
+        "watch:distcss": "node -e \"const fs=require('fs'); const src='styles/element.css'; const dst='dist/index.css'; const copy=()=>{fs.mkdirSync('dist',{recursive:true}); fs.copyFileSync(src,dst); console.log('[css] copied ->',dst)}; copy(); fs.watchFile(src,{interval:200},copy);\"",
+
+        "dev": "concurrently -n TSUP,CSS,COPY \"tsup index.ts --watch --clean=false\" \"npm:watch:css\" \"npm:watch:distcss\"",
+
         "lint": "eslint .",
         "test": "vitest",
         "prepublishOnly": "npm run build"
     },
     "devDependencies": {
+        "concurrently": "^9.2.1",
         "eslint": "^9.0.0",
         "sass": "^1.97.3",
         "tsup": "^8.0.0",
