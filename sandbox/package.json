@@ -1,0 +1,18 @@
+{
+    "name": "@semigarden/synthetic-md-sandbox",
+    "private": true,
+    "version": "0.0.0",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview"
+    },
+    "dependencies": {
+        "@semigarden/synthetic-md-core": "file:../core/dist"
+    },
+    "devDependencies": {
+        "typescript": "^5.3.0",
+        "vite": "^7.3.1"
+    }
+}

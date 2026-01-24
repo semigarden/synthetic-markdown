@@ -6,7 +6,7 @@ import Editor from './editor'
 import Render from './render/render'
 import Input from './input'
 import Intent from './intent'
-import scss from '../styles/element.scss?inline'
+import css from '../styles/element.css'
 
 class Element extends HTMLElement {
     private shadowRootElement: ShadowRoot
@@ -81,9 +81,9 @@ class Element extends HTMLElement {
 
     private addStyles() {
         if (this.styled) return
-    
+        console.log("injecting styles, length =", (css as any)?.length);
         const style = document.createElement('style')
-        style.textContent = scss
+        style.textContent = css
         this.shadowRootElement.appendChild(style)
     
         this.styled = true

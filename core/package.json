@@ -1,0 +1,60 @@
+{
+    "name": "@semigarden/synthetic-md-core",
+    "version": "0.1.0",
+    "description": "Framework-agnostic real-time Markdown editor core",
+    "keywords": [
+        "markdown",
+        "editor",
+        "parser",
+        "wysiwyg",
+        "textarea",
+        "realtime",
+        "commonmark"
+    ],
+    "license": "MIT",
+    "author": {
+        "name": "semigarden",
+        "url": "https://github.com/semigarden"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/semigarden/synthetic-md.git",
+        "directory": "synthetic-md/core"
+    },
+    "bugs": {
+        "url": "https://github.com/semigarden/synthetic-md/issues"
+    },
+    "homepage": "https://github.com/semigarden/synthetic-md#readme",
+    "type": "module",
+    "main": "./dist/index.cjs.js",
+    "module": "./dist/index.esm.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.esm.js",
+            "require": "./dist/index.cjs.js"
+        },
+        "./style.css": "./dist/index.css"
+    },
+    "files": [
+        "dist"
+    ],
+    "sideEffects": false,
+    "scripts": {
+        "build:css": "sass styles/element.scss styles/element.css --no-source-map",
+        "build:distcss": "node -e \"require('fs').copyFileSync('styles/element.css','dist/index.css')\"",
+        "build": "npm run build:css && tsup && npm run build:distcss",
+        "dev": "npm run build:css && tsup index.ts --watch",
+        "lint": "eslint .",
+        "test": "vitest",
+        "prepublishOnly": "npm run build"
+    },
+    "devDependencies": {
+        "eslint": "^9.0.0",
+        "sass": "^1.97.3",
+        "tsup": "^8.0.0",
+        "typescript": "^5.3.0",
+        "vitest": "^4.0.18"
+    }
+}

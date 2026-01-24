@@ -28,20 +28,16 @@ export type Block =
     | TaskListItem
     | BlankLine
 
-export interface Paragraph extends BlockType<'paragraph'> {
-}
-
-export interface BlankLine extends BlockType<'blankLine'> {
-}
-
+export type Paragraph = BlockType<'paragraph'>
+export type BlankLine = BlockType<'blankLine'>
+export type ThematicBreak = BlockType<'thematicBreak'>
+export type HTMLBlock = BlockType<'htmlBlock'>
 export interface Heading extends BlockType<'heading'> {
     level: number
 }
-
 export interface BlockQuote extends BlockType<'blockQuote'> {
     blocks: Block[]
 }
-
 export interface CodeBlock extends BlockType<'codeBlock'> {
     language?: string
     isFenced: boolean
@@ -51,44 +47,30 @@ export interface CodeBlock extends BlockType<'codeBlock'> {
     close?: string
     infoString?: string
 }
-
 export interface List extends BlockType<'list'> {
     ordered: boolean
     listStart?: number
     tight: boolean
     blocks: Block[]
 }
-
 export interface ListItem extends BlockType<'listItem'> {
     blocks: Block[]
 }
-
-export interface ThematicBreak extends BlockType<'thematicBreak'> {
-}
-
 export interface Table extends BlockType<'table'> {
     blocks: Block[]
 }
-
 export interface TableRow extends BlockType<'tableRow'> {
     blocks: Block[]
 }
-
 export interface TableCell extends BlockType<'tableCell'> {
     blocks: Block[]
 }
-
 export interface TableHeader extends BlockType<'tableHeader'> {
     blocks: Block[]
 }
-
-export interface HTMLBlock extends BlockType<'htmlBlock'> {
-}
-
 export interface Footnote extends BlockType<'footnote'> {
     label: string
 }
-
 export interface TaskListItem extends BlockType<'taskListItem'> {
     checked: boolean
     blocks: Block[]

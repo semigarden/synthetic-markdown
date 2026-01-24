@@ -96,7 +96,7 @@ class Select {
         })
     }
 
-    private onRootFocusIn = (_e: FocusEvent) => {
+    private onRootFocusIn = () => {
         const selection = window.getSelection()
         if (!selection || selection.rangeCount === 0) {
             this.range = null

@@ -29,56 +29,33 @@ export type Inline =
     | RawHTML
     | Entity
 
-export interface Marker extends InlineType<'marker'> {
-}
-
-export interface Text extends InlineType<'text'> {
-}
-
-export interface Emphasis extends InlineType<'emphasis'> {
-}
-
-export interface Strong extends InlineType<'strong'> {
-}
-
-export interface CodeSpan extends InlineType<'codeSpan'> {
-}
-
-export interface Link extends InlineType<'link'> {
-    url: string
-    title?: string
-}
-
-export interface Autolink extends InlineType<'autolink'> {
-    url: string
-}
-
+export type Marker = InlineType<'marker'>
+export type Text = InlineType<'text'>
+export type Emphasis = InlineType<'emphasis'>
+export type Strong = InlineType<'strong'>
+export type CodeSpan = InlineType<'codeSpan'>
+export type Strikethrough = InlineType<'strikethrough'>
+export type SoftBreak = InlineType<'softBreak'>
+export type HardBreak = InlineType<'hardBreak'>
+export type RawHTML = InlineType<'rawHTML'>
 export interface Image extends InlineType<'image'> {
     url: string
     alt: string
     title?: string
 }
-
-export interface Strikethrough extends InlineType<'strikethrough'> {
+export interface Link extends InlineType<'link'> {
+    url: string
+    title?: string
 }
-
+export interface Autolink extends InlineType<'autolink'> {
+    url: string
+}
 export interface FootnoteRef extends InlineType<'footnoteRef'> {
     label: string
 }
-
 export interface Emoji extends InlineType<'emoji'> {
     name: string
 }
-
-export interface SoftBreak extends InlineType<'softBreak'> {
-}
-
-export interface HardBreak extends InlineType<'hardBreak'> {
-}
-
-export interface RawHTML extends InlineType<'rawHTML'> {
-}
-
 export interface Entity extends InlineType<'entity'> {
     decoded: string
 }
