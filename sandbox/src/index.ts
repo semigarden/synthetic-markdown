@@ -7,11 +7,11 @@ const syntheticElement = document.querySelector<any>('#synthetic')
 
 // syntheticElement.value = `# Synthetic Markdown
 
-// - [x] core linked locally
+// - [x] core linked
 // - [ ] tables
 // - [ ] code blocks
 
-// > change event should fire on edits
+// > event
 // `
 
 const DB_NAME = 'synthetic-md'
