@@ -6,7 +6,7 @@ import Editor from './editor'
 import Render from './render/render'
 import Input from './input'
 import Intent from './intent'
-import cssText from '../styles/element.css'
+import cssText from '../styles/element-css'
 
 class Element extends HTMLElement {
     private shadowRootElement: ShadowRoot

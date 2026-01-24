@@ -4,6 +4,7 @@ dist
 *.tgz
 
 styles/element.css
+styles/element-css.ts
 
 npm-debug.log*
 yarn-error.log*

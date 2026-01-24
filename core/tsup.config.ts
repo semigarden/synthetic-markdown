@@ -5,14 +5,9 @@ export default defineConfig({
     format: ['esm', 'cjs'],
     dts: true,
     clean: true,
+    bundle: true,
     target: 'es2020',
     outExtension({ format }) {
         return { js: format === "esm" ? ".esm.js" : ".cjs.js" };
     },
-    esbuildOptions(options) {
-        options.loader = {
-            ...(options.loader || {}),
-            '.css': 'text'
-        }
-    }
 })
