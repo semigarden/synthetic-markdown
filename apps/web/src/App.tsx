@@ -10,11 +10,11 @@ const App = () => {
     return (
         <div className={styles.app}>
             <div className={styles.panel}>
-                <div className={`${styles.title} ${activeTab === 'sandbox' && styles.active}`} onClick={() => setActiveTab('sandbox')}>
-                    Sandbox
-                </div>
                 <div className={`${styles.title} ${activeTab === 'guide' && styles.active}`} onClick={() => setActiveTab('guide')}>
                     Guide
+                </div>
+                <div className={`${styles.title} ${activeTab === 'sandbox' && styles.active}`} onClick={() => setActiveTab('sandbox')}>
+                    Sandbox
                 </div>
                 <div className={`${styles.title} ${activeTab === 'documentation' && styles.active}`} onClick={() => setActiveTab('documentation')}>
                     Documentation
