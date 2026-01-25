@@ -1,5 +1,5 @@
 {
-  "name": "@semigarden/synthetic-md-web",
+  "name": "@semigarden/synthetic-md-app",
   "license": "MIT",
   "author": {
     "name": "semigarden",
@@ -8,7 +8,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/semigarden/synthetic-md.git",
-    "directory": "synthetic-md/apps/web"
+    "directory": "synthetic-md/app"
   },
   "bugs": {
     "url": "https://github.com/semigarden/synthetic-md/issues"
