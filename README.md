@@ -7,7 +7,13 @@ Synthetic Markdown is a UI primitive for editing and rendering Markdown in a uni
 
 > [!TIP]
 > Try it online: <https://semigarden.github.io/synthetic-md/>
-> 
+
+> [!IMPORTANT]
+> This project is still in development. Interactions with the following blocks are not yet fully implemented:
+> - Tables
+> - Task Lists
+> - Code Blocks
+
 ---
 
 ![Synthetic Markdown](app/public/synth.gif)
