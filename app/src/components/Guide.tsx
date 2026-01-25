@@ -17,10 +17,9 @@ const Guide = ({ className = '', active = false }: { className?: string, active?
     return (
         <div className={`${styles.guide} ${active && styles.active} ${className}`}>
             <h2>Overview</h2>
-            <p>Synthetic Markdown is a lightweight <a href="https://www.markdownguide.org/" target="_blank">Markdown</a> editor built as a primitive UI element.
-                It behaves like a textarea, while rendering markdown in real time on a unified editing surface.
-                Editing and preview are combined into a single interface, removing the need for split views or mode switching.
-                The core is framework-agnostic and currently available for Vanilla JS and React, with a minimal controlled API.
+            <p>Synthetic Markdown is a lightweight editor built as a primitive UI element.
+                It behaves like a textarea while rendering in real time on a unified editing surface, removing the need for split views or mode switching.
+                Its core is framework-agnostic and currently available for Vanilla JS and React, with a minimal controlled API.
             </p>
             <hr/>
             <h2>Status</h2>
@@ -33,7 +32,7 @@ const Guide = ({ className = '', active = false }: { className?: string, active?
             </p>
             <hr/>
             <h2>Try It Online</h2>
-            <p>Visit the sandbox page and start typing to explore supported Markdown syntax.
+            <p>Visit the sandbox page and start typing to explore supported <a href="https://www.markdownguide.org/" target="_blank">Markdown</a> syntax.
             </p>
             <hr/>
             <h2>Installation</h2>
