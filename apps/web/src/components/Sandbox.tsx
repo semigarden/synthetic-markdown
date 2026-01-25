@@ -4,7 +4,7 @@ import styles from '../styles/Sandbox.module.scss'
 import { saveText, loadText } from '../utils'
 
 
-const Sandbox = () => {
+const Sandbox = ({ className = '', active = false }: { className?: string, active?: boolean }) => {
     const [text, setText] = useState('')
     
     useEffect(() => {
@@ -20,7 +20,7 @@ const Sandbox = () => {
     }
 
     return (
-        <div className={styles.sandbox}>
+        <div className={`${styles.sandbox} ${active && styles.active} ${className}`}>
             <SyntheticText className={styles.synthetic} value={text} onChange={onChange} />
         </div>
     )

@@ -17,7 +17,7 @@
             padding: 5px 0;
             cursor: pointer;
             color: #ffffff80;
-            transition: color 0.8s, border-bottom-color 0.8s;
+            transition: color 1s, border-bottom-color 1s;
             border-bottom: 1px solid transparent;
 
             &:hover {
@@ -40,5 +40,15 @@
         justify-content: flex-start;
         align-items: center;
         flex-grow: 1;
+
+        .activeTab {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            width: 80%;
+            flex-grow: 1;
+            // border-radius: 10px;
+            // padding: 10px;
+        }
     }
 }

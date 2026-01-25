@@ -1,8 +1,8 @@
 import styles from '../styles/Documentation.module.scss'
 
-const Documentation = () => {
+const Documentation = ({ className = '', active = false }: { className?: string, active?: boolean }) => {
     return (
-        <div className={styles.documentation}>
+        <div className={`${styles.documentation} ${active && styles.active} ${className}`}>
             ...
         </div>
     )

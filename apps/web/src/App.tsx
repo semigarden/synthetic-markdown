@@ -21,9 +21,15 @@ const App = () => {
                 </div>
             </div>
             <div className={styles.tabs}>
-                {activeTab === 'sandbox' && <Sandbox />}
+                <div className={styles.activeTab}>
+                    <Guide active={activeTab === 'guide'} />
+                    <Sandbox active={activeTab === 'sandbox'} />
+                    <Documentation active={activeTab === 'documentation'} />
+                </div>
+
+                {/* {activeTab === 'sandbox' && <Sandbox />}
                 {activeTab === 'guide' && <Guide />}
-                {activeTab === 'documentation' && <Documentation />}
+                {activeTab === 'documentation' && <Documentation />} */}
             </div>
         </div>
     )

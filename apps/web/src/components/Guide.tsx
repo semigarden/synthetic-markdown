@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import styles from '../styles/Guide.module.scss'
 
-const Guide = () => {
+const Guide = ({ className = '', active = false }: { className?: string, active?: boolean }) => {
     const [installTab, setInstallTab] = useState('vanilla')
     const [usageTab, setUsageTab] = useState('vanilla')
     const [copiedKey, setCopiedKey] = useState<string | null>(null)
@@ -15,7 +15,7 @@ const Guide = () => {
     }
 
     return (
-        <div className={styles.guide}>
+        <div className={`${styles.guide} ${active && styles.active} ${className}`}>
             <h2>Overview</h2>
             <p>Synthetic Markdown is a lightweight JavaScript editor built as a primitive UI element.
                 It behaves like a textarea, while rendering markdown in real time on a unified editing surface.
