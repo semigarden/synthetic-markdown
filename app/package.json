@@ -24,7 +24,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@semigarden/synthetic-md-react": "^0.0.6",
+    "@semigarden/synthetic-md-react": "*",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

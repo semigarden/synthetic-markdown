@@ -6,7 +6,7 @@ export default defineConfig({
     dts: true,
     clean: true,
     target: 'es2020',
-    external: ['react', 'react-dom', '@semigarden/synthetic-md'],
+    external: ['react', 'react/jsx-runtime', '@semigarden/synthetic-md'],
     outExtension({ format }) {
         return { js: format === "esm" ? ".esm.js" : ".cjs.js" };
     },

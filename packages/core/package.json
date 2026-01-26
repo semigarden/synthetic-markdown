@@ -45,6 +45,7 @@
         "dev": "concurrently -n TSUP,CSS,CSS-TS,COPY \"tsup src/index.ts --watch --clean=false\" \"npm:watch:css\" \"npm:watch:css-ts\" \"npm:watch:distcss\"",
         "lint": "eslint .",
         "test": "vitest",
+        "typecheck": "tsc -p tsconfig.json --noEmit",
         "prepublishOnly": "npm run build"
     },
     "devDependencies": {

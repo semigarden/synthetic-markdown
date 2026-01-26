@@ -1,0 +1,13 @@
+{
+    "private": true,
+    "workspaces": [
+        "dev/*",
+        "packages/*"
+    ],
+    "scripts": {
+        "dev": "npm -w dev/synthetic-md-dev-react run dev",
+        "build": "npm -ws run build",
+        "typecheck": "npm -ws run typecheck",
+        "lint": "npm -ws run lint"
+    }
+}
