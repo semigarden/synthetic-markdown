@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { SyntheticText } from '@semigarden/synthetic-md-react'
 import styles from '../styles/Sandbox.module.scss'
 import { saveText, loadText } from '../utils'
 
 
 const Sandbox = ({ className = '', active = false }: { className?: string, active?: boolean }) => {
+    const syntheticRef = useRef<HTMLTextAreaElement | null>(null)
     const [text, setText] = useState('')
     
     useEffect(() => {
@@ -21,7 +22,7 @@ const Sandbox = ({ className = '', active = false }: { className?: string, activ
 
     return (
         <div className={`${styles.sandbox} ${active && styles.active} ${className}`}>
-            <SyntheticText className={styles.synthetic} value={text} onChange={onChange} autofocus={true} />
+            <SyntheticText ref={syntheticRef} className={styles.synthetic} value={text} onChange={onChange} autofocus={true} />
         </div>
     )
 }

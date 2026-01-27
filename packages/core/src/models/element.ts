@@ -26,6 +26,10 @@ class Element extends HTMLElement {
 
     public autofocus = false
 
+    static get observedAttributes() {
+        return ['autofocus']
+    }
+
     constructor() {
         super()
         this.shadowRootElement = this.attachShadow({ mode: 'open' })
@@ -53,6 +57,7 @@ class Element extends HTMLElement {
         this.interaction.attach()
 
         this.renderDOM()
+        console.log('autofocus element on connectedCallback', this.autofocus)
         this.autoFocus()
     }
 
@@ -62,12 +67,21 @@ class Element extends HTMLElement {
         this.caret?.clear()
     }
 
+    attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
+        if (name === 'autofocus') {
+            this.autofocus = this.hasAttribute('autofocus')
+            console.log('autofocus element on attributeChangedCallback', this.autofocus)
+            this.autoFocus()
+        }
+    }
+
     set value(value: string) {
         if (value === this.ast.text) return
 
         if (!this.hasAcceptedExternalValue && value !== '' || value !== '' && value !== this.ast.text) {
             this.ast.setText(value)
             this.renderDOM()
+            console.log('autofocus element on set value', this.autofocus)
             this.autoFocus()
             this.hasAcceptedExternalValue = true
         }
@@ -113,6 +127,7 @@ class Element extends HTMLElement {
     }
 
     private autoFocus() {
+        console.log('autofocus element', this.autofocus)
         if (this.autofocus && this.rootElement && this.select) this.select.autoFocus()
     }
 }
