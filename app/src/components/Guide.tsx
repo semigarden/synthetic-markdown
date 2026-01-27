@@ -72,7 +72,7 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
 
     return (
         <div className={`${styles.guide} ${active && styles.active} ${className}`}>
-            <h2>Overview</h2>
+            <h2 className={styles.overview}>Overview</h2>
             <p>Synthetic Markdown is a lightweight editor built as a primitive UI element.
                 It behaves like a textarea while rendering in real time on a unified editing surface, removing the need for split views or mode switching.
                 Its core is framework-agnostic and currently available for Vanilla JS and React, with a minimal controlled API.
