@@ -24,7 +24,7 @@ class Element extends HTMLElement {
     private styled = false
     private hasAcceptedExternalValue = false
 
-    public autofocus = false
+    public hasAutofocus = false
 
     static get observedAttributes() {
         return ['autofocus']
@@ -35,9 +35,45 @@ class Element extends HTMLElement {
         this.shadowRootElement = this.attachShadow({ mode: 'open' })
     }
 
+    get value() {
+        return this.ast.text
+    }
+
+    set value(value: string) {
+        if (value === this.ast.text) return
+
+        if (!this.hasAcceptedExternalValue && value !== '' || value !== '' && value !== this.ast.text) {
+            this.ast.setText(value)
+            this.renderDOM()
+            this.setAutoFocus()
+            this.hasAcceptedExternalValue = true
+        }
+    }
+
+    get autofocus() {
+        return this.hasAutofocus
+    }
+
+    set autofocus(value: any) {
+        const on = value === true || value === '' || value === 'true' || value === 1 || value === '1'
+        const currentlyOn = this.hasAttribute('autofocus')
+
+        if (on && !currentlyOn) this.setAttribute('autofocus', '')
+        if (!on && currentlyOn) this.removeAttribute('autofocus')
+
+        this.hasAutofocus = on
+    }
+
+    attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
+        if (name === 'autofocus') {
+            this.hasAutofocus = this.hasAttribute('autofocus')
+            this.setAutoFocus()
+        }
+    }
+
     connectedCallback() {
         const attrValue = this.getAttribute('value') ?? ''
-        this.autofocus = this.hasAttribute('autofocus')
+        this.hasAutofocus = this.hasAttribute('autofocus')
 
         this.ast.setText(attrValue)
 
@@ -57,38 +93,13 @@ class Element extends HTMLElement {
         this.interaction.attach()
 
         this.renderDOM()
-        console.log('autofocus element on connectedCallback', this.autofocus)
-        this.autoFocus()
+        this.setAutoFocus()
     }
 
     disconnectedCallback() {
         this.interaction?.detach()
         this.select?.detach()
         this.caret?.clear()
-    }
-
-    attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
-        if (name === 'autofocus') {
-            this.autofocus = this.hasAttribute('autofocus')
-            console.log('autofocus element on attributeChangedCallback', this.autofocus)
-            this.autoFocus()
-        }
-    }
-
-    set value(value: string) {
-        if (value === this.ast.text) return
-
-        if (!this.hasAcceptedExternalValue && value !== '' || value !== '' && value !== this.ast.text) {
-            this.ast.setText(value)
-            this.renderDOM()
-            console.log('autofocus element on set value', this.autofocus)
-            this.autoFocus()
-            this.hasAcceptedExternalValue = true
-        }
-    }
-
-    get value() {
-        return this.ast.text
     }
 
     private renderDOM() {
@@ -126,9 +137,8 @@ class Element extends HTMLElement {
         }))
     }
 
-    private autoFocus() {
-        console.log('autofocus element', this.autofocus)
-        if (this.autofocus && this.rootElement && this.select) this.select.autoFocus()
+    private setAutoFocus() {
+        if (this.hasAutofocus && this.rootElement && this.select) this.select.autoFocus()
     }
 }
 
