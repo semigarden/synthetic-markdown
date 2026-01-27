@@ -12,52 +12,39 @@
         max-width: 1200px;
         display: flex;
         justify-content: center;
-        gap: 30px;
+        gap: 20px;
         padding: 20px;
+        font-weight: 500;
+        font-size: 16px;
 
         .title {
             display: flex;
             align-items: center;
-            gap: 5px;
-            padding: 5px 0;
+            gap: 10px;
+            padding: 8px 12px;
             cursor: pointer;
-            color: var(--color-text-inactive);
-            transition: color 1s, border-bottom-color 1s;
+            color: var(--color-button-text);
+            transition: color 1s, border-color 1s;
             border-bottom: 1px solid transparent;
 
             .icon {
                 width: 20px;
                 height: 20px;
                 object-fit: contain;
-                filter: invert(0.5);
+                filter: invert(1);
                 transition: filter 1s;
 
                 &.theme {
                     transform: rotateY(180deg);
-                    filter: invert(0.5);
                 }
             }
 
             &:hover {
-                border-bottom-color: var(--color-text);
-                color: var(--color-text);
-
-                .icon {
-                    filter: invert(1);
-                }
+                border-color: var(--color-button-text);
             }
 
             &.active {
-                border-bottom-color: var(--color-text);
-                color: var(--color-text);
-
-                .icon {
-                    filter: invert(1);
-                }
-
-                .icon.theme {
-                    filter: invert(0);
-                }
+                border-color: var(--color-button-text);
             }
         }
     }
@@ -77,43 +64,23 @@
             flex-direction: column;
             width: 80%;
             flex-grow: 1;
-            // border-radius: 10px;
-            // padding: 10px;
         }
     }
 
     @media (prefers-color-scheme: light) {
         .panel .title {
-            color: var(--color-text-inactive);
-
+            color: var(--color-button-text);
+    
             &:hover {
-                border-bottom-color: var(--color-text);
-                color: var(--color-text);
-
-                .icon {
-                    filter: invert(0);
-                }
-    
-                .icon.theme {
-                    filter: invert(0);
-                }
+                border-color: var(--color-button-text);
             }
-
+    
             &.active {
-                border-bottom-color: var(--color-text);
-                color: var(--color-text);
-
-                .icon {
-                    filter: invert(0);
-                }
-            }
-
-            .icon {
-                filter: invert(0.5);
+                border-color: var(--color-button-text);
             }
     
-            .icon.theme {
-                filter: invert(0.5);
+            .icon {
+                filter: invert(0);
             }
         }
     }
@@ -121,36 +88,18 @@
 
 html[data-theme="light"] .app {
     .panel .title {
-        color: var(--color-text-inactive);
+        color: var(--color-button-text);
 
         &:hover {
-            border-bottom-color: var(--color-text);
-            color: var(--color-text);
-
-            .icon {
-                filter: invert(0);
-            }
-
-            .icon.theme {
-                filter: invert(0);
-            }
+            border-color: var(--color-button-text);
         }
 
         &.active {
-            border-bottom-color: var(--color-text);
-            color: var(--color-text);
-
-            .icon {
-                filter: invert(0);
-            }
+            border-color: var(--color-button-text);
         }
 
         .icon {
-            filter: invert(0.5);
-        }
-
-        .icon.theme {
-            filter: invert(0.5);
+            filter: invert(0);
         }
     }
 }

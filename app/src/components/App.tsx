@@ -66,10 +66,10 @@ const App = ({ tab = 'guide' }: { tab?: 'guide' | 'sandbox' }) => {
         <div className={styles.app}>
             <div className={styles.panel}>
                 <div className={`${styles.title} ${activeTab === 'guide' && styles.active}`} onClick={() => go('guide')}>
-                    <img className={styles.icon} src={guide} alt="guide" /> Guide
+                    Guide
                 </div>
                 <div className={`${styles.title} ${activeTab === 'sandbox' && styles.active}`} onClick={() => go('sandbox')}>
-                    <img className={styles.icon} src={sandbox} alt="sandbox" /> Sandbox
+                    Sandbox
                 </div>
                 <div className={`${styles.title}`} onClick={() => window.open('https://github.com/semigarden/synthetic-md#readme', '_blank')}>
                     <img className={styles.icon} src={github} alt="github" /> GitHub
