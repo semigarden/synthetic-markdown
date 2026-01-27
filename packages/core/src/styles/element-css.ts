@@ -292,7 +292,12 @@ const cssText = `@charset "UTF-8";
 }
 
 .link, .autolink {
+  color: #646cff;
+  text-decoration: inherit;
   cursor: pointer;
+}
+.link:hover, .autolink:hover {
+  color: #535bf2;
 }
 
 .caret {

@@ -10,9 +10,13 @@
     --color-text:             #d4cfee;
     --color-muted:            #8b85a3;
     --color-accent:           #4a9eff;
+    --color-accent-hover:     #74b5ff;
     --color-code-bg:          #1a1625;
     --color-blockquote-border: #4a9eff;
     --color-selection-bg:     #2a2340;
+    --color-divider:          rgba(255,255,255,0.18);
+    --color-caret:            #ffffff;
+    --color-focus-bg:         rgba(74,158,255,0.12);
 }
 
 .element {
@@ -23,9 +27,6 @@
     height: 100%;
     align-items: stretch;
     justify-content: flex-start;
-
-    // background-color: var(--color-background);
-    // color: var(--color-text);
 
     resize: none;
     border: none;
@@ -373,14 +374,20 @@
 }
 
 .link, .autolink {
+    color: var(--color-accent);
+    text-decoration: inherit;
     cursor: pointer;
+
+    &:hover {
+        color: var(--color-accent-hover);
+    }
 }
 
 .caret {
     position: absolute;
     width: 1px;
     height: 1em;
-    background-color: #fff;
+    background-color: var(--color-caret);
     animation: blink 1s step-end infinite;
     pointer-events: none;
     z-index: 10;
@@ -392,7 +399,7 @@
     word-break: break-word;
 
     &.focus {
-        background: rgba(0, 120, 255, 0.1);
+        background: var(--color-focus-bg);
         border-radius: 3px;
         padding: 0 2px;
         min-height: 1.2em;

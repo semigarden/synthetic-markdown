@@ -38,7 +38,6 @@ function renderInline(inline: Inline): HTMLElement {
 
     inlineElement.id = inline.id
     inlineElement.dataset.inlineId = inline.id
-    // inlineElement.contentEditable = 'false'
     inlineElement.classList.add('inline', inline.type)
 
     const symbolicText = document.createElement('span')
@@ -55,6 +54,7 @@ function renderInline(inline: Inline): HTMLElement {
     if (inline.type === 'link') {
         ;(inlineElement as HTMLAnchorElement).href = inline.url.replace(/[\u200B\u200C\u200D\uFEFF]/g, '') || ''
         ;(inlineElement as HTMLAnchorElement).title = inline.title ? `${inline.title}\nCtrl + Click to follow link` : 'Ctrl + Click to follow link'
+        inlineElement.classList.add('link')
     }
 
     if (inline.type === 'autolink') {
