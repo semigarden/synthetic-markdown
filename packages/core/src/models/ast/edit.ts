@@ -49,6 +49,7 @@ class Edit {
             (block.type === 'paragraph' && inListItem && taskPrefix)
         ) {
             if (detectedBlock.type === 'listItem' || detectedBlock.type === 'taskListItem' || detectedBlock.type === 'blockQuote') caretPosition = 0
+            if (detectedBlock.type === 'codeBlock') return transform.toCodeBlock(newText, block, inline, caretPosition)
             return transform.transformBlock(newText, block, detectedBlock, caretPosition)
         }
     

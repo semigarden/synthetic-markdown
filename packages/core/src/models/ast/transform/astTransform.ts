@@ -1,4 +1,4 @@
-import type { AstApplyEffect, Block, DetectedBlock, Inline, TableCell, TableHeader, List, ListItem, TaskListItem, BlockQuote } from '../../../types'
+import type { AstApplyEffect, Block, DetectedBlock, Inline, TableCell, TableHeader, List, ListItem, TaskListItem, BlockQuote, CodeBlock } from '../../../types'
 import type { AstContext } from '../astContext'
 
 class AstTransform {
@@ -148,6 +148,34 @@ class AstTransform {
             effect.update([{ at: 'current', target: oldBlock, current: newBlocks[0] }], removedBlocks),
             effect.caret(inline.blockId, inline.id, caretPosition ?? inline.position.start, 'start')
         )
+    }
+
+    toCodeBlock(text: string, block: Block, inline: Inline, caretPosition: number): AstApplyEffect | null {
+        const { ast, query, parser, effect } = this.ctx
+
+        const blocks = query.flattenBlocks(ast.blocks)
+        const entry = blocks.find(b => b.block.id === block.id)
+        if (!entry) return null
+
+    
+        const firstCodeBlockEntry = blocks.find(b => b.index >= entry.index && b.block.type === 'codeBlock')
+
+        const removedBlocks = blocks.slice(entry.index, firstCodeBlockEntry ? firstCodeBlockEntry.index + 1 : ast.blocks.length).map(b => b.block)
+        const sliceTo = firstCodeBlockEntry ? firstCodeBlockEntry.block.position.start : this.ctx.ast.text.length
+        const newText = text + ast.text.slice(block.position.end, sliceTo)
+
+        const newBlocks = parser.reparseTextFragment(newText, block.position.start)
+        if (newBlocks.length === 0) return null
+
+        const oldBlock = block
+        ast.blocks.splice(entry.index, 1, ...newBlocks)
+
+        return effect.compose(
+            effect.update([{ at: 'current', target: oldBlock, current: newBlocks[0] }], removedBlocks),
+            effect.caret(newBlocks[0].id, newBlocks[0].inlines[0].id, newBlocks[0].inlines[0].position.end, 'start')
+        )
+
+        return null
     }
 }
 
