@@ -24,48 +24,50 @@ class Render {
         return this.blockRender.renderBlock(block, parentElement, renderAt, targetBlock)
     }
 
-    public apply(effect: RenderEffect) {
-        switch (effect.type) {
-            case 'update':
-                const removedIds = new Set<string>()
-                effect.render.remove.forEach(block => {
-                    if (removedIds.has(block.id)) return
-                    const removeBlockElement = this.rootElement.querySelector(
-                        `[data-block-id="${block.id}"]`
-                    ) as HTMLElement | null
-                    if (removeBlockElement) {
-                        removeBlockElement.remove()
-                        removedIds.add(block.id)
-                    }
-                })
+    public apply(effects: RenderEffect[]) {
+        for (const effect of effects) {
+            switch (effect.type) {
+                case 'update':
+                    const removedIds = new Set<string>()
+                    effect.render.remove.forEach(block => {
+                        if (removedIds.has(block.id)) return
+                        const removeBlockElement = this.rootElement.querySelector(
+                            `[data-block-id="${block.id}"]`
+                        ) as HTMLElement | null
+                        if (removeBlockElement) {
+                            removeBlockElement.remove()
+                            removedIds.add(block.id)
+                        }
+                    })
 
-                effect.render.insert.forEach(render => {
-                    this.renderBlock(render.current, this.rootElement, render.at, render.target)
-                })
+                    effect.render.insert.forEach(render => {
+                        this.renderBlock(render.current, this.rootElement, render.at, render.target)
+                    })
 
-                normalizeTables(this.rootElement)
-                break
-            case 'input':
-                console.log('input', effect.input)
-                effect.input.forEach(input => {
-                    const block = this.rootElement.querySelector(`[data-block-id="${input.blockId}"]`) as HTMLElement | null
-                    if (!block) return
+                    normalizeTables(this.rootElement)
+                    break
+                case 'input':
+                    console.log('input', effect.input)
+                    effect.input.forEach(input => {
+                        const block = this.rootElement.querySelector(`[data-block-id="${input.blockId}"]`) as HTMLElement | null
+                        if (!block) return
 
-                    const inline = block.querySelector(`[data-inline-id="${input.inlineId}"]`) as HTMLElement | null
-                    if (!inline) return
-                
+                        const inline = block.querySelector(`[data-inline-id="${input.inlineId}"]`) as HTMLElement | null
+                        if (!inline) return
+                    
 
-                    switch (input.type) {
-                        case 'codeBlockMarker':
-                            block.setAttribute('data-language', input.language)
-                            inline.textContent = input.text
-                            break
-                        case 'text':
-                            inline.textContent = input.text
-                            break
-                    }
-                })
-                break
+                        switch (input.type) {
+                            case 'codeBlockMarker':
+                                block.setAttribute('data-language', input.language)
+                                inline.textContent = input.text
+                                break
+                            case 'text':
+                                inline.textContent = input.text
+                                break
+                        }
+                    })
+                    break
+            }
         }
     }
 }

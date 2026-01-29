@@ -62,18 +62,40 @@ export type RenderInput =
         inlineId: string
     }
 
+export type RenderDelete = 
+    | {
+        type: 'block'
+        blockId: string
+    }
+    | {
+        type: 'inline'
+        blockId: string
+        inlineId: string
+    }
+
 export type Render = {
     remove: Block[]
     insert: RenderInsert[]
 }
 
-export type RenderEffect = {
-    type: 'update'
-    render: Render
-} | {
-    type: 'input'
-    input: RenderInput[]
+export type RenderEffect = 
+    | {
+        type: 'update'
+        render: {
+            remove: Block[]
+            insert: RenderInsert[]
+        }
+    } | {
+        type: 'input'
+        input: RenderInput[]
+    } | {
+        type: 'deleteBlock'
+        deleteBlock: RenderDelete[]
+    } | {
+        type: 'deleteInline'
+        deleteInline: RenderDelete[]
 }
+
 
 export type CaretEffect = { 
     type: 'restore'
@@ -86,7 +108,7 @@ export type CaretEffect = {
 }
 
 export type AstApplyEffect = {
-    renderEffect: RenderEffect
+    renderEffect: RenderEffect[]
     caretEffect: CaretEffect
 }
 

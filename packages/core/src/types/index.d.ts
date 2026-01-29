@@ -41,6 +41,7 @@ export type {
     Executors,
     RenderInsert,
     RenderInput,
+    RenderDelete,
     Render,
     RenderEffect,
     CaretEffect,

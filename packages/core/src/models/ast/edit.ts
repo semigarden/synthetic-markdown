@@ -73,7 +73,7 @@ class Edit {
         newInlines.forEach((i: Inline) => (i.blockId = block.id))
 
         return effect.compose(
-            effect.update([{ at: 'current', target: block, current: block }]),
+            [effect.update([{ at: 'current', target: block, current: block }])],
             effect.caret(block.id, newInline.id, position, 'start')
         )
     }
@@ -98,10 +98,10 @@ class Edit {
         ast.blocks.splice(index, 1, ...newLeft, ...newRight)
 
         return effect.compose(
-            effect.update([
+            [effect.update([
                 { at: 'current', target: left, current: newLeft[0] },
                 { at: 'next', target: newLeft[0], current: newRight[0] },
-            ]),
+            ])],
             effect.caret(newRight[0].id, newRight[0].inlines[0].id, 0, 'start')
         )
     }
@@ -231,7 +231,7 @@ class Edit {
                     const caretPos = 0
 
                     return effect.compose(
-                        effect.update([{ at: 'current', target: p, current: p }], [quote]),
+                        [effect.update([{ at: 'current', target: p, current: p }], [quote])],
                         effect.caret(caretBlock.id, caretInline.id, caretPos, 'start')
                     )
                 }
@@ -248,7 +248,7 @@ class Edit {
                 const caretPos = 0
 
                 return effect.compose(
-                    effect.update([{ at: 'current', target: caretBlock, current: caretBlock }], [quote]),
+                    [effect.update([{ at: 'current', target: caretBlock, current: caretBlock }], [quote])],
                     effect.caret(caretBlock.id, caretInline.id, caretPos, 'start')
                 )
             }
@@ -285,7 +285,7 @@ class Edit {
         }
 
         return effect.compose(
-            effect.update([{ at: 'current', target: leftBlock, current: leftBlock }], removedBlocks),
+            [effect.update([{ at: 'current', target: leftBlock, current: leftBlock }], removedBlocks)],
             effect.caret(leftBlock.id, mergedInline.id, caretPositionInMergedInline, 'start')
         )
     }
@@ -354,10 +354,10 @@ class Edit {
         list.blocks.splice(index + 1, 0, newListItem)
 
         return effect.compose(
-            effect.update([
+            [effect.update([
                 { at: 'current', target: listItem, current: listItem },
                 { at: 'next', target: listItem, current: newListItem },
-            ]),
+            ])],
             effect.caret(newListItem.blocks[0].id, newListItem.blocks[0].inlines[0].id, 0, 'start')
         )
     }
@@ -427,10 +427,10 @@ class Edit {
         list.blocks.splice(index + 1, 0, newListItem)
 
         return effect.compose(
-            effect.update([
+            [effect.update([
                 { at: 'current', target: taskListItem, current: taskListItem },
                 { at: 'next', target: taskListItem, current: newListItem },
-            ]),
+            ])],
             effect.caret(newListItem.blocks[0].id, newListItem.blocks[0].inlines[0].id, 0, 'start')
         )
     }
@@ -484,10 +484,10 @@ class Edit {
                 if (!i0) return null
     
                 return effect.compose(
-                    effect.update([
+                    [effect.update([
                         { at: 'current', target: q, current: q },
                         { at: 'current', target: rootQuote, current: rootQuote },
-                    ] as any[]),
+                    ])],
                     effect.caret(para.id, i0.id, 0, 'start')
                 )
             }
@@ -546,7 +546,7 @@ class Edit {
         }
     
         return effect.compose(
-            effect.update(updates),
+            [effect.update(updates)],
             effect.caret(rightParagraph.id, rightInline.id, 0, 'start')
         )
     }    
@@ -587,7 +587,7 @@ class Edit {
         sublist.blocks.push(listItem)
 
         return effect.compose(
-            effect.update([{ at: 'current', target: prev, current: prev }], [{ ...listItem, id: oldId }]),
+            [effect.update([{ at: 'current', target: prev, current: prev }], [{ ...listItem, id: oldId }])],
             effect.caret(listItem.id, listItem.blocks[0].inlines[0].id, 0, 'start')
         )
     }
@@ -643,7 +643,7 @@ class Edit {
         }
 
         return effect.compose(
-            effect.update(updatedTargets, []),
+            [effect.update(updatedTargets, [])],
             effect.caret(taskListItem.id, firstInline.id, 0, 'start')
         )
     }
@@ -684,7 +684,7 @@ class Edit {
         blockQuote.blocks.splice(index, 1, nested)
 
         return effect.compose(
-            effect.update([{ at: 'current', target: blockQuote, current: blockQuote }]),
+            [effect.update([{ at: 'current', target: blockQuote, current: blockQuote }])],
             effect.caret(block.id, inlineId, 0, 'start')
         )
     }
@@ -871,7 +871,7 @@ class Edit {
             if (!focusInline) return null
 
             return effect.compose(
-                effect.update(insertEffects),
+                [effect.update(insertEffects)],
                 effect.caret(focusBlock.id, focusInline.id, 0, 'start')
             )
         }
@@ -892,7 +892,7 @@ class Edit {
         parentList.blocks.splice(parentIndex + 1, 0, listItem)
 
         return effect.compose(
-            effect.update([{ at: 'current', target: parentListItem, current: parentListItem }, { at: 'next', target: parentListItem, current: listItem }]),
+            [effect.update([{ at: 'current', target: parentListItem, current: parentListItem }, { at: 'next', target: parentListItem, current: listItem }])],
             effect.caret(listItem.id, listItem.blocks[0].inlines[0].id, 0, 'start')
         )
     }
@@ -1079,7 +1079,7 @@ class Edit {
             if (!focusInline) return null
 
             return effect.compose(
-                effect.update(insertEffects),
+                [effect.update(insertEffects)],
                 effect.caret(focusBlock.id, focusInline.id, 0, 'start')
             )
         }
@@ -1100,7 +1100,7 @@ class Edit {
         parentList.blocks.splice(parentIndex + 1, 0, taskListItem)
 
         return effect.compose(
-            effect.update([{ at: 'current', target: parentTaskListItem, current: parentTaskListItem }, { at: 'next', target: parentTaskListItem, current: taskListItem }]),
+            [effect.update([{ at: 'current', target: parentTaskListItem, current: parentTaskListItem }, { at: 'next', target: parentTaskListItem, current: taskListItem }])],
             effect.caret(taskListItem.id, taskListItem.blocks[0].inlines[0].id, 0, 'start')
         )
     }
@@ -1170,7 +1170,7 @@ class Edit {
             }
 
             return effect.compose(
-                effect.update(inserts, [liftedBlock]),
+                [effect.update(inserts, [liftedBlock])],
                 effect.caret(liftedBlock.id, inlineId, 0, 'start')
             )
         }
@@ -1193,7 +1193,7 @@ class Edit {
         }
 
         return effect.compose(
-            effect.update(inserts, [liftedBlock]),
+            [effect.update(inserts, [liftedBlock])],
             effect.caret(liftedBlock.id, inlineId, 0, 'start')
         )
     }
@@ -1236,7 +1236,7 @@ class Edit {
         ast.blocks.splice(headerIndex, 2, table)
 
         return effect.compose(
-            effect.update([{ at: 'current', target: headerBlock, current: table }], [headerBlock, dividerBlock]),
+            [effect.update([{ at: 'current', target: headerBlock, current: table }], [headerBlock, dividerBlock])],
             effect.caret(firstParagraph.id, inline.id, inline.position.end, 'start')
         )
     }
@@ -1295,7 +1295,7 @@ class Edit {
                 if (!focusInline) return null
 
                 return effect.compose(
-                    effect.update([{ at: 'current', target: table, current: paragraph }], [table]),
+                    [effect.update([{ at: 'current', target: table, current: paragraph }], [table])],
                     effect.caret(paragraph.id, focusInline.id, 0, 'start')
                 )
             }
@@ -1332,7 +1332,7 @@ class Edit {
         }
 
         return effect.compose(
-            effect.update([{ at: 'current', target: prevCell, current: prevCell }], blocksToRemove),
+            [effect.update([{ at: 'current', target: prevCell, current: prevCell }], blocksToRemove)],
             effect.caret(prevParagraph.id, caretInline.id, position, 'start')
         )
     }
@@ -1388,7 +1388,7 @@ class Edit {
         if (!focusInline) return null
 
         return effect.compose(
-            effect.update([{ at: 'current', target: row, current: row }]),
+            [effect.update([{ at: 'current', target: row, current: row }])],
             effect.caret(newParagraph.id, focusInline.id, 0, 'start')
         )
     }
@@ -1447,7 +1447,7 @@ class Edit {
         if (!focusInline) return null
 
         return effect.compose(
-            effect.update([{ at: 'next', target: row, current: newRow }]),
+            [effect.update([{ at: 'next', target: row, current: newRow }])],
             effect.caret(newParagraph.id, focusInline.id, 0, 'start')
         )
     }
@@ -1506,7 +1506,7 @@ class Edit {
         if (!focusInline) return null
 
         return effect.compose(
-            effect.update([{ at: 'previous', target: row, current: newRow }]),
+            [effect.update([{ at: 'previous', target: row, current: newRow }])],
             effect.caret(newParagraph.id, focusInline.id, 0, 'start')
         )
     }
@@ -1558,7 +1558,7 @@ class Edit {
         if (!focusInline) return null
 
         return effect.compose(
-            effect.update([{ at: 'current', target: cell, current: cell }]),
+            [effect.update([{ at: 'current', target: cell, current: cell }])],
             effect.caret(newBlock.id, focusInline.id, 0, 'start')
         )
     }
@@ -1638,7 +1638,7 @@ class Edit {
         if (!focusInline) return null
 
         return effect.compose(
-            effect.update([{ at: 'current', target: cell, current: cell }, { at: 'next', target: cell, current: newCell }]),
+            [effect.update([{ at: 'current', target: cell, current: cell }, { at: 'next', target: cell, current: newCell }])],
             effect.caret(newParagraph.id, focusInline.id, 0, 'start')
         )
     }
@@ -1668,7 +1668,7 @@ class Edit {
         if (!caretInline) return null
 
         return effect.compose(
-            effect.update([{ at: 'current', target: cell, current: cell }]),
+            [effect.update([{ at: 'current', target: cell, current: cell }])],
             effect.caret(previousBlock.id, caretInline.id, position, 'start')
         )
     }
@@ -1707,7 +1707,7 @@ class Edit {
         targetBlock.text = targetBlock.inlines.map(i => i.text.symbolic).join('')
 
         return effect.compose(
-            effect.update([{ at: 'current', target: cell, current: cell }]),
+            [effect.update([{ at: 'current', target: cell, current: cell }])],
             effect.caret(targetBlock.id, leftInline.id, caretPosition, 'start')
         )
     }
@@ -1737,7 +1737,7 @@ class Edit {
         if (!focusInline) return null
 
         return effect.compose(
-            effect.update([{ at: 'previous', target: table, current: paragraph }]),
+            [effect.update([{ at: 'previous', target: table, current: paragraph }])],
             effect.caret(paragraph.id, focusInline.id, 0, 'start')
         )
     }
@@ -1767,7 +1767,7 @@ class Edit {
         if (!focusInline) return null
 
         return effect.compose(
-            effect.update([{ at: 'next', target: table, current: paragraph }]),
+            [effect.update([{ at: 'next', target: table, current: paragraph }])],
             effect.caret(paragraph.id, focusInline.id, 0, 'start')
         )
     }
@@ -1840,7 +1840,7 @@ class Edit {
         }))
 
         return effect.compose(
-            effect.update(updateEffects),
+            [effect.update(updateEffects)],
             effect.caret(lastBlock.id, lastInline.id, lastBlock.text.length, 'start')
         )
     }
@@ -1934,7 +1934,7 @@ class Edit {
         })
 
         return effect.compose(
-            effect.update(updateEffects, blocksToRemove),
+            [effect.update(updateEffects, blocksToRemove)],
             effect.caret(lastBlock.id, lastInline.id, lastBlock.text.length, 'start')
         )
     }
@@ -1946,7 +1946,7 @@ class Edit {
         if (!block || block.type !== 'taskListItem') return null
 
         block.checked = !block.checked
-        return effect.compose(effect.update([{ at: 'current', target: block, current: block }]), effect.caret(blockId, inlineId, caretPosition, 'start'))
+        return effect.compose([effect.update([{ at: 'current', target: block, current: block }])], effect.caret(blockId, inlineId, caretPosition, 'start'))
     }
 
     public inputCodeBlock(text: string, blockId: string, inlineId: string, caretPosition: number): AstApplyEffect | null {
@@ -1974,7 +1974,7 @@ class Edit {
             console.log('newBlocks', JSON.stringify(newBlocks, null, 2))
 
             return effect.compose(
-                effect.input([{ type: 'text', text, blockId: block.id, inlineId: inline.id }]),
+                [effect.input([{ type: 'text', text, blockId: block.id, inlineId: inline.id }])],
                 effect.caret(block.id, inline.id, caretPosition, 'start')
             )
         }
@@ -1998,26 +1998,28 @@ class Edit {
                         block.position.end = block.position.start + block.text.length
 
                         return effect.compose(
-                            effect.input([{ type: 'text', text, blockId: block.id, inlineId: inline.id }]),
+                            [effect.input([{ type: 'text', text, blockId: block.id, inlineId: inline.id }])],
                             effect.caret(block.id, inline.id, caretPosition, 'start')
                         )
+                    } else {
+                        // exit code block
                     }
+                } else {
+                    inline.text.symbolic = text
+                    inline.text.semantic = newText
+                    inline.position.end = inline.position.start + newText.length
+
+                    block.language = newText
+                    block.text = block.inlines.map(i => i.text.symbolic).join('')
+                    block.position.end = block.position.start + block.text.length
+
+                    return effect.compose(
+                        [effect.input([
+                            { type: 'codeBlockMarker', text: text, language: newText, blockId: block.id, inlineId: inline.id },
+                        ])],
+                        effect.caret(block.id, inline.id, caretPosition, 'start')
+                    )
                 }
-
-                inline.text.symbolic = text
-                inline.text.semantic = newText
-                inline.position.end = inline.position.start + newText.length
-
-                block.language = newText
-                block.text = block.inlines.map(i => i.text.symbolic).join('')
-                block.position.end = block.position.start + block.text.length
-
-                return effect.compose(
-                    effect.input([
-                        { type: 'codeBlockMarker', text: text, language: newText, blockId: block.id, inlineId: inline.id },
-                    ]),
-                    effect.caret(block.id, inline.id, caretPosition, 'start')
-                )
             }
 
             if (inline === block.inlines[block.inlines.length - 1]) {
@@ -2037,8 +2039,30 @@ class Edit {
                     console.log('mark', JSON.stringify(block, null, 2))
 
                     return effect.compose(
-                        effect.input([{ type: 'text', text, blockId: block.id, inlineId: inline.id }]),
+                        [effect.input([{ type: 'text', text, blockId: block.id, inlineId: inline.id }])],
                         effect.caret(block.id, inline.id, caretPosition, 'start')
+                    )
+                } else {
+                    const inlineText = block.inlines.find(i => i.type === 'text')
+                    if (!inlineText) return null
+
+                    inlineText.text.symbolic += markerText
+                    inlineText.text.semantic += markerText
+                    inlineText.position.end = inlineText.position.start + markerText.length
+
+                    delete block.close
+                    block.inlines.pop()
+                    block.text = block.inlines.map(i => i.text.symbolic).join('')
+                    block.position.end = block.position.start + block.text.length
+
+                    console.log('mark', JSON.stringify(block, null, 2))
+
+                    return effect.compose(
+                        [
+                            effect.input([{ type: 'text', text: inlineText.text.symbolic, blockId: block.id, inlineId: inlineText.id }]),
+                            effect.deleteInline([{ type: 'inline', blockId: block.id, inlineId: inline.id }]),
+                        ],
+                        effect.caret(block.id, inlineText.id, inlineText.position.end, 'start')
                     )
                 }
             }
@@ -2216,7 +2240,7 @@ class Edit {
         const newCaretPosition = actualPosition + 1
 
         return effect.compose(
-            effect.update([{ at: 'current', target: block, current: block }]),
+            [effect.update([{ at: 'current', target: block, current: block }])],
             effect.caret(block.id, inline.id, newCaretPosition, 'start')
         )
     }
@@ -2311,7 +2335,7 @@ class Edit {
             block.position.end = block.position.start + this.calculateCodeBlockLength(block)
 
             return effect.compose(
-                effect.update([{ at: 'current', target: block, current: block }]),
+                [effect.update([{ at: 'current', target: block, current: block }])],
                 effect.caret(block.id, inline.id, newCaretPosition, 'start')
             )
         }
@@ -2333,7 +2357,7 @@ class Edit {
             const newCaretPosition = caretPosition - 1
 
             return effect.compose(
-                effect.update([{ at: 'current', target: block, current: block }]),
+                [effect.update([{ at: 'current', target: block, current: block }])],
                 effect.caret(block.id, inline.id, newCaretPosition, 'start')
             )
         }
@@ -2413,7 +2437,7 @@ class Edit {
         block.position.end = block.position.start + this.calculateCodeBlockLength(block)
 
         return effect.compose(
-            effect.update([{ at: 'current', target: block, current: block }]),
+            [effect.update([{ at: 'current', target: block, current: block }])],
             effect.caret(block.id, textInline.id, atOpenNewline ? 1 : 0, 'start')
         )
     }
@@ -2440,7 +2464,7 @@ class Edit {
         })
 
         return effect.compose(
-            effect.update(effects, [oldBlock]),
+            [effect.update(effects, [oldBlock])],
             effect.caret(newBlocks[0].id, newBlocks[0].inlines[newBlocks[0].inlines.length - 1].id, newBlocks[0].inlines[newBlocks[0].inlines.length - 1].position.end, 'start')
         )
 
@@ -2525,7 +2549,7 @@ class Edit {
         }))
 
         return effect.compose(
-            effect.update(updateEffects, [block]),
+            [effect.update(updateEffects, [block])],
             effect.caret(firstBlock.id, focusInline.id, 0, 'start')
         )
     }
@@ -2552,7 +2576,7 @@ class Edit {
         if (!textInline) return null
 
         return effect.compose(
-            effect.update([{ at: 'current', target: block, current: block }]),
+            [effect.update([{ at: 'current', target: block, current: block }])],
             effect.caret(block.id, textInline.id, 1, 'start')
         )
     }
