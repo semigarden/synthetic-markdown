@@ -2138,44 +2138,91 @@ class Edit {
     }
 
     public splitCodeBlock(blockId: string, inlineId: string, caretPosition: number): AstApplyEffect | null {
-        const { query, effect } = this.context
+        const { ast,query, effect } = this.context
 
         const block = query.getBlockById(blockId) as CodeBlock
         if (!block || block.type !== 'codeBlock') return null
 
         const inline = query.getInlineById(inlineId)
-        if (!inline || inline.type !== 'text') return null
+        if (!inline) return null
 
-        const symbolicText = inline.text.symbolic
-        const hasLeadingNewline = symbolicText.startsWith('\n')
-        const contentStart = hasLeadingNewline ? 1 : 0
+        if (inline.type === 'marker') {
+            console.log('splitCodeBlock from marker', blockId, inlineId, caretPosition)
+            const isOpenerMarker = inline === block.inlines[0]
+            const isCloserMarker = inline === block.inlines[block.inlines.length - 1]
+            if (isOpenerMarker) {
+                console.log('isOpenerMarker', isOpenerMarker)
+                if (caretPosition === 0) {
+                    const newInline: Inline = {
+                        id: uuid(),
+                        type: 'marker',
+                        blockId: block.id,
+                        text: { symbolic: '\u200B', semantic: '' },
+                        position: { start: 0, end: 1 },
+                    }
 
-        let actualPosition = caretPosition
+                    const newBlock: Block = {
+                        id: uuid(),
+                        type: 'paragraph',
+                        inlines: [newInline],
+                        text: '\u200B',
+                        position: { start: block.position.start, end: block.position.start + 1 },
+                    }
 
-        if (hasLeadingNewline && caretPosition === 0) {
-            actualPosition = 1
-        } else {
-            actualPosition = Math.max(caretPosition, contentStart)
+                    const blockIndex = query.flattenBlocks(ast.blocks).findIndex(b => b.block.id === block.id)
+                    if (blockIndex === -1) return null
+
+                    const blocksAfter = ast.blocks.slice(blockIndex)
+                    ast.blocks.splice(blockIndex, blocksAfter.length, newBlock, ...blocksAfter)
+
+                    return effect.compose(
+                        [effect.update([{ type: 'block', at: 'previous', target: block, current: newBlock }])],
+                        effect.caret(block.id, inline.id, caretPosition, 'start')
+                    )
+                }
+            }
+
+            if (isCloserMarker) {
+                console.log('isCloserMarker', isCloserMarker)
+            }
+
+            return null
         }
 
-        const beforeCaret = symbolicText.slice(0, actualPosition)
-        const afterCaret = symbolicText.slice(actualPosition)
+        if (inline.type === 'text') {
+            const symbolicText = inline.text.symbolic
+            const hasLeadingNewline = symbolicText.startsWith('\n')
+            const contentStart = hasLeadingNewline ? 1 : 0
 
-        const newSymbolic = beforeCaret + '\n' + afterCaret
+            let actualPosition = caretPosition
 
-        inline.text.symbolic = newSymbolic
-        inline.text.semantic = newSymbolic.replace(/^\u200B$/, '')
-        inline.position.end = inline.position.start + newSymbolic.length
+            if (hasLeadingNewline && caretPosition === 0) {
+                actualPosition = 1
+            } else {
+                actualPosition = Math.max(caretPosition, contentStart)
+            }
 
-        block.text = inline.text.semantic
-        block.position.end = block.position.start + this.calculateCodeBlockLength(block)
+            const beforeCaret = symbolicText.slice(0, actualPosition)
+            const afterCaret = symbolicText.slice(actualPosition)
 
-        const newCaretPosition = actualPosition + 1
+            const newSymbolic = beforeCaret + '\n' + afterCaret
 
-        return effect.compose(
-            [effect.update([{ type: 'block', at: 'current', target: block, current: block }])],
-            effect.caret(block.id, inline.id, newCaretPosition, 'start')
-        )
+            inline.text.symbolic = newSymbolic
+            inline.text.semantic = newSymbolic.replace(/^\u200B$/, '')
+            inline.position.end = inline.position.start + newSymbolic.length
+
+            block.text = inline.text.semantic
+            block.position.end = block.position.start + this.calculateCodeBlockLength(block)
+
+            const newCaretPosition = actualPosition + 1
+
+            return effect.compose(
+                [effect.update([{ type: 'block', at: 'current', target: block, current: block }])],
+                effect.caret(block.id, inline.id, newCaretPosition, 'start')
+            )
+        }
+
+        return null
     }
 
     private syncFencedCodeBlockFromOpenMarker(block: CodeBlock) {
