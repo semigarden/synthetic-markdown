@@ -63,7 +63,7 @@ class AstTransform {
             cell.blocks.splice(entry.index, 1, ...newBlocks)
 
             return effect.compose(
-                effect.update([{ at: 'current', target: cell, current: cell }]),
+                [effect.update([{ type: 'block', at: 'current', target: cell, current: cell }])],
                 effect.caret(inline.blockId, inline.id, caretPosition ?? inline.position.start, 'start')
             )
         }
@@ -81,7 +81,7 @@ class AstTransform {
                 ast.blocks.splice(listEntry.index, 0, ...newBlocks)
 
                 return effect.compose(
-                    effect.update([{ at: 'previous', target: list, current: newBlocks[0] }], [entry.block]),
+                    [effect.update([{ type: 'block', at: 'previous', target: list, current: newBlocks[0] }], [entry.block])],
                     effect.caret(inline.blockId, inline.id, caretPosition ?? inline.position.start, 'start')
                 )
             }
@@ -89,7 +89,7 @@ class AstTransform {
             ast.blocks.splice(listEntry.index, 1, ...newBlocks)
 
             return effect.compose(
-                effect.update([{ at: 'current', target: list, current: newBlocks[0] }]),
+                [effect.update([{ type: 'block', at: 'current', target: list, current: newBlocks[0] }])],
                 effect.caret(inline.blockId, inline.id, caretPosition ?? inline.position.start, 'start')
             )
         }
@@ -99,7 +99,7 @@ class AstTransform {
             parent.blocks.splice(entry.index, 1, ...newBlocks)
 
             return effect.compose(
-                effect.update([{ at: 'current', target: parent, current: parent }], removedBlocks),
+                [effect.update([{ type: 'block', at: 'current', target: parent, current: parent }], removedBlocks)],
                 effect.caret(inline.blockId, inline.id, caretPosition ?? inline.position.start, 'start')
             )
         }
@@ -108,7 +108,7 @@ class AstTransform {
         ast.blocks.splice(entry.index, 1, ...newBlocks)
 
         return effect.compose(
-            effect.update([{ at: 'current', target: oldBlock, current: newBlocks[0] }], removedBlocks),
+            [effect.update([{ type: 'block', at: 'current', target: oldBlock, current: newBlocks[0] }], removedBlocks)],
             effect.caret(inline.blockId, inline.id, caretPosition ?? inline.position.start, 'start')
         )
     }
@@ -133,7 +133,7 @@ class AstTransform {
         ast.blocks.splice(entry.index, removedBlocks.length, ...newBlocks)
 
         return effect.compose(
-            effect.update([{ at: 'current', target: oldBlock, current: newBlocks[0] }], removedBlocks),
+            [effect.update([{ type: 'block', at: 'current', target: oldBlock, current: newBlocks[0] }], removedBlocks)],
             effect.caret(newBlocks[0].id, newBlocks[0].inlines[0].id, newBlocks[0].inlines[0].position.end, 'start')
         )
     }

@@ -122,7 +122,8 @@ class AstNormalizer {
                         block.position = { start, end: start + serialized.length }
                         globalPos += serialized.length
 
-                        block.text = raw
+                        block.text = block.inlines.map(i => i.text.symbolic).join('')
+                        console.log('updateBlock 0', JSON.stringify(block.text, null, 2))
                         return serialized
                     }
 
@@ -148,6 +149,7 @@ class AstNormalizer {
                         block.position = { start, end: start + serialized.length }
                         globalPos += serialized.length
                         
+                        console.log('updateBlock 1', JSON.stringify(block.text, null, 2))
                         return serialized
                     }
                 }
@@ -165,6 +167,7 @@ class AstNormalizer {
                 block.text = text
                 block.position = { start, end: start + text.length }
                 globalPos += text.length
+                console.log('updateBlock 2', JSON.stringify(block.text, null, 2))
                 return text
             }
 

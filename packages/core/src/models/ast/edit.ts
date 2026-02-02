@@ -2182,6 +2182,32 @@ class Edit {
                         effect.caret(block.id, inline.id, caretPosition, 'start')
                     )
                 }
+
+                if (caretPosition === block.fenceLength) {
+                    const newInlineText = inline.text.symbolic.slice(caretPosition, inline.text.symbolic.length)
+                    const newBlockText = block.text.slice(0, caretPosition) + '\n' + block.text.slice(caretPosition)
+
+                    inline.text.symbolic = inline.text.symbolic.slice(0, caretPosition) + '\n'
+                    inline.position.end = inline.position.start + inline.text.symbolic.length
+
+                    block.text = newBlockText
+                    block.language = ''
+                    block.position.end = block.position.start + block.text.length
+
+                    const inlineText = block.inlines.find(i => i.type === 'text')
+                    if (!inlineText) return null
+
+                    inlineText.text.symbolic = newInlineText
+                    inlineText.position.end = inlineText.position.start + inlineText.text.symbolic.length
+
+                    return effect.compose(
+                        [effect.input([
+                            { type: 'codeBlockMarker', text: inline.text.symbolic, language: block.language, blockId: block.id, inlineId: inline.id },
+                            { type: 'text', text: newInlineText, blockId: block.id, inlineId: inlineText.id },
+                        ])],
+                        effect.caret(block.id, inlineText.id, 0, 'start')
+                    )
+                }
             }
 
             if (isCloserMarker) {
@@ -2223,36 +2249,57 @@ class Edit {
         }
 
         if (inline.type === 'text') {
-            const symbolicText = inline.text.symbolic
-            const hasLeadingNewline = symbolicText.startsWith('\n')
-            const contentStart = hasLeadingNewline ? 1 : 0
+            // caret at the start of the text
+            console.log('caret at the start of the text', JSON.stringify(block, null, 2), JSON.stringify(block.text.slice(0, inline.position.start + caretPosition), null, 2), caretPosition) // JSON.stringify(block.text.slice(0, inline.position.start + caretPosition), null, 2))
+            if (block.text.slice(0, inline.position.start + caretPosition).endsWith('\n')) {
+                const newText = inline.text.symbolic.slice(0, caretPosition) + '\n' + inline.text.symbolic.slice(caretPosition)
+                inline.text.symbolic = newText
+                inline.text.semantic = newText
+                inline.position.end = inline.position.start + newText.length
 
-            let actualPosition = caretPosition
+                block.text = block.inlines.map(i => i.text.symbolic).join('')
+                block.position.end = block.position.start + block.text.length
 
-            if (hasLeadingNewline && caretPosition === 0) {
-                actualPosition = 1
-            } else {
-                actualPosition = Math.max(caretPosition, contentStart)
+                console.log('newText', JSON.stringify(block.text, null, 2))
+
+                return effect.compose(
+                    [effect.input([{ type: 'text', text: newText, blockId: block.id, inlineId: inline.id }])],
+                    effect.caret(block.id, inline.id, caretPosition + 1, 'start')
+                )
             }
 
-            const beforeCaret = symbolicText.slice(0, actualPosition)
-            const afterCaret = symbolicText.slice(actualPosition)
+            // const symbolicText = inline.text.symbolic
+            // const hasLeadingNewline = symbolicText.startsWith('\n')
+            // const contentStart = hasLeadingNewline ? 1 : 0
 
-            const newSymbolic = beforeCaret + '\n' + afterCaret
+            // let actualPosition = caretPosition
 
-            inline.text.symbolic = newSymbolic
-            inline.text.semantic = newSymbolic.replace(/^\u200B$/, '')
-            inline.position.end = inline.position.start + newSymbolic.length
+            // if (hasLeadingNewline && caretPosition === 0) {
+            //     actualPosition = 1
+            // } else {
+            //     actualPosition = Math.max(caretPosition, contentStart)
+            // }
 
-            block.text = inline.text.semantic
-            block.position.end = block.position.start + this.calculateCodeBlockLength(block)
+            // const beforeCaret = symbolicText.slice(0, actualPosition)
+            // const afterCaret = symbolicText.slice(actualPosition)
 
-            const newCaretPosition = actualPosition + 1
+            // const newSymbolic = beforeCaret + '\n' + afterCaret
 
-            return effect.compose(
-                [effect.update([{ type: 'block', at: 'current', target: block, current: block }])],
-                effect.caret(block.id, inline.id, newCaretPosition, 'start')
-            )
+            console.log('splitCodeBlock from text', caretPosition)
+
+            // inline.text.symbolic = newSymbolic
+            // inline.text.semantic = newSymbolic.replace(/^\u200B$/, '')
+            // inline.position.end = inline.position.start + newSymbolic.length
+
+            // block.text = inline.text.semantic
+            // block.position.end = block.position.start + this.calculateCodeBlockLength(block)
+
+            // const newCaretPosition = actualPosition + 1
+
+            // return effect.compose(
+            //     [effect.update([{ type: 'block', at: 'current', target: block, current: block }])],
+            //     effect.caret(block.id, inline.id, newCaretPosition, 'start')
+            // )
         }
 
         return null
