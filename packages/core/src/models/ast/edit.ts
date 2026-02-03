@@ -2138,7 +2138,7 @@ class Edit {
     }
 
     public splitCodeBlock(blockId: string, inlineId: string, caretPosition: number): AstApplyEffect | null {
-        const { ast,query, effect } = this.context
+        const { ast, query, parser, effect } = this.context
 
         const block = query.getBlockById(blockId) as CodeBlock
         if (!block || block.type !== 'codeBlock') return null
@@ -2146,12 +2146,12 @@ class Edit {
         const inline = query.getInlineById(inlineId)
         if (!inline) return null
 
+        const strip = (string: string) => string.replace(/\u200B/g, '')
+
         if (inline.type === 'marker') {
-            console.log('splitCodeBlock from marker', blockId, inlineId, caretPosition)
             const isOpenerMarker = inline === block.inlines[0]
             const isCloserMarker = inline === block.inlines[block.inlines.length - 1]
             if (isOpenerMarker) {
-                console.log('isOpenerMarker', isOpenerMarker)
                 if (caretPosition === 0) {
                     const newInline: Inline = {
                         id: uuid(),
@@ -2183,27 +2183,57 @@ class Edit {
                     )
                 }
 
-                if (caretPosition === block.fenceLength) {
+                if (caretPosition > 0 && caretPosition < 3) {
+                    const newText = block.text.slice(0, caretPosition) + '\n' + block.text.slice(caretPosition)
+                    const newBlocks = parser.reparseTextFragment(newText, block.position.start)
+                    if (newBlocks.length === 0) return null
+
+                    const blockIndex = query.flattenBlocks(ast.blocks).findIndex(b => b.block.id === block.id)
+                    if (blockIndex === -1) return null
+
+                    const oldBlock = block
+                    ast.blocks.splice(blockIndex, 1, ...newBlocks)
+
+                    const absoluteCaretPosition = block.position.start + (caretPosition + 1)
+
+                    let newInline: Inline | undefined
+                    for (const b of newBlocks) {
+                        if (b.position.start <= absoluteCaretPosition && absoluteCaretPosition < b.position.end) {
+                            newInline = b.inlines[0]
+                            break
+                        }
+                    }
+                    if (!newInline) return null
+
+                    return effect.compose(
+                        [effect.update(newBlocks.map((b, idx) => ({ type: 'block', at: idx === 0 ? 'current' as const : 'next' as const, target: idx === 0 ? oldBlock : newBlocks[idx - 1], current: b })), [oldBlock])],
+                        effect.caret(newInline.blockId, newInline.id, 0, 'start')
+                    )
+                }
+
+                if (caretPosition >= 3 && caretPosition <= inline.text.symbolic.replace(/\n/g, '').length) {
+                    const newMarkerText = inline.text.symbolic.slice(0, caretPosition)
+                    const newLanguage = newMarkerText.replace(block.fenceChar?.repeat(block.fenceLength ?? 3) ?? '', '')
                     const newInlineText = inline.text.symbolic.slice(caretPosition, inline.text.symbolic.length)
-                    const newBlockText = block.text.slice(0, caretPosition) + '\n' + block.text.slice(caretPosition)
 
-                    inline.text.symbolic = inline.text.symbolic.slice(0, caretPosition) + '\n'
+                    inline.text.symbolic = newMarkerText + '\n'
                     inline.position.end = inline.position.start + inline.text.symbolic.length
-
-                    block.text = newBlockText
-                    block.language = ''
-                    block.position.end = block.position.start + block.text.length
 
                     const inlineText = block.inlines.find(i => i.type === 'text')
                     if (!inlineText) return null
 
-                    inlineText.text.symbolic = newInlineText
+                    inlineText.text.symbolic = newInlineText + inlineText.text.symbolic
+                    inlineText.text.semantic = strip(newInlineText) + strip(inlineText.text.semantic)
                     inlineText.position.end = inlineText.position.start + inlineText.text.symbolic.length
+
+                    block.text = strip(block.inlines.map(i => i.text.symbolic).join(''))
+                    block.language = newLanguage
+                    block.position.end = block.position.start + block.text.length
 
                     return effect.compose(
                         [effect.input([
                             { type: 'codeBlockMarker', text: inline.text.symbolic, language: block.language, blockId: block.id, inlineId: inline.id },
-                            { type: 'text', text: newInlineText, blockId: block.id, inlineId: inlineText.id },
+                            { type: 'text', text: inlineText.text.symbolic, blockId: block.id, inlineId: inlineText.id },
                         ])],
                         effect.caret(block.id, inlineText.id, 0, 'start')
                     )
@@ -2211,8 +2241,51 @@ class Edit {
             }
 
             if (isCloserMarker) {
-                console.log('isCloserMarker', isCloserMarker)
-                if (caretPosition === inline.text.symbolic.length) {
+                if (caretPosition === 0) {
+                    const inlineText = block.inlines.find(i => i.type === 'text')
+                    if (!inlineText) return null
+
+                    inlineText.text.symbolic = inlineText.text.symbolic + '\n'
+                    inlineText.text.semantic = strip(inlineText.text.semantic) + '\n'
+                    inlineText.position.end = inlineText.position.start + inlineText.text.symbolic.length
+
+                    block.text = block.inlines.map(i => i.text.symbolic).join('')
+                    block.position.end = block.position.start + block.text.length
+
+                    return effect.compose(
+                        [effect.input([{ type: 'text', text: inlineText.text.symbolic, blockId: block.id, inlineId: inlineText.id }])],
+                        effect.caret(block.id, inline.id, 0, 'start')
+                    )
+                }
+
+                if (caretPosition > 0 && caretPosition < inline.text.symbolic.replace(/\n/g, '').length) {
+                    const newText = inline.text.symbolic.slice(0, caretPosition) + '\n' + inline.text.symbolic.slice(caretPosition)
+                    const positionAfterNewline = inline.text.symbolic.slice(caretPosition).length
+
+                    const inlineText = block.inlines.find(i => i.type === 'text')
+                    if (!inlineText) return null
+
+                    inlineText.text.symbolic = inlineText.text.symbolic + newText
+                    inlineText.text.semantic = strip(inlineText.text.semantic) + strip(newText)
+                    inlineText.position.end = inlineText.position.start + inlineText.text.symbolic.length
+
+                    delete block.close
+                    block.inlines.pop()
+                    block.text = strip(block.inlines.map(i => i.text.symbolic).join(''))
+                    block.position.end = block.position.start + block.text.length 
+             
+                    const position = inlineText.text.symbolic.length - positionAfterNewline
+
+                    return effect.compose(
+                        [
+                            effect.deleteInline([{ type: 'inline', blockId: block.id, inlineId: inline.id }]),
+                            effect.input([{ type: 'text', text: inlineText.text.symbolic, blockId: block.id, inlineId: inlineText.id }]),
+                        ],
+                        effect.caret(block.id, inlineText.id, position, 'start')
+                    )
+                }
+
+                if (caretPosition === inline.text.symbolic.replace(/\n/g, '').length) {
                     const newInline: Inline = {
                         id: uuid(),
                         type: 'text',
@@ -2236,8 +2309,6 @@ class Edit {
 
                     ast.blocks.splice(blockIndex + 1, 0, newBlock)
 
-                    console.log('splitCodeBlock from closer marker', JSON.stringify(newBlock, null, 2))
-
                     return effect.compose(
                         [effect.update([{ type: 'block', at: 'next', target: block, current: newBlock }])],
                         effect.caret(newBlock.id, newInline.id, newInline.position.end, 'start')
@@ -2249,57 +2320,19 @@ class Edit {
         }
 
         if (inline.type === 'text') {
-            // caret at the start of the text
-            console.log('caret at the start of the text', JSON.stringify(block, null, 2), JSON.stringify(block.text.slice(0, inline.position.start + caretPosition), null, 2), caretPosition) // JSON.stringify(block.text.slice(0, inline.position.start + caretPosition), null, 2))
-            if (block.text.slice(0, inline.position.start + caretPosition).endsWith('\n')) {
-                const newText = inline.text.symbolic.slice(0, caretPosition) + '\n' + inline.text.symbolic.slice(caretPosition)
-                inline.text.symbolic = newText
-                inline.text.semantic = newText
-                inline.position.end = inline.position.start + newText.length
+            const newText = inline.text.symbolic.slice(0, caretPosition) + '\n' + inline.text.symbolic.slice(caretPosition)
 
-                block.text = block.inlines.map(i => i.text.symbolic).join('')
-                block.position.end = block.position.start + block.text.length
+            inline.text.symbolic = newText
+            inline.text.semantic = strip(newText)
+            inline.position.end = inline.position.start + newText.length
 
-                console.log('newText', JSON.stringify(block.text, null, 2))
+            block.text = strip(block.inlines.map(i => i.text.symbolic).join(''))
+            block.position.end = block.position.start + block.text.length
 
-                return effect.compose(
-                    [effect.input([{ type: 'text', text: newText, blockId: block.id, inlineId: inline.id }])],
-                    effect.caret(block.id, inline.id, caretPosition + 1, 'start')
-                )
-            }
-
-            // const symbolicText = inline.text.symbolic
-            // const hasLeadingNewline = symbolicText.startsWith('\n')
-            // const contentStart = hasLeadingNewline ? 1 : 0
-
-            // let actualPosition = caretPosition
-
-            // if (hasLeadingNewline && caretPosition === 0) {
-            //     actualPosition = 1
-            // } else {
-            //     actualPosition = Math.max(caretPosition, contentStart)
-            // }
-
-            // const beforeCaret = symbolicText.slice(0, actualPosition)
-            // const afterCaret = symbolicText.slice(actualPosition)
-
-            // const newSymbolic = beforeCaret + '\n' + afterCaret
-
-            console.log('splitCodeBlock from text', caretPosition)
-
-            // inline.text.symbolic = newSymbolic
-            // inline.text.semantic = newSymbolic.replace(/^\u200B$/, '')
-            // inline.position.end = inline.position.start + newSymbolic.length
-
-            // block.text = inline.text.semantic
-            // block.position.end = block.position.start + this.calculateCodeBlockLength(block)
-
-            // const newCaretPosition = actualPosition + 1
-
-            // return effect.compose(
-            //     [effect.update([{ type: 'block', at: 'current', target: block, current: block }])],
-            //     effect.caret(block.id, inline.id, newCaretPosition, 'start')
-            // )
+            return effect.compose(
+                [effect.input([{ type: 'text', text: newText, blockId: block.id, inlineId: inline.id }])],
+                effect.caret(block.id, inline.id, caretPosition + 1, 'start')
+            )
         }
 
         return null

@@ -86,7 +86,6 @@ class Interaction {
         }
 
         const context = this.select.resolveInlineContext()
-        console.log('onKeyDown', intent, JSON.stringify(context, null, 2))
         if (!context) return
 
         const effect = this.intent.resolveEffect(intent, context)

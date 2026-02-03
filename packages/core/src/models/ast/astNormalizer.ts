@@ -17,19 +17,12 @@ class AstNormalizer {
                 strippedOpen = true
             } else if (t.startsWith(open)) {
                 t = t.slice(open.length)
-                if (t.startsWith('\n')) t = t.slice(1)
                 strippedOpen = true
             }
 
             if (close.length > 0) {
-                if (t.endsWith('\n' + close)) {
-                    t = t.slice(0, t.length - (close.length + 1))
-                } else if (t.endsWith(close)) {
-                    t = t.slice(0, t.length - close.length)
-                }
+                t = t.slice(0, t.length - close.length)
             }
-
-            if (strippedOpen && t.startsWith('\n')) t = t.slice(1)
 
             return t
         }
@@ -56,7 +49,9 @@ class AstNormalizer {
                         const close = closeRaw.length > 0 ? closeRaw : ''
 
                         const raw0 = String(codeBlock.text ?? '')
-                        const raw = stripFencedPayload(raw0, open, close)
+                        const raw = raw0.startsWith(open)
+                            ? stripFencedPayload(raw0, open, close)
+                            : raw0
                         codeBlock.text = raw
 
                         const body = raw.length === 0 ? '\u200B' : raw
@@ -118,12 +113,11 @@ class AstNormalizer {
                             localPos += len
                         }
 
-                        const serialized = (open + '\n') + contentSymbolic + (close.length > 0 ? '\n' + close : '')
+                        const serialized = block.inlines.map(i => i.text.symbolic).join('')
                         block.position = { start, end: start + serialized.length }
                         globalPos += serialized.length
 
-                        block.text = block.inlines.map(i => i.text.symbolic).join('')
-                        console.log('updateBlock 0', JSON.stringify(block.text, null, 2))
+                        block.text = serialized
                         return serialized
                     }
 
@@ -149,7 +143,6 @@ class AstNormalizer {
                         block.position = { start, end: start + serialized.length }
                         globalPos += serialized.length
                         
-                        console.log('updateBlock 1', JSON.stringify(block.text, null, 2))
                         return serialized
                     }
                 }
@@ -167,7 +160,6 @@ class AstNormalizer {
                 block.text = text
                 block.position = { start, end: start + text.length }
                 globalPos += text.length
-                console.log('updateBlock 2', JSON.stringify(block.text, null, 2))
                 return text
             }
 
@@ -378,8 +370,8 @@ class AstNormalizer {
 
         this.text = parts.join('')
 
-        // console.log('text', this.text)
-        // console.log('blocks', JSON.stringify(blocks, null, 2))
+        console.log('text', JSON.stringify(this.text, null, 2))
+        console.log('blocks', JSON.stringify(blocks, null, 2))
     }
 }
 
