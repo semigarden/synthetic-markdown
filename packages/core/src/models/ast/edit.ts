@@ -1,7 +1,7 @@
 import { detectBlockType } from '../parser/block/blockDetect'
-import { uuid } from '../../utils/utils'
+import { uuid, strip } from '../../utils/utils'
 import type { AstContext } from './astContext'
-import type { AstApplyEffect, Block, Inline, List, ListItem, Table, TableRow, TableHeader, TableCell, TaskListItem, BlockQuote, Paragraph, CodeBlock, RenderInsert } from '../../types'
+import type { AstApplyEffect, Block, Inline, List, ListItem, Table, TableRow, TableHeader, TableCell, TaskListItem, BlockQuote, Paragraph, CodeBlock, RenderInsert, RenderInput } from '../../types'
 
 class Edit {
     constructor(private context: AstContext) {}
@@ -24,10 +24,12 @@ class Edit {
                 .reduce((sum, i) => sum + i.text.symbolic.length, 0)
             + caretPosition
     
-        const newText =
+        let newText =
             block.inlines.slice(0, inlineIndex).map(i => i.text.symbolic).join('') +
             text +
             block.inlines.slice(inlineIndex + 1).map(i => i.text.symbolic).join('')
+
+        newText = strip(newText)
     
         const detectedBlock = detectBlockType(newText)
     
@@ -60,21 +62,36 @@ class Edit {
                 return this.mergeIntoTable(prevBlock, block, newText)
             }
         }
-    
+
         const newInlines = parser.inline.parseInline(newText, block.id, block.type, block.position.start)
         const hit = query.getInlineAtPosition(newInlines, absoluteCaretPosition)
         const newInline = hit?.inline
         const position = hit?.position ?? 0
         if (!newInline) return null
-    
-        block.text = newInlines.map((i: Inline) => i.text.symbolic).join('')
-        block.position = { start: block.position.start, end: block.position.start + block.text.length }
-        block.inlines = newInlines
-        newInlines.forEach((i: Inline) => (i.blockId = block.id))
+
+        const inlineTypeChanged = newInline.type !== inline.type
+        if (inlineTypeChanged || newInlines.length !== block.inlines.length) {
+            block.text = newInlines.map((i: Inline) => i.text.symbolic).join('')
+            block.position = { start: block.position.start, end: block.position.start + block.text.length }
+            block.inlines = newInlines
+            newInlines.forEach((i: Inline) => (i.blockId = block.id))
+
+            return effect.compose(
+                [effect.update([{ type: 'block', at: 'current', target: block, current: block }])],
+                effect.caret(block.id, newInline.id, position, 'start')
+            )
+        }
+
+        inline.text.symbolic = newInline.text.symbolic
+        inline.text.semantic = newInline.text.semantic
+        inline.position.end = inline.position.start + newInline.text.symbolic.length
+        
+        block.text = block.inlines.map(i => i.text.symbolic).join('')
+        block.position.end = block.position.start + block.text.length
 
         return effect.compose(
-            [effect.update([{ type: 'block', at: 'current', target: block, current: block }])],
-            effect.caret(block.id, newInline.id, position, 'start')
+            [effect.input([{ type: 'text', symbolic: inline.text.symbolic, semantic: inline.text.semantic, blockId: block.id, inlineId: inline.id }])],
+            effect.caret(block.id, inline.id, caretPosition, 'start')
         )
     }
 
@@ -2004,7 +2021,7 @@ class Edit {
 
                 return effect.compose(
                     [
-                        effect.input([{ type: 'text', text: inline.text.symbolic, blockId: block.id, inlineId: inline.id }]),
+                        effect.input([{ type: 'text', symbolic: inline.text.symbolic, semantic: inline.text.semantic, blockId: block.id, inlineId: inline.id }]),
                         effect.insertInline([{ type: 'inline', at: 'next', target: inline, current: closerMarker }]),
                     ],
                     effect.caret(block.id, closerMarker.id, closerMarker.position.end, 'start')
@@ -2012,7 +2029,7 @@ class Edit {
             }
 
             return effect.compose(
-                [effect.input([{ type: 'text', text, blockId: block.id, inlineId: inline.id }])],
+                [effect.input([{ type: 'text', symbolic: text, semantic: text, blockId: block.id, inlineId: inline.id }])],
                 effect.caret(block.id, inline.id, caretPosition, 'start')
             )
         }
@@ -2036,7 +2053,7 @@ class Edit {
                         block.position.end = block.position.start + block.text.length
 
                         return effect.compose(
-                            [effect.input([{ type: 'text', text, blockId: block.id, inlineId: inline.id }])],
+                            [effect.input([{ type: 'text', symbolic: text, semantic: text, blockId: block.id, inlineId: inline.id }])],
                             effect.caret(block.id, inline.id, caretPosition, 'start')
                         )
                     } else {
@@ -2107,7 +2124,7 @@ class Edit {
                     block.close = markerText
 
                     return effect.compose(
-                        [effect.input([{ type: 'text', text, blockId: block.id, inlineId: inline.id }])],
+                        [effect.input([{ type: 'text', symbolic: text, semantic: text, blockId: block.id, inlineId: inline.id }])],
                         effect.caret(block.id, inline.id, caretPosition, 'start')
                     )
                 } else {
@@ -2125,7 +2142,7 @@ class Edit {
 
                     return effect.compose(
                         [
-                            effect.input([{ type: 'text', text: inlineText.text.symbolic, blockId: block.id, inlineId: inlineText.id }]),
+                            effect.input([{ type: 'text', symbolic: inlineText.text.symbolic, semantic: inlineText.text.semantic, blockId: block.id, inlineId: inlineText.id }]),
                             effect.deleteInline([{ type: 'inline', blockId: block.id, inlineId: inline.id }]),
                         ],
                         effect.caret(block.id, inlineText.id, inlineText.position.end, 'start')
@@ -2145,8 +2162,6 @@ class Edit {
 
         const inline = query.getInlineById(inlineId)
         if (!inline) return null
-
-        const strip = (string: string) => string.replace(/\u200B/g, '')
 
         if (inline.type === 'marker') {
             const isOpenerMarker = inline === block.inlines[0]
@@ -2233,7 +2248,7 @@ class Edit {
                     return effect.compose(
                         [effect.input([
                             { type: 'codeBlockMarker', text: inline.text.symbolic, language: block.language, blockId: block.id, inlineId: inline.id },
-                            { type: 'text', text: inlineText.text.symbolic, blockId: block.id, inlineId: inlineText.id },
+                            { type: 'text', symbolic: inlineText.text.symbolic, semantic: inlineText.text.semantic, blockId: block.id, inlineId: inlineText.id },
                         ])],
                         effect.caret(block.id, inlineText.id, 0, 'start')
                     )
@@ -2253,7 +2268,7 @@ class Edit {
                     block.position.end = block.position.start + block.text.length
 
                     return effect.compose(
-                        [effect.input([{ type: 'text', text: inlineText.text.symbolic, blockId: block.id, inlineId: inlineText.id }])],
+                        [effect.input([{ type: 'text', symbolic: inlineText.text.symbolic, semantic: inlineText.text.semantic, blockId: block.id, inlineId: inlineText.id }])],
                         effect.caret(block.id, inline.id, 0, 'start')
                     )
                 }
@@ -2279,7 +2294,7 @@ class Edit {
                     return effect.compose(
                         [
                             effect.deleteInline([{ type: 'inline', blockId: block.id, inlineId: inline.id }]),
-                            effect.input([{ type: 'text', text: inlineText.text.symbolic, blockId: block.id, inlineId: inlineText.id }]),
+                            effect.input([{ type: 'text', symbolic: inlineText.text.symbolic, semantic: inlineText.text.semantic, blockId: block.id, inlineId: inlineText.id }]),
                         ],
                         effect.caret(block.id, inlineText.id, position, 'start')
                     )
@@ -2330,7 +2345,7 @@ class Edit {
             block.position.end = block.position.start + block.text.length
 
             return effect.compose(
-                [effect.input([{ type: 'text', text: newText, blockId: block.id, inlineId: inline.id }])],
+                [effect.input([{ type: 'text', symbolic: newText, semantic: newText, blockId: block.id, inlineId: inline.id }])],
                 effect.caret(block.id, inline.id, caretPosition + 1, 'start')
             )
         }
@@ -2560,34 +2575,6 @@ class Edit {
             [effect.update(effects, [oldBlock])],
             effect.caret(newBlocks[0].id, newBlocks[0].inlines[newBlocks[0].inlines.length - 1].id, newBlocks[0].inlines[newBlocks[0].inlines.length - 1].position.end, 'start')
         )
-
-        const paragraph: Block = {
-            id: uuid(),
-            type: 'paragraph',
-            text: '',
-            position: { start: 0, end: 0 },
-            inlines: [],
-        }
-        paragraph.inlines = parser.inline.parseInline('', paragraph.id, 'paragraph', 0)
-        paragraph.inlines.forEach((i: Inline) => i.blockId = paragraph.id)
-
-        return null
-
-        // if (direction === 'above') {
-        //     ast.blocks.splice(blockIndex, 0, paragraph)
-        //     const focusInline = paragraph.inlines[0]
-        //     return effect.compose(
-        //         effect.update([{ at: 'previous', target: block, current: paragraph }]),
-        //         effect.caret(paragraph.id, focusInline.id, 0, 'start')
-        //     )
-        // } else {
-        //     ast.blocks.splice(blockIndex + 1, 0, paragraph)
-        //     const focusInline = paragraph.inlines[0]
-        //     return effect.compose(
-        //         effect.update([{ at: 'next', target: block, current: paragraph }]),
-        //         effect.caret(paragraph.id, focusInline.id, 0, 'start')
-        //     )
-        // }
     }
 
     public unwrapCodeBlock(blockId: string): AstApplyEffect | null {

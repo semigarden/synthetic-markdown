@@ -79,11 +79,19 @@ class Render {
                     console.log('input', effect.input)
                     effect.input.forEach(input => {
                         const block = this.rootElement.querySelector(`[data-block-id="${input.blockId}"]`) as HTMLElement | null
+                        console.log('block', block)
                         if (!block) return
 
                         const inline = block.querySelector(`[data-inline-id="${input.inlineId}"]`) as HTMLElement | null
+                        console.log('inline', inline)
                         if (!inline) return
-                    
+
+                        const symbolic = inline.querySelector(`.symbolic`) as HTMLElement | null
+                        const semantic = inline.querySelector(`.semantic`) as HTMLElement | null
+                        console.log('symbolic', symbolic, 'semantic', semantic)
+                        if (!symbolic || !semantic) return
+
+                        console.log('symbolic', symbolic.textContent, 'semantic', semantic.textContent)
 
                         switch (input.type) {
                             case 'codeBlockMarker':
@@ -91,7 +99,8 @@ class Render {
                                 inline.textContent = input.text
                                 break
                             case 'text':
-                                inline.textContent = input.text
+                                symbolic.textContent = input.symbolic
+                                semantic.textContent = input.semantic
                                 break
                         }
                     })

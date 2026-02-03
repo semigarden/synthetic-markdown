@@ -370,8 +370,8 @@ class AstNormalizer {
 
         this.text = parts.join('')
 
-        console.log('text', JSON.stringify(this.text, null, 2))
-        console.log('blocks', JSON.stringify(blocks, null, 2))
+        // console.log('text', JSON.stringify(this.text, null, 2))
+        // console.log('blocks', JSON.stringify(blocks, null, 2))
     }
 }
 

@@ -10,6 +10,8 @@ const uuid = (): string => {
     })
 }
 
+const strip = (string: string) => string.replace(/\u200B/g, '')
+
 const namedEntities: Record<string, string> = {
     // Basic HTML entities
     "&amp;": "&",
@@ -258,8 +260,9 @@ const namedEntities: Record<string, string> = {
     "&yuml;": "ÿ",
 };
 
+const replaceAll = (string: string, search: string, replace: string) => string.replace(new RegExp(search, 'g'), replace)
+
 /**
- * Supports:
  * - Named character references (e.g., &amp;, &copy;)
  * - Decimal numeric character references (e.g., &#160;)
  * - Hexadecimal numeric character references (e.g., &#xA0;)
@@ -268,7 +271,7 @@ function decodeHTMLEntity(text: string): string {
     // First handle named entities
     for (const [entity, char] of Object.entries(namedEntities)) {
         if (text.includes(entity)) {
-            text = text.replaceAll(entity, char);
+            text = replaceAll(text, entity, char);
         }
     }
 
@@ -326,4 +329,4 @@ function encodeHTMLEntities(text: string): string {
         .replace(/'/g, "&#39;");
 }
 
-export { uuid, decodeHTMLEntity, containsHTMLEntity, encodeHTMLEntities };
+export { uuid, decodeHTMLEntity, containsHTMLEntity, encodeHTMLEntities, strip };

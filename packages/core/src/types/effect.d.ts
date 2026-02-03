@@ -64,7 +64,8 @@ export type RenderInput =
         inlineId: string
     } | {
         type: 'text'
-        text: string
+        symbolic: string
+        semantic: string
         blockId: string
         inlineId: string
     }
