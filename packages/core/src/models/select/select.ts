@@ -2,6 +2,7 @@ import Ast from '../ast/ast'
 import Caret from '../caret'
 import Focus from './focus'
 import { getSelectedElements, resolveRange, resolveInlineContext } from './map'
+import { findClosestInlineAndPosition } from './hit'
 import type { EditContext, SelectionRange, EditEffect, Block, Inline } from '../../types'
 
 class Select {
@@ -43,13 +44,46 @@ class Select {
         this.focus.autoFocus()
     }
 
+    public placeCaretAtPoint(event: MouseEvent) {
+        const target = event.target as Element | null
+        if (!target || !this.rootElement.contains(target)) return
+
+        const blockEl = target.closest('[data-block-id]') as HTMLElement | null
+        if (!blockEl?.dataset?.blockId) return
+
+        const block = this.ast.query.getBlockById(blockEl.dataset.blockId)
+        if (!block) return
+
+        const hit = findClosestInlineAndPosition(
+            this.rootElement,
+            block,
+            event.clientX,
+            event.clientY,
+            (id) => this.ast.query.getInlineById(id)
+        )
+        if (!hit) return
+
+        this.caret.blockId = block.id
+        this.caret.inlineId = hit.inline.id
+        this.caret.position = hit.position
+        this.caret.restoreCaret(hit.inline.id, hit.position)
+        this.focus.focusBlock(block.id)
+        this.focus.focusInline(hit.inline.id)
+    }
+
     private onSelectionChange = () => {
+        console.log('onSelectionChange')
         if (this.suppressSelectionChange) return
 
         if (this.rafId !== null) cancelAnimationFrame(this.rafId)
 
         this.rafId = requestAnimationFrame(() => {
-            const selection = window.getSelection()
+            // const selection = window.getSelection()
+            const shadowRoot = this.rootElement.getRootNode() as ShadowRoot | Document
+            const selection = 'getSelection' in shadowRoot
+                ? shadowRoot.getSelection()
+                : document.getSelection()
+                
             if (!selection || selection.rangeCount === 0) {
                 this.range = null
                 this.caret.clear()
@@ -59,6 +93,7 @@ class Select {
                 this.focus.unfocusInlines(this.focusState.focusedInlineIds)
                 this.focusState.focusedBlockIds = []
                 this.focusState.focusedInlineIds = []
+                console.log('onSelectionChange clear')
                 return
             }
 
@@ -66,6 +101,7 @@ class Select {
                 !this.rootElement.contains(selection.anchorNode) ||
                 !this.rootElement.contains(selection.focusNode)
             ) {
+                console.log('onSelectionChange not in editor')
                 return
             }
 
@@ -101,7 +137,13 @@ class Select {
     }
 
     private onRootFocusIn = () => {
-        const selection = window.getSelection()
+        // const selection = window.getSelection()
+        const shadowRoot = this.rootElement.getRootNode() as ShadowRoot | Document
+        const selection = 'getSelection' in shadowRoot
+            ? shadowRoot.getSelection()
+            : document.getSelection()
+
+        console.log('onRootFocusIn', selection)
         if (!selection || selection.rangeCount === 0) {
             this.range = null
             this.caret.clear()
@@ -111,6 +153,8 @@ class Select {
             this.focus.unfocusInlines(this.focusState.focusedInlineIds)
             this.focusState.focusedBlockIds = []
             this.focusState.focusedInlineIds = []
+
+            console.log('onRootFocusIn clear')
             return
         }
 
@@ -118,6 +162,7 @@ class Select {
             !this.rootElement.contains(selection.anchorNode) ||
             !this.rootElement.contains(selection.focusNode)
         ) {
+            console.log('onRootFocusIn not in editor')
             return
         }
 
@@ -149,6 +194,7 @@ class Select {
 
         const range = resolveRange(this.ast, this.caret, this.rootElement, selection)
         this.range = range
+        console.log('onRootFocusIn range', JSON.stringify(range, null, 2), selection)
     }
 
     private onRootFocusOut = (e: FocusEvent) => {
@@ -193,25 +239,26 @@ class Select {
     private placeCaretInFirstInline(blockEl: HTMLElement, at: 'start' | 'end' = 'start') {
         const inlineEl = blockEl.querySelector('[data-inline-id]') as HTMLElement | null
         if (!inlineEl) return null
-      
+
         const target = (inlineEl.querySelector('.symbolic') as HTMLElement | null) ?? inlineEl
-      
+
         if (target.childNodes.length === 0) {
-            target.appendChild(document.createTextNode('\u200B'))
+            target.appendChild(target.ownerDocument.createTextNode('\u200B'))
         }
-      
+
         this.rootElement.focus()
-      
-        const sel = target.ownerDocument.getSelection()
-        if (!sel) return null
-      
+
+        const root = this.rootElement.getRootNode() as ShadowRoot | Document
+        const selection = 'getSelection' in root ? root.getSelection() : target.ownerDocument.getSelection()
+        if (!selection) return null
+
         const range = target.ownerDocument.createRange()
         range.selectNodeContents(target)
         range.collapse(at === 'start')
-      
-        sel.removeAllRanges()
-        sel.addRange(range)
-      
+
+        selection.removeAllRanges()
+        selection.addRange(range)
+
         return inlineEl
     }
 

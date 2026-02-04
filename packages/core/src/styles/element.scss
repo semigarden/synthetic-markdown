@@ -79,6 +79,7 @@
         inset: 0;
         color: transparent;
         caret-color: transparent;
+        opacity: 0;
     }
 
     &:not(.focused) .semantic {

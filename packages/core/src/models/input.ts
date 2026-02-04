@@ -11,11 +11,13 @@ class Input {
     ) {}
 
     public resolveEffect(event: InputEvent): EditEffect | null {
+        console.log('resolveEffect', JSON.stringify(event, null, 2))
         const isInsert = event.type.startsWith('insert')
         const isDelete = event.type.startsWith('delete')
         if (!isInsert && !isDelete) return null
     
         const range = this.select?.resolveRange()
+        console.log('range', JSON.stringify(range, null, 2))
         if (!range) return null
 
         const isCollapsed = range.start.blockId === range.end.blockId &&

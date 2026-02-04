@@ -142,7 +142,7 @@ function resolveTextNodeAt(
 ): { node: Text; offset: number } | null {
     let remaining = offset
 
-    for (const child of inlineEl.childNodes) {
+    for (const child of Array.from(inlineEl.childNodes)) {
         if (child.nodeType === Node.TEXT_NODE) {
             const text = child as Text
             if (remaining <= text.length) return { node: text, offset: remaining }

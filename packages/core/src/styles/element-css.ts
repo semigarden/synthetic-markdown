@@ -71,6 +71,7 @@ const cssText = `@charset "UTF-8";
   inset: 0;
   color: transparent;
   caret-color: transparent;
+  opacity: 0;
 }
 .inline:not(.focused) .semantic {
   position: relative;

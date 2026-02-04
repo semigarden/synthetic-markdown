@@ -126,17 +126,20 @@ class Interaction {
         }
 
         const anchor = target.closest('a') as HTMLAnchorElement | null
-        if (!anchor) return
-
-        const follow = event.ctrlKey || event.metaKey
-    
-        if (!follow) {
+        if (anchor) {
+            const follow = event.ctrlKey || event.metaKey
+            if (!follow) {
+                event.preventDefault()
+                return
+            }
             event.preventDefault()
+            window.open(anchor.href, '_blank', 'noopener,noreferrer')
             return
         }
-    
-        event.preventDefault()
-        window.open(anchor.href, '_blank', 'noopener,noreferrer')
+
+        // if (this.rootElement.contains(target)) {
+        //     this.select.placeCaretAtPoint(event)
+        // }
     }
 
     private resolveIntentFromEvent = (event: KeyboardEvent): IntentType | null => {

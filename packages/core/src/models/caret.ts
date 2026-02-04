@@ -18,10 +18,15 @@ class Caret {
     }
 
     getPositionInInline(inlineEl: HTMLElement) {
-        const sel = window.getSelection()
+        // const sel = window.getSelection()
+        const shadowRoot = this.rootElement.getRootNode() as ShadowRoot | Document
+        const selection = 'getSelection' in shadowRoot
+            ? shadowRoot.getSelection()
+            : document.getSelection()
+            
         let caretPositionInInline = 0
-        if (sel && sel.rangeCount > 0) {
-            const range = sel.getRangeAt(0)
+        if (selection && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0)
             const preRange = document.createRange()
             preRange.selectNodeContents(inlineEl)
             preRange.setEnd(range.startContainer, range.startOffset)
@@ -42,7 +47,11 @@ class Caret {
       
         this.rootElement.focus()
       
-        const selection = window.getSelection()
+        // const selection = window.getSelection()
+        const shadowRoot = this.rootElement.getRootNode() as ShadowRoot | Document
+        const selection = 'getSelection' in shadowRoot
+            ? shadowRoot.getSelection()
+            : document.getSelection()
         if (!selection) return
       
         selection.removeAllRanges()
