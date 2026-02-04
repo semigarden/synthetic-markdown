@@ -26,7 +26,7 @@ class AstTransform {
 
         text = text.replace(/[\u200B\u200C\u200D\uFEFF]/g, '').replace(/\r$/, '')
 
-        if (detected.type === 'codeBlock') return this.toCodeBlock(text, block)
+        if (detected.type === 'codeBlock') return this.toCodeBlock(text, block, caretPosition)
 
         const flat = query.flattenBlocks(ast.blocks)
         const entry = flat.find(b => b.block.id === block.id)
@@ -113,21 +113,39 @@ class AstTransform {
         )
     }
 
-    toCodeBlock(text: string, block: Block): AstApplyEffect | null {
+    toCodeBlock(text: string, block: Block, caretPosition: number | null = null): AstApplyEffect | null {
         const { ast, query, parser, effect } = this.ctx
 
         const blocks = query.flattenBlocks(ast.blocks)
         const entry = blocks.find(b => b.block.id === block.id)
         if (!entry) return null
     
+        let firstCodeBlock: CodeBlock | null = null
         const firstCodeBlockEntry = blocks.find(b => b.index >= entry.index && b.block.type === 'codeBlock')
+        if (firstCodeBlockEntry) {
+            firstCodeBlock = firstCodeBlockEntry.block as CodeBlock
+        }
 
-        const removedBlocks = blocks.slice(entry.index, firstCodeBlockEntry ? firstCodeBlockEntry.index + 1 : ast.blocks.length).map(b => b.block)
-        const sliceTo = firstCodeBlockEntry ? firstCodeBlockEntry.block.position.start : this.ctx.ast.text.length
-        const newText = text + ast.text.slice(block.position.end, sliceTo)
+        // console.log('firstCodeBlockEntry', JSON.stringify(firstCodeBlockEntry, null, 2))
+        // return null
+        const removedBlocks = blocks.slice(entry.index + 1, firstCodeBlockEntry ? firstCodeBlockEntry.index : ast.blocks.length).map(b => b.block)
+        const sliceTo = firstCodeBlockEntry ? firstCodeBlockEntry.block.position.start + 1 : this.ctx.ast.text.length
+        let newText = text + ast.text.slice(block.position.end + (caretPosition ?? 0), sliceTo)
+
+        if (!firstCodeBlock?.close) {
+            newText += '\n' + firstCodeBlock?.fenceChar?.repeat(firstCodeBlock?.fenceLength ?? 3)
+            removedBlocks.push(firstCodeBlock as Block)
+        }
 
         const newBlocks = parser.reparseTextFragment(newText, block.position.start)
         if (newBlocks.length === 0) return null
+
+        // console.log('newBlocks', JSON.stringify(newBlocks, null, 2))
+        // console.log('text', JSON.stringify(text, null, 2))
+        // console.log('slice', JSON.stringify(ast.text.slice(block.position.end, sliceTo), null, 2))
+        // console.log('newText', JSON.stringify(newText, null, 2))
+        // console.log('removedBlocks', JSON.stringify(removedBlocks, null, 2))
+        // return null
 
         const oldBlock = block
         ast.blocks.splice(entry.index, removedBlocks.length, ...newBlocks)
