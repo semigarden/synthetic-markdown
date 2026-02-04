@@ -73,6 +73,9 @@
 .inline:not(.focused) .semantic {
   position: relative;
 }
+.inline.marker:not(.focused) {
+  opacity: 0;
+}
 .inline.focused .symbolic {
   position: relative;
   color: inherit;

@@ -76,6 +76,9 @@ const cssText = `@charset "UTF-8";
 .inline:not(.focused) .semantic {
   position: relative;
 }
+.inline.marker:not(.focused) {
+  opacity: 0;
+}
 .inline.focused .symbolic {
   position: relative;
   color: inherit;

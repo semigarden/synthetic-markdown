@@ -131,6 +131,8 @@ class Select {
             this.focus.focusBlocks(this.focusState.focusedBlockIds)
             this.focus.focusInlines(this.focusState.focusedInlineIds)
 
+            console.log('onSelectionChange focusState', JSON.stringify(this.focusState, null, 2))
+
             const range = resolveRange(this.ast, this.caret, this.rootElement, selection)
             this.range = range
         })

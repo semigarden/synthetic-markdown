@@ -158,10 +158,6 @@ class BlockRender {
                 element.classList.add(`h${block.level ?? 1}`)
             }
 
-            case 'thematicBreak': {
-                element.classList.add('focused')
-            }
-
             default:
                 this.deps.renderInlines(block.inlines, element)
         }

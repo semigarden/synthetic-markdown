@@ -66,12 +66,14 @@
 
     .symbolic {
         position: relative;
+        // order: 1
     }
 
     .semantic {
         pointer-events: none;
         user-select: none;
         opacity: 1;
+        // order: 2;
     }
 
     &:not(.focused) .symbolic {
@@ -86,11 +88,16 @@
         position: relative;
     }
 
+    &.marker:not(.focused) {
+        opacity: 0;
+    }
+
     &.focused .symbolic {
         position: relative;
         color: inherit;
         caret-color: auto;
         cursor: text;
+        // order: 2;
     }
 
     &.focused .semantic {
@@ -99,6 +106,7 @@
         opacity: 0;
         user-select: none;
         pointer-events: none;
+        // order: 1;
     }
 
     &.focused .image {

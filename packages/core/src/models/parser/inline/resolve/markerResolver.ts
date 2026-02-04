@@ -43,7 +43,7 @@ class MarkerResolver {
                 id: uuid(),
                 type: 'marker',
                 blockId,
-                text: { symbolic: text, semantic: '' },
+                text: { symbolic: text, semantic: text },
                 position: {
                     start: position,
                     end: position + text.length
