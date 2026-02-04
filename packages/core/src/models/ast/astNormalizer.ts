@@ -118,6 +118,7 @@ class AstNormalizer {
                         globalPos += serialized.length
 
                         block.text = serialized
+
                         return serialized
                     }
 
@@ -370,8 +371,8 @@ class AstNormalizer {
 
         this.text = parts.join('')
 
-        // console.log('text', JSON.stringify(this.text, null, 2))
-        // console.log('blocks', JSON.stringify(blocks, null, 2))
+        // console.log('norm text', JSON.stringify(this.text, null, 2))
+        // console.log('norm blocks', JSON.stringify(blocks, null, 2))
     }
 }
 

@@ -76,27 +76,27 @@ class Render {
                     normalizeTables(this.rootElement)
                     break
                 case 'input':
-                    console.log('input', effect.input)
                     effect.input.forEach(input => {
                         const block = this.rootElement.querySelector(`[data-block-id="${input.blockId}"]`) as HTMLElement | null
-                        console.log('block', block)
                         if (!block) return
 
                         const inline = block.querySelector(`[data-inline-id="${input.inlineId}"]`) as HTMLElement | null
-                        console.log('inline', inline)
+                        console.log('inline', JSON.stringify(input, null, 2), inline)
                         if (!inline) return
 
                         const symbolic = inline.querySelector(`.symbolic`) as HTMLElement | null
                         const semantic = inline.querySelector(`.semantic`) as HTMLElement | null
-                        console.log('symbolic', symbolic, 'semantic', semantic)
+                        
                         if (!symbolic || !semantic) return
 
-                        console.log('symbolic', symbolic.textContent, 'semantic', semantic.textContent)
+                        console.log('symbolic', symbolic)
+                        console.log('semantic', semantic)
 
                         switch (input.type) {
                             case 'codeBlockMarker':
-                                block.setAttribute('data-language', input.language)
-                                inline.textContent = input.text
+                                console.log('input', JSON.stringify(input, null, 2))
+                                block.setAttribute('data-language', input.language ?? '')
+                                symbolic.textContent = input.text
                                 break
                             case 'text':
                                 symbolic.textContent = input.symbolic

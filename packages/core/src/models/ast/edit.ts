@@ -2038,7 +2038,7 @@ class Edit {
                 console.log('newText', JSON.stringify(text, null, 2), JSON.stringify(block.fenceChar ?? '', null, 2), JSON.stringify(newText, null, 2))
                 
                 const markerText = text.slice(0, caretPosition)
-                const isMarkerOnly = markerText === (block.fenceChar?.repeat((block.fenceLength ?? 3) - 1) ?? '');
+                const isMarkerOnly = new RegExp(`^${block.fenceChar}+$`).test(markerText)
                 console.log('markerText', JSON.stringify(markerText, null, 2), isMarkerOnly)
 
                 if (isMarkerOnly) {
@@ -2046,12 +2046,18 @@ class Edit {
                         inline.text.symbolic = markerText
                         inline.position.end = inline.position.start + markerText.length
 
+                        block.language = ''
                         block.fenceLength = markerText.length
                         block.text = block.inlines.map(i => i.text.symbolic).join('')
                         block.position.end = block.position.start + block.text.length
 
+                        console.log('block', JSON.stringify(block, null, 2))
+
                         return effect.compose(
-                            [effect.input([{ type: 'text', symbolic: text, semantic: text, blockId: block.id, inlineId: inline.id }])],
+                            [effect.input([
+                                { type: 'codeBlockMarker', text: markerText, language: '', blockId: block.id, inlineId: inline.id },
+                                { type: 'text', symbolic: text, semantic: text, blockId: block.id, inlineId: inline.id }
+                            ])],
                             effect.caret(block.id, inline.id, caretPosition, 'start')
                         )
                     } else {
@@ -2098,6 +2104,8 @@ class Edit {
                     block.language = newText
                     block.text = block.inlines.map(i => i.text.symbolic).join('')
                     block.position.end = block.position.start + block.text.length
+
+                    console.log('blocks', JSON.stringify(block, null, 2))
 
                     return effect.compose(
                         [effect.input([

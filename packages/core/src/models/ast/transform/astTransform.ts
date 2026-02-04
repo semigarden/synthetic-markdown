@@ -126,23 +126,25 @@ class AstTransform {
             firstCodeBlock = firstCodeBlockEntry.block as CodeBlock
         }
 
-        // console.log('firstCodeBlockEntry', JSON.stringify(firstCodeBlockEntry, null, 2))
+        console.log('firstCodeBlockEntry', JSON.stringify(firstCodeBlockEntry, null, 2))
         // return null
         const removedBlocks = blocks.slice(entry.index + 1, firstCodeBlockEntry ? firstCodeBlockEntry.index : ast.blocks.length).map(b => b.block)
         const sliceTo = firstCodeBlockEntry ? firstCodeBlockEntry.block.position.start + 1 : this.ctx.ast.text.length
-        let newText = text + ast.text.slice(block.position.end + (caretPosition ?? 0), sliceTo)
+        let newText = text + ast.text.slice(block.position.start + (caretPosition ?? 0), sliceTo)
 
-        if (!firstCodeBlock?.close) {
-            newText += '\n' + firstCodeBlock?.fenceChar?.repeat(firstCodeBlock?.fenceLength ?? 3)
+        if (firstCodeBlock && !firstCodeBlock.close) {
+            newText += '\n' + firstCodeBlock.fenceChar?.repeat(firstCodeBlock.fenceLength ?? 3)
             removedBlocks.push(firstCodeBlock as Block)
         }
 
         const newBlocks = parser.reparseTextFragment(newText, block.position.start)
+        console.log('newBlocks', JSON.stringify(newBlocks, null, 2))
+        console.log('newText', JSON.stringify(newText, null, 2))
         if (newBlocks.length === 0) return null
 
         // console.log('newBlocks', JSON.stringify(newBlocks, null, 2))
-        // console.log('text', JSON.stringify(text, null, 2))
-        // console.log('slice', JSON.stringify(ast.text.slice(block.position.end, sliceTo), null, 2))
+        console.log('text', JSON.stringify(text, null, 2))
+        console.log('slice', JSON.stringify(ast.text.slice(block.position.end + (caretPosition ?? 0), sliceTo), null, 2))
         // console.log('newText', JSON.stringify(newText, null, 2))
         // console.log('removedBlocks', JSON.stringify(removedBlocks, null, 2))
         // return null
