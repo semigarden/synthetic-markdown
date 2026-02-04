@@ -35,8 +35,6 @@ class BlockRender {
 
         this.renderByType(block, element)
 
-        console.log('renderByType', block.type)
-
         this.mountIfNew({
             isNew,
             element,
@@ -56,8 +54,6 @@ class BlockRender {
             `[data-block-id="${block.id}"]`
         ) as HTMLElement | null
 
-        console.log('getOrCreateBlockElement', block.type)
-
         const isNew = !element
 
         if (element) {
@@ -75,7 +71,6 @@ class BlockRender {
     }
 
     private renderByType(block: Block, element: HTMLElement) {
-        console.log('renderByType', block.type)
         switch (block.type) {
             case 'blockQuote':
             case 'list':
