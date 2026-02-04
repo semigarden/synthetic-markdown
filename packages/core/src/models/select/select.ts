@@ -243,7 +243,7 @@ class Select {
         const target = (inlineEl.querySelector('.symbolic') as HTMLElement | null) ?? inlineEl
 
         if (target.childNodes.length === 0) {
-            target.appendChild(target.ownerDocument.createTextNode('\u200B'))
+            target.appendChild(target.ownerDocument.createTextNode('\u00A0'))
         }
 
         this.rootElement.focus()

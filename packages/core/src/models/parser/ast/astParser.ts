@@ -25,7 +25,7 @@ class AstParser {
         this.reset()
         parseLinkReferenceDefinitions(text, this.linkReferences)
 
-        text = text.replace(/[\u200B\u200C\u200D\uFEFF]/g, '').replace(/\r$/, '')
+        text = text.replace(/[\u00A0\u200C\u200D\uFEFF]/g, '').replace(/\r$/, '')
 
         this.block.reset()
 
@@ -79,6 +79,7 @@ class AstParser {
 
         console.log('blocks', JSON.stringify(this.blocks, null, 2))
         console.log('text', JSON.stringify(text, null, 2))
+
         return this.blocks
     }
 
@@ -116,7 +117,7 @@ class AstParser {
     public reparseTextFragment(text: string, offset: number): Block[] {
         this.block.reset()
     
-        text = text.replace(/[\u200B\u200C\u200D\uFEFF]/g, '').replace(/\r$/, '')
+        text = text.replace(/[\u00A0\u200C\u200D\uFEFF]/g, '').replace(/\r$/, '')
     
         const blocks: Block[] = []
     

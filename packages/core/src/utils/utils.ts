@@ -10,7 +10,7 @@ const uuid = (): string => {
     })
 }
 
-const strip = (string: string) => string.replace(/\u200B/g, '')
+const strip = (string: string) => string.replace(/\u00A0/g, '')
 
 const namedEntities: Record<string, string> = {
     // Basic HTML entities

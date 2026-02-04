@@ -180,7 +180,7 @@ class Input {
         }
 
         inline.text.symbolic = inline.text.symbolic
-            .replace(/[\u200B\u200C\u200D\uFEFF]/g, '')
+            .replace(/[\u00A0\u200C\u200D\uFEFF]/g, '')
             .replace(/\r$/, '')
 
         if (inline.text.symbolic === '') {
@@ -238,7 +238,7 @@ class Input {
         const currentText = inline.text.symbolic
 
         const cleanedText = currentText
-            .replace(/[\u200B\u200C\u200D\uFEFF]/g, '')
+            .replace(/[\u00A0\u200C\u200D\uFEFF]/g, '')
             .replace(/\r$/, '')
 
         if (direction === 'backward') {

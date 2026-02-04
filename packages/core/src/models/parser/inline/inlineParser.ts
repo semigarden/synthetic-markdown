@@ -45,7 +45,7 @@ class InlineParser {
                 const close = closeRaw.length > 0 ? closeRaw : ''
 
                 const raw = text
-                const body = raw.length === 0 ? '\u200B' : raw
+                const body = raw.length === 0 ? '\u00A0' : raw
                 const contentSymbolic = body
                 const contentSemantic = raw
 
@@ -116,7 +116,7 @@ class InlineParser {
                     id: uuid(),
                     type: 'text',
                     blockId: block.id,
-                    text: { symbolic: text.length === 0 ? '\u200B' : text, semantic: text },
+                    text: { symbolic: text.length === 0 ? '\u00A0' : text, semantic: text },
                     position: { start: codeStart, end: codeStart + (text.length === 0 ? 1 : text.length) },
                 },
             ]
@@ -150,7 +150,7 @@ class InlineParser {
                 id: uuid(),
                 type: 'text',
                 blockId,
-                text: { symbolic: '\u200B', semantic: '' },
+                text: { symbolic: '\u00A0', semantic: '' },
                 position: { start: position, end: position }
             })
 

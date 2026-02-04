@@ -24,7 +24,7 @@ class AstTransform {
     ): AstApplyEffect | null {
         const { ast, query, parser, effect } = this.ctx
 
-        text = text.replace(/[\u200B\u200C\u200D\uFEFF]/g, '').replace(/\r$/, '')
+        text = text.replace(/[\u00A0\u200C\u200D\uFEFF]/g, '').replace(/\r$/, '')
 
         if (detected.type === 'codeBlock') return this.toCodeBlock(text, block, caretPosition)
 
