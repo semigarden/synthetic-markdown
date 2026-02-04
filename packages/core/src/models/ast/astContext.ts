@@ -6,10 +6,10 @@ import type AstTransform from './transform/astTransform'
 import type Effect from './effect/effect'
 
 export type AstContext = {
-  ast: Ast
-  parser: AstParser
-  mutation: AstMutation
-  get query(): AstQuery
-  transform: AstTransform
-  effect: Effect
+    ast: Ast
+    parser: AstParser
+    mutation: AstMutation
+    get query(): AstQuery
+    transform: AstTransform
+    effect: Effect
 }

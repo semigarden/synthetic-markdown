@@ -1,5 +1,5 @@
 {
-    "name": "@semigarden/synthetic-md-react",
+    "name": "synthetic-md-react",
     "version": "0.0.14",
     "description": "A UI primitive for unified Markdown editing and rendering",
     "license": "MIT",
@@ -42,7 +42,7 @@
         "prepublishOnly": "npm run build"
     },
     "peerDependencies": {
-        "@semigarden/synthetic-md": "*",
+        "synthetic-md": "*",
         "react": "^19.2.0"
     },
     "devDependencies": {

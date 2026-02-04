@@ -9,8 +9,6 @@ class Edit {
     public input(blockId: string, inlineId: string, text: string, caretPosition: number): AstApplyEffect | null {
         const { query, parser, transform, effect } = this.context
 
-        console.log('input', blockId, inlineId, text, caretPosition)
-
         const block = query.getBlockById(blockId)
         if (!block) return null
     
