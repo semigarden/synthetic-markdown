@@ -72,7 +72,7 @@ class Select {
     }
 
     private onSelectionChange = () => {
-        console.log('onSelectionChange')
+        console.log('onSelectionChange', this.suppressSelectionChange)
         if (this.suppressSelectionChange) return
 
         if (this.rafId !== null) cancelAnimationFrame(this.rafId)
@@ -83,6 +83,9 @@ class Select {
             const selection = 'getSelection' in shadowRoot
                 ? shadowRoot.getSelection()
                 : document.getSelection()
+
+            console.log('onSelectionChange range', document.getSelection()?.rangeCount)
+            console.log('onSelectionChange shadowRoot range', ('getSelection' in shadowRoot ? shadowRoot.getSelection()?.rangeCount : null))
                 
             if (!selection || selection.rangeCount === 0) {
                 this.range = null

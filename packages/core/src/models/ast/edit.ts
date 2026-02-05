@@ -76,6 +76,8 @@ class Edit {
             block.inlines = newInlines
             newInlines.forEach((i: Inline) => (i.blockId = block.id))
 
+            console.log('input 0')
+
             return effect.compose(
                 [effect.update([{ type: 'block', at: 'current', target: block, current: block }])],
                 effect.caret(block.id, newInline.id, position, 'start')
@@ -88,6 +90,8 @@ class Edit {
         
         block.text = block.inlines.map(i => i.text.symbolic).join('')
         block.position.end = block.position.start + block.text.length
+
+        console.log('input 1')
 
         return effect.compose(
             [effect.input([{ type: 'text', symbolic: inline.text.symbolic, semantic: inline.text.semantic, blockId: block.id, inlineId: inline.id }])],

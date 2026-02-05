@@ -81,7 +81,6 @@ class Render {
                         if (!block) return
 
                         const inline = block.querySelector(`[data-inline-id="${input.inlineId}"]`) as HTMLElement | null
-                        console.log('inline', JSON.stringify(input, null, 2), inline)
                         if (!inline) return
 
                         const symbolic = inline.querySelector(`.symbolic`) as HTMLElement | null
@@ -89,18 +88,27 @@ class Render {
                         
                         if (!symbolic || !semantic) return
 
-                        console.log('symbolic', symbolic)
-                        console.log('semantic', semantic)
+                        const setText = (el: HTMLElement, value: string) => {
+                            const first = el.firstChild
+                            if (first instanceof Text) {
+                                first.data = value
+                                while (first.nextSibling) first.nextSibling.remove()
+                                return
+                            }
+                            el.textContent = value
+                        }
 
                         switch (input.type) {
                             case 'codeBlockMarker':
-                                console.log('input', JSON.stringify(input, null, 2))
                                 block.setAttribute('data-language', input.language ?? '')
-                                symbolic.textContent = input.text
+                                // symbolic.textContent = input.text
+                                setText(symbolic, input.text)
                                 break
                             case 'text':
-                                symbolic.textContent = input.symbolic
-                                semantic.textContent = input.semantic
+                                // symbolic.textContent = input.symbolic
+                                // semantic.textContent = input.semantic
+                                setText(symbolic, input.symbolic)
+                                setText(semantic, input.semantic)
                                 break
                         }
                     })

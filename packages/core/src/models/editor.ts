@@ -3,6 +3,7 @@ import Caret from './caret'
 import Render from './render/render'
 import Timeline from './timeline'
 import { EditEffect, Executors, AstApplyEffect, AstEffectMap } from '../types'
+import Select from './select/select'
 
 class Editor {
     private executors: Executors = {
@@ -41,6 +42,7 @@ class Editor {
     }
     public emitChange: () => void
     public timeline: Timeline
+    private caretToken = 0
 
     constructor(
         public ast: Ast,
@@ -89,9 +91,11 @@ class Editor {
 
             const { renderEffect, caretEffect } = result
 
+            this.caretToken++
+
             this.ast.normalize()
             this.render.apply(renderEffect)
-            this.caret.apply(caretEffect)
+            this.caret.apply(caretEffect, this.caretToken)
             this.emitChange()
         }
 

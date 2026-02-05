@@ -82,8 +82,8 @@ class Element extends HTMLElement {
 
         this.render = new Render(this.rootElement!)
         this.caret = new Caret(this.rootElement!)
-        this.editor = new Editor(this.ast, this.caret, this.render, this.emitChange.bind(this))
         this.select = new Select(this.ast, this.caret, this.rootElement!)
+        this.editor = new Editor(this.ast, this.caret, this.render, this.emitChange.bind(this))
         this.select.attach()
 
         this.input = new Input(this.ast, this.caret, this.select)

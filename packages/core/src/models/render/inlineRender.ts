@@ -48,7 +48,7 @@ function renderInline(inline: Inline): HTMLElement {
     const semanticText = document.createElement('span')
     semanticText.textContent = inline.text.semantic
     semanticText.classList.add('semantic')
-    semanticText.contentEditable = 'false'
+    // semanticText.contentEditable = 'false'
 
     inlineElement.appendChild(symbolicText)
     inlineElement.appendChild(semanticText)
