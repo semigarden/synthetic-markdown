@@ -18,14 +18,14 @@
         font-size: 16px;
 
         .title {
+            position: relative;
             display: flex;
             align-items: center;
             gap: 5px;
             padding: 8px 4px;
             cursor: pointer;
             color: var(--color-button-text);
-            transition: color 1s, border-color 1s;
-            border-bottom: 1px solid transparent;
+            transition: color 1s;
 
             .icon {
                 width: 20px;
@@ -39,12 +39,34 @@
                 }
             }
 
+            &::after {
+                content: '';
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                margin: 0 auto;
+                width: 0;
+                height: 2px;
+                background-color: transparent;
+                opacity: 0;
+                transition: width 0.5s, background-color 0.5s, opacity 0.5s;
+            }
+
             &:hover {
-                border-color: var(--color-button-text);
+                &::after {
+                    width: 100%;
+                    opacity: 1;
+                    background-color: var(--color-button-text);
+                }
             }
 
             &.active {
-                border-color: var(--color-button-text);
+                &::after {
+                    width: 100%;
+                    opacity: 1;
+                    background-color: var(--color-button-text);
+                }
             }
         }
     }
@@ -106,11 +128,17 @@
             color: var(--color-button-text);
     
             &:hover {
-                border-color: var(--color-button-text);
+                &::after {
+                    width: 100%;
+                    background-color: var(--color-button-text);
+                }
             }
     
             &.active {
-                border-color: var(--color-button-text);
+                &::after {
+                    width: 100%;
+                    background-color: var(--color-button-text);
+                }
             }
     
             .icon {
@@ -125,11 +153,17 @@ html[data-theme="light"] .app {
         color: var(--color-button-text);
 
         &:hover {
-            border-color: var(--color-button-text);
+            &::after {
+                width: 100%;
+                background-color: var(--color-button-text);
+            }
         }
 
         &.active {
-            border-color: var(--color-button-text);
+            &::after {
+                width: 100%;
+                background-color: var(--color-button-text);
+            }
         }
 
         .icon {
