@@ -71,23 +71,52 @@ class Select {
         this.focus.focusInline(hit.inline.id)
     }
 
+    public syncFromDomSelection(): void {
+        const root = this.rootElement.getRootNode() as ShadowRoot | Document
+        const selection =
+            'getSelection' in root ? root.getSelection() : document.getSelection()
+      
+        if (!selection || selection.rangeCount === 0) return
+      
+        if (
+            !this.rootElement.contains(selection.anchorNode) ||
+            !this.rootElement.contains(selection.focusNode)
+        ) return
+      
+        const range = resolveRange(this.ast, this.caret, this.rootElement, selection)
+        if (!range) return
+      
+        this.range = range
+
+        const collapsed =
+            range.start.blockId === range.end.blockId &&
+            range.start.inlineId === range.end.inlineId &&
+            range.start.position === range.end.position
+        
+        if (collapsed) {
+            this.caret.blockId = range.start.blockId
+            this.caret.inlineId = range.start.inlineId
+            this.caret.position = range.start.position
+            this.caret.affinity = 'end'
+        }
+    }
+      
+
     private onSelectionChange = () => {
-        console.log('onSelectionChange', this.suppressSelectionChange)
+        if (this.caret.isSelectionSuppressed()) return
         if (this.suppressSelectionChange) return
 
         if (this.rafId !== null) cancelAnimationFrame(this.rafId)
 
         this.rafId = requestAnimationFrame(() => {
-            // const selection = window.getSelection()
             const shadowRoot = this.rootElement.getRootNode() as ShadowRoot | Document
             const selection = 'getSelection' in shadowRoot
                 ? shadowRoot.getSelection()
                 : document.getSelection()
 
-            console.log('onSelectionChange range', document.getSelection()?.rangeCount)
-            console.log('onSelectionChange shadowRoot range', ('getSelection' in shadowRoot ? shadowRoot.getSelection()?.rangeCount : null))
-                
             if (!selection || selection.rangeCount === 0) {
+                if (this.rootElement.matches(':focus-within')) return
+
                 this.range = null
                 this.caret.clear()
                 this.multiInlineMode = false
@@ -96,7 +125,6 @@ class Select {
                 this.focus.unfocusInlines(this.focusState.focusedInlineIds)
                 this.focusState.focusedBlockIds = []
                 this.focusState.focusedInlineIds = []
-                console.log('onSelectionChange clear')
                 return
             }
 
@@ -104,7 +132,6 @@ class Select {
                 !this.rootElement.contains(selection.anchorNode) ||
                 !this.rootElement.contains(selection.focusNode)
             ) {
-                console.log('onSelectionChange not in editor')
                 return
             }
 
@@ -134,8 +161,6 @@ class Select {
             this.focus.focusBlocks(this.focusState.focusedBlockIds)
             this.focus.focusInlines(this.focusState.focusedInlineIds)
 
-            console.log('onSelectionChange focusState', JSON.stringify(this.focusState, null, 2))
-
             const range = resolveRange(this.ast, this.caret, this.rootElement, selection)
             this.range = range
         })
@@ -150,6 +175,8 @@ class Select {
 
         console.log('onRootFocusIn', selection)
         if (!selection || selection.rangeCount === 0) {
+            if (this.rootElement.matches(':focus-within')) return
+
             this.range = null
             this.caret.clear()
             this.multiInlineMode = false
@@ -158,8 +185,7 @@ class Select {
             this.focus.unfocusInlines(this.focusState.focusedInlineIds)
             this.focusState.focusedBlockIds = []
             this.focusState.focusedInlineIds = []
-
-            console.log('onRootFocusIn clear')
+            console.log('onSelectionChange clear')
             return
         }
 

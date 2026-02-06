@@ -5,6 +5,8 @@ import Select from './select/select'
 import { Intent as IntentType } from '../types'
 
 class Interaction {
+    private isComposing = false
+
     constructor(
         private rootElement: HTMLElement,
         private select: Select,
@@ -15,6 +17,8 @@ class Interaction {
 
     attach() {
         this.rootElement.addEventListener('beforeinput', this.onBeforeInput)
+        this.rootElement.addEventListener('compositionstart', this.onCompositionStart)
+        this.rootElement.addEventListener('compositionend', this.onCompositionEnd)
         this.rootElement.addEventListener('keydown', this.onKeyDown)
         this.rootElement.addEventListener('paste', this.onPaste)
         this.rootElement.addEventListener('copy', this.onCopy)
@@ -23,10 +27,20 @@ class Interaction {
 
     detach() {
         this.rootElement.removeEventListener('beforeinput', this.onBeforeInput)
+        this.rootElement.removeEventListener('compositionstart', this.onCompositionStart)
+        this.rootElement.removeEventListener('compositionend', this.onCompositionEnd)
         this.rootElement.removeEventListener('keydown', this.onKeyDown)
         this.rootElement.removeEventListener('paste', this.onPaste)
         this.rootElement.removeEventListener('copy', this.onCopy)
         this.rootElement.removeEventListener('click', this.onClick)
+    }
+
+    private onCompositionStart = () => {
+        this.isComposing = true
+    }
+
+    private onCompositionEnd = () => {
+        this.isComposing = false
     }
 
     private onBeforeInput = (event: InputEvent) => {
@@ -35,16 +49,40 @@ class Interaction {
             return
         }
 
-        if (event.inputType === 'insertLineBreak' || event.inputType === 'insertParagraph') {
-            event.preventDefault()
+        if (this.isComposing && event.isComposing) {
+            console.log('onBeforeInput composing', event.data)
             return
         }
 
+        if (event.inputType === 'insertLineBreak' || event.inputType === 'insertParagraph') {
+            event.preventDefault()
+            // const context = this.select.resolveInlineContext()
+            // if (!context) return
+            // const effect = this.intent.resolveEffect('split', context)
+            // if (!effect) return
+            // this.editor.apply(effect)
+            return
+        }
+
+        // if (event.inputType === 'deleteContentBackward') {
+        //     event.preventDefault()
+        //     console.log('onBeforeInput deleteContentBackward', event.data)
+        //     const context = this.select.resolveInlineContext()
+        //     if (!context) return
+        //     const effect = this.intent.resolveEffect('merge', context)
+        //     if (!effect) return
+        //     this.editor.apply(effect)
+        //     return
+        // }
+
+        this.select.syncFromDomSelection()
+
         const effect = this.input.resolveEffect({ text: event.data ?? '', type: event.inputType })
         if (!effect) return
-        if (effect.preventDefault) {
-            event.preventDefault()
-        }
+        // if (effect.preventDefault) {
+        //     event.preventDefault()
+        // }
+        event.preventDefault()
 
         this.editor.apply(effect)
     }

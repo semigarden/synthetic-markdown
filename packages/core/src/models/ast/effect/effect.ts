@@ -29,7 +29,7 @@ class Effect {
         return { type: 'restore', caret: { blockId, inlineId, position, affinity } }
     }
 
-    compose(renderEffect: AstApplyEffect['renderEffect'][], caretEffect: AstApplyEffect['caretEffect']): AstApplyEffect {
+    compose(renderEffect: AstApplyEffect['renderEffect'][], caretEffect?: AstApplyEffect['caretEffect']): AstApplyEffect {
         return { renderEffect: renderEffect.flat() as AstApplyEffect['renderEffect'], caretEffect }
     }
 

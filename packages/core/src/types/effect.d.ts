@@ -123,7 +123,7 @@ export type CaretEffect = {
 
 export type AstApplyEffect = {
     renderEffect: RenderEffect[]
-    caretEffect: CaretEffect
+    caretEffect?: CaretEffect
 }
 
 export type EditEffect = {

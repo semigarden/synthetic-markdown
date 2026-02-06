@@ -10,6 +10,9 @@ class Caret {
     private restoreToken = 0
     private composing = false
 
+    private suppressSelectionToken = 0
+    private suppressRafId: number | null = null
+
     constructor(
         private rootElement: HTMLElement,
     ) {}
@@ -30,6 +33,27 @@ class Caret {
 
     private onCompositionEnd = () => {
         this.composing = false
+    }
+
+    public beginSelectionSuppress(token: number) {
+        this.suppressSelectionToken = token
+
+        if (this.suppressRafId !== null) cancelAnimationFrame(this.suppressRafId)
+
+        this.suppressRafId = requestAnimationFrame(() => {
+            this.suppressRafId = requestAnimationFrame(() => {
+                if (this.suppressSelectionToken === token) {
+                    this.suppressSelectionToken = 0
+                }
+                this.suppressRafId = null
+            })
+        })
+    }
+
+    public isSelectionSuppressed(token?: number) {
+        if (this.suppressSelectionToken === 0) return false
+        if (token === undefined) return true
+        return this.suppressSelectionToken === token
     }
 
     clear() {
@@ -56,69 +80,43 @@ class Caret {
     }
 
     public restoreCaret(inlineId: string | null = this.inlineId, position: number | null = this.position) {
-        console.log('restoreCaret', inlineId, position)
         if (inlineId === null || position === null) return
-        if (this.rootElement.tabIndex < 0) this.rootElement.tabIndex = 0
+
+        console.log('restoreCaret', inlineId, position)
 
         const inlineEl = this.rootElement.querySelector(`[data-inline-id="${inlineId}"]`) as HTMLElement
-        if (!inlineEl) {
-            console.warn('could not find inline element for caret restore:', inlineId)
-            return
-        }
+        if (!inlineEl) return
 
         const target = (inlineEl.querySelector('.symbolic') as HTMLElement | null) ?? inlineEl
+        let textNode = target.firstChild instanceof Text ? target.firstChild : null
 
-        if (target.childNodes.length === 0) {
-            target.appendChild(target.ownerDocument.createTextNode('\u00A0'))
+        if (!textNode) {
+            target.textContent = ''
+            textNode = target.ownerDocument.createTextNode('\u00A0')
+            target.appendChild(textNode)
         }
 
-        target.focus({ preventScroll: true })
-
-        const selection = target.ownerDocument.getSelection()
+      
+        const root = this.rootElement.getRootNode() as ShadowRoot | Document
+        const selection =
+            'getSelection' in root ? root.getSelection() : target.ownerDocument.getSelection()
         if (!selection) return
 
-        selection.removeAllRanges()
+        this.rootElement.focus({ preventScroll: true })
+
 
         const range = target.ownerDocument.createRange()
-        let placed = false
+        const max = textNode.data.length
+        const clamped = Math.min(position, max)
 
-        if (target.childNodes.length > 0 && target.firstChild instanceof Text) {
-            const textNode = target.firstChild as Text
-            const clamped = Math.min(position, textNode.length)
-            range.setStart(textNode, clamped)
-            range.collapse(true)
-            placed = true
-        } else if (target.childNodes.length > 0) {
-            let currentPos = 0
-            const walker = target.ownerDocument.createTreeWalker(
-                target,
-                NodeFilter.SHOW_TEXT,
-                null
-            )
-
-            let node: Text | null
-            while ((node = walker.nextNode() as Text)) {
-                const len = node.length
-                if (currentPos + len >= position) {
-                    range.setStart(node, position - currentPos)
-                    range.collapse(true)
-                    placed = true
-                    break
-                }
-                currentPos += len
-            }
-        }
-
-        if (!placed) {
-            range.selectNodeContents(target)
-            range.collapse(false)
-        }
-
+        selection.removeAllRanges()
+        range.setStart(textNode, clamped)
+        range.collapse(true)
         selection.addRange(range)
-        inlineEl.scrollIntoView({ block: 'nearest' })
+        console.log('restoreCaret selection', selection.rangeCount)
     }
-    
-    public apply(effect: CaretEffect, caretToken: number) {
+
+    public apply(effect: CaretEffect, caretToken: number, mode: 'microtask' | 'raf' | 'raf2') {
         switch (effect.type) {
             case 'restore': {
                 const { blockId, inlineId, position, affinity } = effect.caret
@@ -127,24 +125,42 @@ class Caret {
                 this.position = position
                 this.affinity = affinity
 
-                this.scheduleRestore(caretToken, inlineId, position)
+                this.beginSelectionSuppress(caretToken)
+                this.scheduleRestore(caretToken, inlineId, position, mode)
                 break
             }
         }
     }
 
-    private scheduleRestore(caretToken: number, inlineId: string, position: number) {
+    private scheduleRestore(caretToken: number, inlineId: string, position: number, mode: 'microtask' | 'raf' | 'raf2') {
         this.restoreToken = caretToken
-        
+
         if (this.restoreRafId !== null) cancelAnimationFrame(this.restoreRafId)
 
-        this.restoreRafId = requestAnimationFrame(() => {
-            this.restoreRafId = null
-            
+        const run = () => {
             if (this.composing) return
             if (caretToken !== this.restoreToken) return
-
             this.restoreCaret(inlineId, position)
+        }
+        
+        if (mode === 'microtask') {
+            queueMicrotask(run)
+            return
+        }
+        
+        if (mode === 'raf') {
+            this.restoreRafId = requestAnimationFrame(() => {
+                this.restoreRafId = null
+                run()
+            })
+            return
+        }
+        
+        this.restoreRafId = requestAnimationFrame(() => {
+            this.restoreRafId = requestAnimationFrame(() => {
+                this.restoreRafId = null
+                run()
+            })
         })
     }
 }

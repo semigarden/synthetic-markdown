@@ -42,7 +42,8 @@ class Render {
         const element = createInlineElement(current)
         switch (at) {
             case 'current':
-                targetElement.replaceWith(element)
+                // targetElement.replaceWith(element)
+                this.patchInlineElement(targetElement, element)
                 break
             case 'previous':
                 targetElement.before(element)
@@ -88,27 +89,27 @@ class Render {
                         
                         if (!symbolic || !semantic) return
 
-                        const setText = (el: HTMLElement, value: string) => {
-                            const first = el.firstChild
-                            if (first instanceof Text) {
-                                first.data = value
-                                while (first.nextSibling) first.nextSibling.remove()
-                                return
-                            }
-                            el.textContent = value
-                        }
+                        // const setText = (el: HTMLElement, value: string) => {
+                        //     const first = el.firstChild
+                        //     if (first instanceof Text) {
+                        //         first.data = value
+                        //         while (first.nextSibling) first.nextSibling.remove()
+                        //         return
+                        //     }
+                        //     el.textContent = value
+                        // }
 
                         switch (input.type) {
                             case 'codeBlockMarker':
                                 block.setAttribute('data-language', input.language ?? '')
                                 // symbolic.textContent = input.text
-                                setText(symbolic, input.text)
+                                this.setText(symbolic, input.text)
                                 break
                             case 'text':
                                 // symbolic.textContent = input.symbolic
                                 // semantic.textContent = input.semantic
-                                setText(symbolic, input.symbolic)
-                                setText(semantic, input.semantic)
+                                this.setText(symbolic, input.symbolic)
+                                this.setText(semantic, input.semantic)
                                 break
                         }
                     })
@@ -138,6 +139,40 @@ class Render {
             }
         }
     }
+
+    private patchInlineElement(existing: HTMLElement, next: HTMLElement) {
+        for (const { name } of Array.from(existing.attributes)) {
+            if (!next.hasAttribute(name)) existing.removeAttribute(name)
+        }
+        for (const { name, value } of Array.from(next.attributes)) {
+            if (existing.getAttribute(name) !== value) existing.setAttribute(name, value)
+        }
+
+        const nextSymbolic = next.querySelector('.symbolic') as HTMLElement | null
+        const nextSemantic = next.querySelector('.semantic') as HTMLElement | null
+        const curSymbolic = existing.querySelector('.symbolic') as HTMLElement | null
+        const curSemantic = existing.querySelector('.semantic') as HTMLElement | null
+
+        if (nextSymbolic && curSymbolic) {
+            this.setText(curSymbolic, nextSymbolic.textContent ?? '')
+        }
+        if (nextSemantic && curSemantic) {
+            this.setText(curSemantic, nextSemantic.textContent ?? '')
+        }
+    }
+
+    private setText(element: HTMLElement, value: string) {
+        const v = value.length ? value : '\u00A0'
+        const first = element.firstChild
+        if (first instanceof Text) {
+            first.data = v
+            while (first.nextSibling) first.nextSibling.remove()
+            return
+        }
+        element.textContent = ''
+        element.appendChild(element.ownerDocument.createTextNode(v))
+    }
+
 }
 
 export default Render

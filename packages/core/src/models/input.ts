@@ -39,28 +39,55 @@ class Input {
     }
 
     private resolveInsert(text: string, range: SelectionRange): EditEffect | null {
+        console.log('input resolveInsert', text, range)
         if (range.start.blockId !== range.end.blockId) {
             return this.resolveMultiBlockInsert(text, range)
         }
 
         const block = this.ast.query.getBlockById(range.start.blockId)
+        console.log('input resolveInsert block', JSON.stringify(block, null, 2))
         if (!block) return null
 
         const inline = this.ast.query.getInlineById(range.start.inlineId)
+        console.log('input resolveInsert inline', JSON.stringify(inline, null, 2))
         if (!inline) return null
 
         if (block.type === 'codeBlock') {
+            console.log('input resolveInsert codeBlock')
             return this.resolveCodeBlockInsert(text, block, inline, range)
         }
 
         const startInlineIndex = block.inlines.findIndex(i => i.id === inline.id)
         const endInline = this.ast.query.getInlineById(range.end.inlineId)
+        console.log('input resolveInsert endInline', JSON.stringify(endInline, null, 2))
         if (!endInline) return null
 
         if (inline.id === endInline.id) {
             const currentText = inline.text.symbolic
-            const newText = currentText.slice(0, range.start.position) + text + currentText.slice(range.end.position)
-            const newCaretPosition = range.start.position + text.length
+            // const newText = currentText.slice(0, range.start.position) + text + currentText.slice(range.end.position)
+            // const newCaretPosition = range.start.position + text.length
+
+            // console.log('input resolveInsert', newText, range.start.position, newCaretPosition)
+
+            const isCollapsed =
+                range.start.blockId === range.end.blockId &&
+                range.start.inlineId === range.end.inlineId &&
+                range.start.position === range.end.position
+
+            const startPos = isCollapsed
+                ? (this.caret.position ?? range.start.position)
+                : range.start.position
+              
+            const endPos = isCollapsed
+                ? startPos
+                : range.end.position
+
+            const newText =
+                currentText.slice(0, startPos) + text + currentText.slice(endPos)
+              
+              const newCaretPosition = startPos + text.length
+
+            console.log('input resolveInsert', isCollapsed,newText, startPos, endPos, newCaretPosition)
 
             return {
                 preventDefault: true,
@@ -89,6 +116,8 @@ class Input {
         
         const newText = textBefore + text + textAfter
         const newCaretPosition = textBefore.length + text.length
+
+        console.log('input resolveInsert 2', newText, textBefore.length, newCaretPosition)
 
         return {
             preventDefault: true,
@@ -220,6 +249,8 @@ class Input {
             newText = currentText.slice(0, position) + currentText.slice(position + 1)
             newCaretPosition = position
         }
+
+        console.log('input resolveDelete', direction, newText, newCaretPosition)
 
         return {
             preventDefault: true,
