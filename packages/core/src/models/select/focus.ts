@@ -93,7 +93,6 @@ class Focus {
         if (!inlineElement) return
 
         inlineElement.classList.add('focused')
-        console.log('focusInline', inlineId)
     }
 
     public unfocusInline(inlineId: string) {

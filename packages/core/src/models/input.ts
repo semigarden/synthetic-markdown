@@ -230,7 +230,8 @@ class Input {
 
         const inlineIndex = block.inlines.findIndex(i => i.id === inline.id)
 
-        const position = range.start.position
+        const positionInline = range.start.position
+        const position = this.caret.position ?? positionInline
         const currentText = inline.text.symbolic
 
         let newText: string
@@ -265,7 +266,8 @@ class Input {
     }
 
     private resolveCodeBlockDelete(direction: 'backward' | 'forward', block: Block, inline: Inline, range: SelectionRange): EditEffect | null {
-        const position = range.start.position
+        const positionInline = range.start.position
+        const position = this.caret.position ?? positionInline
         const currentText = inline.text.symbolic
 
         const cleanedText = currentText

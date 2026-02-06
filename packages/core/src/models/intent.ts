@@ -14,7 +14,6 @@ class Intent {
 
     public resolveEffect(intent: IntentType, context: EditContext): EditEffect {
         if (intent === 'split') {
-            console.log('resolveSplit', intent, context)
             return this.resolveSplit(context)
         } else if (intent === 'merge') {
             return this.resolveMerge(context)
@@ -38,7 +37,8 @@ class Intent {
     }
 
     public resolveSplit(context: EditContext): EditEffect {
-        const caretPosition = this.caret.getPositionInInline(context.inlineElement)
+        const caretPositionInline = this.caret.getPositionInInline(context.inlineElement)
+        const caretPosition = this.caret.position ?? caretPositionInline
         const parentBlock = this.ast.query.getParentBlock(context.block)
 
         if (context.block.type === 'codeBlock') {
@@ -107,6 +107,8 @@ class Intent {
                 ast: [{ type: 'splitBlockQuote', blockQuoteId: parentBlock.id, blockId: context.block.id, inlineId: context.inline.id, caretPosition: caretPosition }],
             }
         }
+
+        console.log('resolveSplit', this.caret.position, caretPosition)
 
         return {
             preventDefault: true,
@@ -226,7 +228,8 @@ class Intent {
 
     private resolveIndent(context: EditContext): EditEffect {
         if (context.block.type === 'codeBlock') {
-            const caretPosition = this.caret.getPositionInInline(context.inlineElement)
+            const caretPositionInline = this.caret.getPositionInInline(context.inlineElement)
+            const caretPosition = this.caret.position ?? caretPositionInline
             const tabSpaces = '  '
             
             const currentText = context.inline.text.symbolic
@@ -247,7 +250,8 @@ class Intent {
 
         const parentBlock = this.ast.query.getParentBlock(context.block)
         if (parentBlock?.type === 'tableCell' || parentBlock?.type === 'tableHeader') {
-            const caretPosition = this.caret.getPositionInInline(context.inlineElement)
+            const caretPositionInline = this.caret.getPositionInInline(context.inlineElement)
+            const caretPosition = this.caret.position ?? caretPositionInline
             return {
                 preventDefault: true,
                 ast: [{
@@ -365,7 +369,8 @@ class Intent {
         const tableCell = this.ast.query.getParentBlock(context.block)
         if (tableCell?.type !== 'tableCell' && tableCell?.type !== 'tableHeader') return { preventDefault: false }
 
-        const caretPosition = this.caret.getPositionInInline(context.inlineElement)
+        const caretPositionInline = this.caret.getPositionInInline(context.inlineElement)
+        const caretPosition = this.caret.position ?? caretPositionInline
 
         return {
             preventDefault: true,

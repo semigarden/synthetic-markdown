@@ -173,7 +173,6 @@ class Select {
             ? shadowRoot.getSelection()
             : document.getSelection()
 
-        console.log('onRootFocusIn', selection)
         if (!selection || selection.rangeCount === 0) {
             if (this.rootElement.matches(':focus-within')) return
 
@@ -185,7 +184,6 @@ class Select {
             this.focus.unfocusInlines(this.focusState.focusedInlineIds)
             this.focusState.focusedBlockIds = []
             this.focusState.focusedInlineIds = []
-            console.log('onSelectionChange clear')
             return
         }
 
@@ -193,7 +191,6 @@ class Select {
             !this.rootElement.contains(selection.anchorNode) ||
             !this.rootElement.contains(selection.focusNode)
         ) {
-            console.log('onRootFocusIn not in editor')
             return
         }
 
@@ -225,7 +222,6 @@ class Select {
 
         const range = resolveRange(this.ast, this.caret, this.rootElement, selection)
         this.range = range
-        console.log('onRootFocusIn range', JSON.stringify(range, null, 2), selection)
     }
 
     private onRootFocusOut = (e: FocusEvent) => {

@@ -102,6 +102,9 @@ class Edit {
     public split(blockId: string, inlineId: string, caretPosition: number): AstApplyEffect | null {
         const { ast, query, parser, mutation, effect } = this.context
 
+        console.log('split', blockId, inlineId, caretPosition)
+
+        // return null
         const block = query.getBlockById(blockId)
         if (!block) return null
 
