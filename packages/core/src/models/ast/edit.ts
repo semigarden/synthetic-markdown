@@ -41,6 +41,22 @@ class Edit {
             if (!entry?.parent) return false
             return entry.parent.type === 'listItem' || entry.parent.type === 'taskListItem'
         })()
+
+        const { lineStart, leadingSpaces } = query.getLineInfo(newText, absoluteCaretPosition)
+
+        const caretInIndent = absoluteCaretPosition <= lineStart + leadingSpaces
+        const shouldIndent =
+            inListItem &&
+            caretInIndent &&
+            leadingSpaces === 4 &&
+            absoluteCaretPosition === lineStart + 4
+
+        if (shouldIndent) {
+            const flat = query.flattenBlocks(this.context.ast.blocks)
+            const entry = flat.find(b => b.block.id === block.id)
+            if (!entry?.parent) return null
+            return this.indentListItem(entry.parent.id)
+        }
     
         const taskPrefix = /^\[([ xX])\](?:\s+|$)/.test(newText)
     

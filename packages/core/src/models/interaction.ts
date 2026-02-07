@@ -46,6 +46,7 @@ class Interaction {
     }
 
     private onBeforeInput = (event: InputEvent) => {
+        console.log('onBeforeInput', event.inputType, event.data)
         if (event.inputType === 'insertFromPaste') {
             event.preventDefault()
             return
@@ -56,27 +57,8 @@ class Interaction {
             return
         }
 
-        if (event.inputType === 'insertLineBreak') {
+        if (event.inputType === 'insertParagraph' || event.inputType === 'insertLineBreak') {
             event.preventDefault()
-            const context = this.select.resolveInlineContext()
-
-            const parentBlock = this.ast.query.getParentBlock(context?.block as Block)
-            if (context && parentBlock?.type === 'listItem') {
-                const effect = this.intent.resolveEffect('indent', context)
-                if (!effect) return
-
-                this.editor.apply(effect)
-            }
-            return
-        }
-
-        if (event.inputType === 'insertParagraph') {
-            event.preventDefault()
-            // const context = this.select.resolveInlineContext()
-            // if (!context) return
-            // const effect = this.intent.resolveEffect('split', context)
-            // if (!effect) return
-            // this.editor.apply(effect)
             return
         }
 
@@ -205,18 +187,20 @@ class Interaction {
         const context = this.select.resolveInlineContext()
         const isInCodeBlock = context?.block?.type === 'codeBlock'
 
+        console.log('resolveIntentFromEvent', key, event.shiftKey, event.ctrlKey)
+
         if (event.shiftKey) {
             if (key === 'tab') return 'outdent'
             if (key === 'enter') {
                 const parentBlock = this.ast.query.getParentBlock(context?.block as Block)
-                if (parentBlock?.type === 'listItem') {
+                if (parentBlock?.type === 'listItem' || parentBlock?.type === 'taskListItem' || parentBlock?.type === 'blockQuote') {
                     return 'indent'
                 }
                 return 'splitInCell'
             }
             if (key === 'backspace') {
                 const parentBlock = this.ast.query.getParentBlock(context?.block as Block)
-                if (parentBlock?.type === 'listItem') {
+                if (parentBlock?.type === 'listItem' || parentBlock?.type === 'taskListItem' || parentBlock?.type === 'blockQuote') {
                     return 'outdent'
                 }
                 return 'insertRowAbove'

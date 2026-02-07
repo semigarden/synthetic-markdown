@@ -280,6 +280,14 @@ class AstQuery {
         const lines = text.split('\n')
         return lines.map(l => `> ${l}`).join('\n')
     }
+
+    public getLineInfo(text: string, absPos: number): { lineStart: number; leadingSpaces: number } {
+        const lineStart = text.lastIndexOf('\n', Math.max(0, absPos - 1)) + 1
+        let i = lineStart
+        while (i < text.length && text[i] === ' ') i++
+        const leadingSpaces = i - lineStart
+        return { lineStart, leadingSpaces }
+    }
 }
 
 export default AstQuery
