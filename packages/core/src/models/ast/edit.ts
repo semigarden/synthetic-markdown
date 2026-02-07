@@ -9,8 +9,6 @@ class Edit {
     public input(blockId: string, inlineId: string, text: string, caretPosition: number): AstApplyEffect | null {
         const { query, parser, transform, effect } = this.context
 
-        console.log('input', text, caretPosition)
-
         const block = query.getBlockById(blockId)
         if (!block) return null
     
@@ -32,11 +30,9 @@ class Edit {
         newText = strip(newText)
     
         const detectedBlock = detectBlockType(newText)
-    
         const blockTypeChanged =
             detectedBlock.type !== block.type ||
             (detectedBlock.type === 'heading' && block.type === 'heading' && detectedBlock.level !== block.level)
-    
         const ignoreTypes = ['blankLine', 'table']
     
         const inListItem = (() => {
@@ -56,17 +52,19 @@ class Edit {
             return transform.transformBlock(newText, block, detectedBlock, caretPosition)
         }
     
-        if (block.type === 'paragraph' && this.isTableDivider(newText)) {
-            const prevBlock = this.getPreviousBlock(block)
-            if (prevBlock?.type === 'paragraph' && this.isTableHeader(prevBlock.text)) {
-                return this.mergeIntoTable(prevBlock, block, newText)
-            }
-        }
+        // disabled
+        // if (block.type === 'paragraph' && this.isTableDivider(newText)) {
+        //     const prevBlock = this.getPreviousBlock(block)
+        //     if (prevBlock?.type === 'paragraph' && this.isTableHeader(prevBlock.text)) {
+        //         return this.mergeIntoTable(prevBlock, block, newText)
+        //     }
+        // }
 
         const newInlines = parser.inline.parseInline(newText, block.id, block.type, block.position.start)
         const hit = query.getInlineAtPosition(newInlines, absoluteCaretPosition)
         const newInline = hit?.inline
         const position = hit?.position ?? 0
+
         if (!newInline) return null
 
         const inlineTypeChanged = newInline.type !== inline.type
@@ -75,8 +73,6 @@ class Edit {
             block.position = { start: block.position.start, end: block.position.start + block.text.length }
             block.inlines = newInlines
             newInlines.forEach((i: Inline) => (i.blockId = block.id))
-
-            console.log('input 0', caretPosition, position)
 
             return effect.compose(
                 [effect.update([{ type: 'block', at: 'current', target: block, current: block }])],
@@ -91,8 +87,6 @@ class Edit {
         
         block.text = block.inlines.map(i => i.text.symbolic).join('')
         block.position.end = block.position.start + block.text.length
-
-        console.log('input 1')
 
         return effect.compose(
             [effect.input([{ type: 'text', symbolic: inline.text.symbolic, semantic: inline.text.semantic, blockId: block.id, inlineId: inline.id }])],
@@ -214,8 +208,6 @@ class Edit {
 
         const { leftBlock, mergedInline, removedBlock } = result
 
-        console.log('mergedInline', JSON.stringify(mergedInline, null, 2))
-
         const mergeAdjacentIn = (arr: Block[]) => {
             let i = 0
             while (i < arr.length - 1) {
@@ -310,8 +302,6 @@ class Edit {
         if (blockTypeChanged && !ignoreTypes.includes(detectedBlock.type)) {
             return transform.transformBlock(newText, leftBlock, detectedBlock, caretPositionInMergedInline, removedBlocks)
         }
-
-        console.log('mergeInline caretPositionInMergedInline', caretPositionInMergedInline, leftInline.text.symbolic.length)
 
         return effect.compose(
             [effect.update([{ type: 'block', at: 'current', target: leftBlock, current: leftBlock }], removedBlocks)],
@@ -2023,8 +2013,6 @@ class Edit {
 
     public inputCodeBlock(text: string, blockId: string, inlineId: string, caretPosition: number): AstApplyEffect | null {
         const { ast, query, parser, effect } = this.context
-
-        console.log('inputCodeBlock', text, blockId, inlineId, caretPosition)
        
         const block = query.getBlockById(blockId) as CodeBlock
         if (!block || block.type !== 'codeBlock') return null

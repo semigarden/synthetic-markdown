@@ -21,27 +21,28 @@ class AstTransform {
         const entry = flat.find(b => b.block.id === block.id)
         if (!entry) return null
 
-        if (
-            block.type === 'paragraph' &&
-            entry.parent &&
-            (entry.parent.type === 'listItem' || entry.parent.type === 'taskListItem')
-        ) {
-            const parent = entry.parent as ListItem | TaskListItem
-            const marker = parent.inlines?.find((i: Inline) => i.type === 'marker')?.text.symbolic ?? ''
+        // disabled
+        // if (
+        //     block.type === 'paragraph' &&
+        //     entry.parent &&
+        //     (entry.parent.type === 'listItem' || entry.parent.type === 'taskListItem')
+        // ) {
+        //     const parent = entry.parent as ListItem | TaskListItem
+        //     const marker = parent.inlines?.find((i: Inline) => i.type === 'marker')?.text.symbolic ?? ''
 
-            if (/^(\s*[-*+]\s+|\s*\d+[.)]\s+)$/.test(marker)) {
-                const m = /^\[([ xX])\](?:\s+|$)/.exec(text)
-                if (m) {
-                    const checked = m[1].toLowerCase() === 'x'
-                    ;(parent as any).type = 'taskListItem'
-                    ;(parent as any).checked = checked
-                    text = text.slice(m[0].length)
-                } else if (parent.type === 'taskListItem') {
-                    ;(parent as any).type = 'listItem'
-                    delete (parent as any).checked
-                }
-            }
-        }
+        //     if (/^(\s*[-*+]\s+|\s*\d+[.)]\s+)$/.test(marker)) {
+        //         const m = /^\[([ xX])\](?:\s+|$)/.exec(text)
+        //         if (m) {
+        //             const checked = m[1].toLowerCase() === 'x'
+        //             ;(parent as any).type = 'taskListItem'
+        //             ;(parent as any).checked = checked
+        //             text = text.slice(m[0].length)
+        //         } else if (parent.type === 'taskListItem') {
+        //             ;(parent as any).type = 'listItem'
+        //             delete (parent as any).checked
+        //         }
+        //     }
+        // }
 
         const newBlocks = parser.reparseTextFragment(text, block.position.start)
         const inline = query.getFirstInline(newBlocks)

@@ -109,13 +109,15 @@ class BlockParser {
             return null
         }
 
-        if (this.tableParser.hasPendingTable) {
-            return this.tableParser.feedLine(line, offset, () => this.parseLine(line, offset))
-        }
+        // disabled
+        // if (this.tableParser.hasPendingTable) {
+        //     return this.tableParser.feedLine(line, offset, () => this.parseLine(line, offset))
+        // }
 
-        if (this.tableParser.tryStartTable(line, start)) {
-            return null
-        }
+        // disabled
+        // if (this.tableParser.tryStartTable(line, start)) {
+        //     return null
+        // }
 
         return this.parseLine(line, offset)
     }
@@ -145,17 +147,18 @@ class BlockParser {
                 break
             }
 
-            case 'taskListItem': {
-                const list = buildListFromItem(line, start, end, detected)
-                const last = blocks[blocks.length - 1]
-                if (last && last.type === 'list' && (last as any).ordered === !!(detected as any).ordered) {
-                    ;(last as any).blocks.push(...(list as any).blocks)
-                    last.position.end = end
-                } else {
-                    blocks.push(list)
-                }
-                break
-            }
+            // disabled
+            // case 'taskListItem': {
+            //     const list = buildListFromItem(line, start, end, detected)
+            //     const last = blocks[blocks.length - 1]
+            //     if (last && last.type === 'list' && (last as any).ordered === !!(detected as any).ordered) {
+            //         ;(last as any).blocks.push(...(list as any).blocks)
+            //         last.position.end = end
+            //     } else {
+            //         blocks.push(list)
+            //     }
+            //     break
+            // }
 
             case 'listItem': {
                 const list = buildListFromItem(line, start, end, detected)

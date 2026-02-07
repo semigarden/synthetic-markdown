@@ -18,14 +18,15 @@ function detectBlockType(line: string): DetectedBlock {
 
     if (/^\s{0,3}(```+|~~~+)/.test(line)) return { type: 'codeBlock' }
 
-    const taskListMatch = /^\s*([-*+])\s+\[([ xX])\](?:\s+|$)/.exec(line)
-    if (taskListMatch) {
-        return {
-            type: 'taskListItem',
-            ordered: false,
-            checked: taskListMatch[2].toLowerCase() === 'x',
-        }
-    }
+    // disabled
+    // const taskListMatch = /^\s*([-*+])\s+\[([ xX])\](?:\s+|$)/.exec(line)
+    // if (taskListMatch) {
+    //     return {
+    //         type: 'taskListItem',
+    //         ordered: false,
+    //         checked: taskListMatch[2].toLowerCase() === 'x',
+    //     }
+    // }
 
     const unorderedListMatch = /^\s*([-*+])\s+/.exec(line)
     if (unorderedListMatch) return { type: 'listItem', ordered: false }

@@ -94,12 +94,14 @@ function buildListFromItem(
     detected: DetectedBlock
   ): Block {
     // task: '- [ ] ' / '- [x] ' (also * +)
-    const taskMatch = /^(\s*[-*+])\s+\[([ xX])\]\s+/.exec(line)
+    // const taskMatch = /^(\s*[-*+])\s+\[([ xX])\]\s+/.exec(line)
+    const taskMatch = null
   
     // normal list: '- ' / '* ' / '+ ' / '1. ' / '1) '
     const listMatch = /^(\s*([-*+]|(\d+[.)])))\s+/.exec(line)
   
-    const isTask = !!taskMatch
+    // const isTask = !!taskMatch
+    const isTask = false
     const markerText = isTask ? taskMatch![0] : (listMatch ? listMatch[0] : '')
     const markerLength = markerText.length
   
@@ -113,24 +115,34 @@ function buildListFromItem(
         inlines: [],
     }
   
-    const item = isTask
-      ? ({
-            id: uuid(),
-            type: 'taskListItem',
-            checked: taskMatch![2].toLowerCase() === 'x',
-            text: markerText,
-            position: { start, end },
-            blocks: [paragraph],
-            inlines: [],
-        } as TaskListItem)
-    : ({
-            id: uuid(),
-            type: 'listItem',
-            text: markerText,
-            position: { start, end },
-            blocks: [paragraph],
-            inlines: [],
-        } as ListItem)
+    // disabled
+    // const item = isTask
+    //   ? ({
+    //         id: uuid(),
+    //         type: 'taskListItem',
+    //         checked: taskMatch![2].toLowerCase() === 'x',
+    //         text: markerText,
+    //         position: { start, end },
+    //         blocks: [paragraph],
+    //         inlines: [],
+    //     } as TaskListItem)
+    // : ({
+    //         id: uuid(),
+    //         type: 'listItem',
+    //         text: markerText,
+    //         position: { start, end },
+    //         blocks: [paragraph],
+    //         inlines: [],
+    //     } as ListItem)
+
+    const item = {
+        id: uuid(),
+        type: 'listItem',
+        text: markerText,
+        position: { start, end },
+        blocks: [paragraph],
+        inlines: [],
+    } as ListItem
   
     return {
         id: uuid(),
