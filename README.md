@@ -26,12 +26,12 @@ Synthetic Markdown is a UI primitive for editing and rendering Markdown in a uni
 
 #### Vanilla
 ```
-npm install @semigarden/synthetic-md
+npm install synthetic-md
 ```
 
 #### React
 ```
-npm install @semigarden/synthetic-md-react
+npm install synthetic-md-react
 ```
 
 ## Usage
