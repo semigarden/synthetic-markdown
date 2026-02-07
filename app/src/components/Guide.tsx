@@ -3,7 +3,7 @@ import { createHighlighter } from 'shiki'
 import styles from '../styles/Guide.module.scss'
 import CopyIcon from '../assets/copy.svg?react'
 
-const usageVanilla = `import { defineElement } from '@semigarden/synthetic-md'
+const usageVanilla = `import { defineElement } from 'synthetic-md'
 
 defineElement()
 
@@ -19,7 +19,7 @@ syntheticElement.addEventListener('change', (e) => {
 syntheticElement.value = '# Hello'`
 
 const usageReact = `import { useState } from 'react'
-import { SyntheticText } from '@semigarden/synthetic-md-react'
+import { SyntheticText } from 'synthetic-md-react'
 
 const App = () => {
     const [text, setText] = useState('')
@@ -100,8 +100,8 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
                         <div className={`${styles.tab} ${installTab === 'react' && styles.active}`} onClick={() => setInstallTab('react')}>React</div>
                     </div>
                     <button className={styles.button} onClick={() => {
-                        if (installTab === 'vanilla') copy('install-vanilla', 'npm install @semigarden/synthetic-md')
-                        else copy('install-react', 'npm install @semigarden/synthetic-md-react')
+                        if (installTab === 'vanilla') copy('install-vanilla', 'npm install synthetic-md')
+                        else copy('install-react', 'npm install synthetic-md-react')
                     }}
                     title="Copy">
                         {copiedKey === 'install-vanilla' || copiedKey === 'install-react' ? <span className={styles.icon} title="Copied">✓</span> : <CopyIcon className={styles.icon} title="Copy" />}
@@ -113,7 +113,7 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
                         <span className={styles.language}>bash</span>
                         <pre>
                             <code>
-                                npm install @semigarden/synthetic-md
+                                npm install synthetic-md
                             </code>
                         </pre>
                     </div>}
@@ -121,7 +121,7 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
                         <span className={styles.language}>bash</span>
                         <pre>
                             <code>
-                                npm install @semigarden/synthetic-md-react
+                                npm install synthetic-md-react
                             </code>
                         </pre>
                     </div>}
