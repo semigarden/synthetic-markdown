@@ -56,7 +56,21 @@ class Interaction {
             return
         }
 
-        if (event.inputType === 'insertLineBreak' || event.inputType === 'insertParagraph') {
+        if (event.inputType === 'insertLineBreak') {
+            event.preventDefault()
+            const context = this.select.resolveInlineContext()
+
+            const parentBlock = this.ast.query.getParentBlock(context?.block as Block)
+            if (context && parentBlock?.type === 'listItem') {
+                const effect = this.intent.resolveEffect('indent', context)
+                if (!effect) return
+
+                this.editor.apply(effect)
+            }
+            return
+        }
+
+        if (event.inputType === 'insertParagraph') {
             event.preventDefault()
             // const context = this.select.resolveInlineContext()
             // if (!context) return
