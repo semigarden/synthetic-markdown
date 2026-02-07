@@ -1,6 +1,6 @@
 {
     "name": "synthetic-md-react",
-    "version": "0.0.14",
+    "version": "0.0.15",
     "description": "A UI primitive for unified Markdown editing and rendering",
     "license": "MIT",
     "author": {
@@ -42,8 +42,8 @@
         "prepublishOnly": "npm run build"
     },
     "peerDependencies": {
-        "synthetic-md": "*",
-        "react": "^19.2.0"
+        "react": "^19.2.0",
+        "synthetic-md": "^0.0.23"
     },
     "devDependencies": {
         "@types/react": "^19.2.9",

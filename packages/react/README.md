@@ -6,7 +6,7 @@ A UI primitive for unified Markdown editing and rendering
 
 ```
 import { useState } from 'react'
-import { SyntheticText } from '@semigarden/synthetic-md-react'
+import { SyntheticText } from 'synthetic-md-react'
 
 const App = () => {
     const [text, setText] = useState('')
