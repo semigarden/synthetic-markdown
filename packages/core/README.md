@@ -5,7 +5,7 @@ A UI primitive for unified Markdown editing and rendering
 ---
 
 ```
-import { defineElement } from '@semigarden/synthetic-md'
+import { defineElement } from 'synthetic-md'
 
 defineElement()
 

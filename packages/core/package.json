@@ -1,6 +1,6 @@
 {
     "name": "synthetic-md",
-    "version": "0.0.20",
+    "version": "0.0.22",
     "description": "A UI primitive for unified Markdown editing and rendering",
     "license": "MIT",
     "author": {
