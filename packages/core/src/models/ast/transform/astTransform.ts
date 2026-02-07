@@ -4,17 +4,6 @@ import type { AstContext } from '../astContext'
 class AstTransform {
     constructor(private ctx: AstContext) {}
 
-    private resolveCaret(inline: Inline, caretPosition: number | null) {
-        if (caretPosition == null) {
-            return { blockId: inline.blockId, inlineId: inline.id, pos: 0 }
-        }
-
-        const local = caretPosition - (inline.position?.start ?? 0)
-        const pos = Math.max(0, Math.min(local, inline.text.symbolic.length))
-
-        return { blockId: inline.blockId, inlineId: inline.id, pos: pos }
-    }
-
     transformBlock(
         text: string,
         block: Block,
@@ -64,7 +53,8 @@ class AstTransform {
 
             return effect.compose(
                 [effect.update([{ type: 'block', at: 'current', target: cell, current: cell }])],
-                effect.caret(inline.blockId, inline.id, caretPosition ?? inline.position.start, 'start')
+                effect.caret(inline.blockId, inline.id, caretPosition ?? inline.position.start, 'start'),
+                effect.dom('structure')
             )
         }
 
@@ -82,7 +72,8 @@ class AstTransform {
 
                 return effect.compose(
                     [effect.update([{ type: 'block', at: 'previous', target: list, current: newBlocks[0] }], [entry.block])],
-                    effect.caret(inline.blockId, inline.id, caretPosition ?? inline.position.start, 'start')
+                    effect.caret(inline.blockId, inline.id, caretPosition ?? inline.position.start, 'start'),
+                    effect.dom('structure')
                 )
             }
 
@@ -90,7 +81,8 @@ class AstTransform {
 
             return effect.compose(
                 [effect.update([{ type: 'block', at: 'current', target: list, current: newBlocks[0] }])],
-                effect.caret(inline.blockId, inline.id, caretPosition ?? inline.position.start, 'start')
+                effect.caret(inline.blockId, inline.id, caretPosition ?? inline.position.start, 'start'),
+                effect.dom('structure')
             )
         }
 
@@ -100,7 +92,8 @@ class AstTransform {
 
             return effect.compose(
                 [effect.update([{ type: 'block', at: 'current', target: parent, current: parent }], removedBlocks)],
-                effect.caret(inline.blockId, inline.id, caretPosition ?? inline.position.start, 'start')
+                effect.caret(inline.blockId, inline.id, caretPosition ?? inline.position.start, 'start'),
+                effect.dom('structure')
             )
         }
 
@@ -109,7 +102,8 @@ class AstTransform {
 
         return effect.compose(
             [effect.update([{ type: 'block', at: 'current', target: oldBlock, current: newBlocks[0] }], removedBlocks)],
-            effect.caret(inline.blockId, inline.id, caretPosition ?? inline.position.start, 'start')
+            effect.caret(inline.blockId, inline.id, caretPosition ?? inline.position.start, 'start'),
+            effect.dom('structure')
         )
     }
 
@@ -154,7 +148,8 @@ class AstTransform {
 
         return effect.compose(
             [effect.update([{ type: 'block', at: 'current', target: oldBlock, current: newBlocks[0] }], removedBlocks)],
-            effect.caret(newBlocks[0].id, newBlocks[0].inlines[0].id, newBlocks[0].inlines[0].position.end, 'start')
+            effect.caret(newBlocks[0].id, newBlocks[0].inlines[0].id, newBlocks[0].inlines[0].position.end, 'start'),
+            effect.dom('structure')
         )
     }
 }

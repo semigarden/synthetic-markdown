@@ -128,8 +128,8 @@ export type DomEffect =
 
 export type AstApplyEffect = {
     renderEffect: RenderEffect[]
-    caretEffect?: CaretEffect
-    domEffect?: DomEffect // define for every effect what type of dom effect it is
+    caretEffect: CaretEffect
+    domEffect: DomEffect
 }
 
 export type EditEffect = {

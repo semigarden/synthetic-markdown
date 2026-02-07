@@ -33,7 +33,7 @@ class Effect {
         return domEffect
     }
 
-    compose(renderEffect: AstApplyEffect['renderEffect'][], caretEffect?: AstApplyEffect['caretEffect'], domEffect?: AstApplyEffect['domEffect']): AstApplyEffect {
+    compose(renderEffect: AstApplyEffect['renderEffect'][], caretEffect: AstApplyEffect['caretEffect'], domEffect: AstApplyEffect['domEffect']): AstApplyEffect {
         return { renderEffect: renderEffect.flat() as AstApplyEffect['renderEffect'], caretEffect, domEffect }
     }
 

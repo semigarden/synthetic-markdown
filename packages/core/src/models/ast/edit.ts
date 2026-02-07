@@ -125,7 +125,8 @@ class Edit {
                 { type: 'block', at: 'current', target: left, current: newLeft[0] },
                 { type: 'block', at: 'next', target: newLeft[0], current: newRight[0] },
             ])],
-            effect.caret(newRight[0].id, newRight[0].inlines[0].id, 0, 'start')
+            effect.caret(newRight[0].id, newRight[0].inlines[0].id, 0, 'start'),
+            effect.dom('structure')
         )
     }
 
@@ -255,7 +256,8 @@ class Edit {
 
                     return effect.compose(
                         [effect.update([{ type: 'block', at: 'current', target: p, current: p }], [quote])],
-                        effect.caret(caretBlock.id, caretInline.id, caretPos, 'start')
+                        effect.caret(caretBlock.id, caretInline.id, caretPos, 'start'),
+                        effect.dom('structure')
                     )
                 }
 
@@ -272,7 +274,8 @@ class Edit {
 
                 return effect.compose(
                     [effect.update([{ type: 'block', at: 'current', target: caretBlock, current: caretBlock }], [quote])],
-                    effect.caret(caretBlock.id, caretInline.id, caretPos, 'start')
+                    effect.caret(caretBlock.id, caretInline.id, caretPos, 'start'),
+                    effect.dom('structure')
                 )
             }
 
@@ -312,7 +315,8 @@ class Edit {
 
         return effect.compose(
             [effect.update([{ type: 'block', at: 'current', target: leftBlock, current: leftBlock }], removedBlocks)],
-            effect.caret(leftBlock.id, mergedInline.id, caretPositionInMergedInline, 'start')
+            effect.caret(leftBlock.id, mergedInline.id, caretPositionInMergedInline, 'start'),
+            effect.dom('structure')
         )
     }
 
@@ -384,7 +388,8 @@ class Edit {
                 { type: 'block', at: 'current', target: listItem, current: listItem },
                 { type: 'block', at: 'next', target: listItem, current: newListItem },
             ])],
-            effect.caret(newListItem.blocks[0].id, newListItem.blocks[0].inlines[0].id, 0, 'start')
+            effect.caret(newListItem.blocks[0].id, newListItem.blocks[0].inlines[0].id, 0, 'start'),
+            effect.dom('structure')
         )
     }
 
@@ -457,7 +462,8 @@ class Edit {
                 { type: 'block', at: 'current', target: taskListItem, current: taskListItem },
                 { type: 'block', at: 'next', target: taskListItem, current: newListItem },
             ])],
-            effect.caret(newListItem.blocks[0].id, newListItem.blocks[0].inlines[0].id, 0, 'start')
+            effect.caret(newListItem.blocks[0].id, newListItem.blocks[0].inlines[0].id, 0, 'start'),
+            effect.dom('structure')
         )
     }
 
@@ -514,7 +520,8 @@ class Edit {
                         { type: 'block', at: 'current', target: q, current: q },
                         { type: 'block', at: 'current', target: rootQuote, current: rootQuote },
                     ])],
-                    effect.caret(para.id, i0.id, 0, 'start')
+                    effect.caret(para.id, i0.id, 0, 'start'),
+                    effect.dom('structure')
                 )
             }
     
@@ -573,7 +580,8 @@ class Edit {
     
         return effect.compose(
             [effect.update(updates)],
-            effect.caret(rightParagraph.id, rightInline.id, 0, 'start')
+            effect.caret(rightParagraph.id, rightInline.id, 0, 'start'),
+            effect.dom('structure')
         )
     }    
 
@@ -614,7 +622,8 @@ class Edit {
 
         return effect.compose(
             [effect.update([{ type: 'block', at: 'current', target: prev, current: prev }], [{ ...listItem, id: oldId }])],
-            effect.caret(listItem.id, listItem.blocks[0].inlines[0].id, 0, 'start')
+            effect.caret(listItem.id, listItem.blocks[0].inlines[0].id, 0, 'start'),
+            effect.dom('structure')
         )
     }
 
@@ -670,7 +679,8 @@ class Edit {
 
         return effect.compose(
             [effect.update(updatedTargets, [])],
-            effect.caret(taskListItem.id, firstInline.id, 0, 'start')
+            effect.caret(taskListItem.id, firstInline.id, 0, 'start'),
+            effect.dom('structure')
         )
     }
 
@@ -711,7 +721,8 @@ class Edit {
 
         return effect.compose(
             [effect.update([{ type: 'block', at: 'current', target: blockQuote, current: blockQuote }])],
-            effect.caret(block.id, inlineId, 0, 'start')
+            effect.caret(block.id, inlineId, 0, 'start'),
+            effect.dom('structure'),
         )
     }
 
@@ -904,7 +915,8 @@ class Edit {
 
             return effect.compose(
                 [effect.update(insertEffects)],
-                effect.caret(focusBlock.id, focusInline.id, 0, 'start')
+                effect.caret(focusBlock.id, focusInline.id, 0, 'start'),
+                effect.dom('structure')
             )
         }
 
@@ -925,7 +937,8 @@ class Edit {
 
         return effect.compose(
             [effect.update([{ type: 'block', at: 'current', target: parentListItem, current: parentListItem }, { type: 'block', at: 'next', target: parentListItem, current: listItem }])],
-            effect.caret(listItem.id, listItem.blocks[0].inlines[0].id, 0, 'start')
+            effect.caret(listItem.id, listItem.blocks[0].inlines[0].id, 0, 'start'),
+            effect.dom('structure')
         )
     }
 
@@ -1118,7 +1131,8 @@ class Edit {
 
             return effect.compose(
                 [effect.update(insertEffects)],
-                effect.caret(focusBlock.id, focusInline.id, 0, 'start')
+                effect.caret(focusBlock.id, focusInline.id, 0, 'start'),
+                effect.dom('structure')
             )
         }
 
@@ -1139,7 +1153,8 @@ class Edit {
 
         return effect.compose(
             [effect.update([{ type: 'block', at: 'current', target: parentTaskListItem, current: parentTaskListItem }, { type: 'block', at: 'next', target: parentTaskListItem, current: taskListItem }])],
-            effect.caret(taskListItem.id, taskListItem.blocks[0].inlines[0].id, 0, 'start')
+            effect.caret(taskListItem.id, taskListItem.blocks[0].inlines[0].id, 0, 'start'),
+            effect.dom('structure')
         )
     }
 
@@ -1209,7 +1224,8 @@ class Edit {
 
             return effect.compose(
                 [effect.update(inserts, [liftedBlock])],
-                effect.caret(liftedBlock.id, inlineId, 0, 'start')
+                effect.caret(liftedBlock.id, inlineId, 0, 'start'),
+                effect.dom('structure')
             )
         }
     
@@ -1232,7 +1248,8 @@ class Edit {
 
         return effect.compose(
             [effect.update(inserts, [liftedBlock])],
-            effect.caret(liftedBlock.id, inlineId, 0, 'start')
+            effect.caret(liftedBlock.id, inlineId, 0, 'start'),
+            effect.dom('structure')
         )
     }
 
@@ -1275,7 +1292,8 @@ class Edit {
 
         return effect.compose(
             [effect.update([{ type: 'block', at: 'current', target: headerBlock, current: table }], [headerBlock, dividerBlock])],
-            effect.caret(firstParagraph.id, inline.id, inline.position.end, 'start')
+            effect.caret(firstParagraph.id, inline.id, inline.position.end, 'start'),
+            effect.dom('structure')
         )
     }
 
@@ -1334,7 +1352,8 @@ class Edit {
 
                 return effect.compose(
                     [effect.update([{ type: 'block', at: 'current', target: table, current: paragraph }], [table])],
-                    effect.caret(paragraph.id, focusInline.id, 0, 'start')
+                    effect.caret(paragraph.id, focusInline.id, 0, 'start'),
+                    effect.dom('structure')
                 )
             }
 
@@ -1371,7 +1390,8 @@ class Edit {
 
         return effect.compose(
             [effect.update([{ type: 'block', at: 'current', target: prevCell, current: prevCell }], blocksToRemove)],
-            effect.caret(prevParagraph.id, caretInline.id, position, 'start')
+            effect.caret(prevParagraph.id, caretInline.id, position, 'start'),
+            effect.dom('structure')
         )
     }
 
@@ -1427,7 +1447,8 @@ class Edit {
 
         return effect.compose(
             [effect.update([{ type: 'block', at: 'current', target: row, current: row }])],
-            effect.caret(newParagraph.id, focusInline.id, 0, 'start')
+            effect.caret(newParagraph.id, focusInline.id, 0, 'start'),
+            effect.dom('structure')
         )
     }
 
@@ -1486,7 +1507,8 @@ class Edit {
 
         return effect.compose(
             [effect.update([{ type: 'block', at: 'next', target: row, current: newRow }])],
-            effect.caret(newParagraph.id, focusInline.id, 0, 'start')
+            effect.caret(newParagraph.id, focusInline.id, 0, 'start'),
+            effect.dom('structure')
         )
     }
 
@@ -1545,7 +1567,8 @@ class Edit {
 
         return effect.compose(
             [effect.update([{ type: 'block', at: 'previous', target: row, current: newRow }])],
-            effect.caret(newParagraph.id, focusInline.id, 0, 'start')
+            effect.caret(newParagraph.id, focusInline.id, 0, 'start'),
+            effect.dom('structure')
         )
     }
 
@@ -1597,7 +1620,8 @@ class Edit {
 
         return effect.compose(
             [effect.update([{ type: 'block', at: 'current', target: cell, current: cell }])],
-            effect.caret(newBlock.id, focusInline.id, 0, 'start')
+            effect.caret(newBlock.id, focusInline.id, 0, 'start'),
+            effect.dom('structure')
         )
     }
 
@@ -1677,7 +1701,8 @@ class Edit {
 
         return effect.compose(
             [effect.update([{ type: 'block', at: 'current', target: cell, current: cell }, { type: 'block', at: 'next', target: cell, current: newCell }])],
-            effect.caret(newParagraph.id, focusInline.id, 0, 'start')
+            effect.caret(newParagraph.id, focusInline.id, 0, 'start'),
+            effect.dom('structure')
         )
     }
 
@@ -1707,7 +1732,8 @@ class Edit {
 
         return effect.compose(
             [effect.update([{ type: 'block', at: 'current', target: cell, current: cell }])],
-            effect.caret(previousBlock.id, caretInline.id, position, 'start')
+            effect.caret(previousBlock.id, caretInline.id, position, 'start'),
+            effect.dom('structure')
         )
     }
 
@@ -1746,7 +1772,8 @@ class Edit {
 
         return effect.compose(
             [effect.update([{ type: 'block', at: 'current', target: cell, current: cell }])],
-            effect.caret(targetBlock.id, leftInline.id, caretPosition, 'start')
+            effect.caret(targetBlock.id, leftInline.id, caretPosition, 'start'),
+            effect.dom('structure')
         )
     }
 
@@ -1776,7 +1803,8 @@ class Edit {
 
         return effect.compose(
             [effect.update([{ type: 'block', at: 'previous', target: table, current: paragraph }])],
-            effect.caret(paragraph.id, focusInline.id, 0, 'start')
+            effect.caret(paragraph.id, focusInline.id, 0, 'start'),
+            effect.dom('structure')
         )
     }
 
@@ -1806,7 +1834,8 @@ class Edit {
 
         return effect.compose(
             [effect.update([{ type: 'block', at: 'next', target: table, current: paragraph }])],
-            effect.caret(paragraph.id, focusInline.id, 0, 'start')
+            effect.caret(paragraph.id, focusInline.id, 0, 'start'),
+            effect.dom('structure')
         )
     }
 
@@ -1880,7 +1909,8 @@ class Edit {
 
         return effect.compose(
             [effect.update(updateEffects)],
-            effect.caret(lastBlock.id, lastInline.id, lastBlock.text.length, 'start')
+            effect.caret(lastBlock.id, lastInline.id, lastBlock.text.length, 'start'),
+            effect.dom('structure')
         )
     }
 
@@ -1976,7 +2006,8 @@ class Edit {
 
         return effect.compose(
             [effect.update(updateEffects, blocksToRemove)],
-            effect.caret(lastBlock.id, lastInline.id, lastBlock.text.length, 'start')
+            effect.caret(lastBlock.id, lastInline.id, lastBlock.text.length, 'start'),
+            effect.dom('structure')
         )
     }
     
@@ -1987,7 +2018,7 @@ class Edit {
         if (!block || block.type !== 'taskListItem') return null
 
         block.checked = !block.checked
-        return effect.compose([effect.update([{ type: 'block', at: 'current', target: block, current: block }])], effect.caret(blockId, inlineId, caretPosition, 'start'))
+        return effect.compose([effect.update([{ type: 'block', at: 'current', target: block, current: block }])], effect.caret(blockId, inlineId, caretPosition, 'start'), effect.dom('structure'))
     }
 
     public inputCodeBlock(text: string, blockId: string, inlineId: string, caretPosition: number): AstApplyEffect | null {
@@ -2033,13 +2064,15 @@ class Edit {
                         effect.input([{ type: 'text', symbolic: inline.text.symbolic, semantic: inline.text.semantic, blockId: block.id, inlineId: inline.id }]),
                         effect.insertInline([{ type: 'inline', at: 'next', target: inline, current: closerMarker }]),
                     ],
-                    effect.caret(block.id, closerMarker.id, closerMarker.position.end, 'start')
+                    effect.caret(block.id, closerMarker.id, closerMarker.position.end, 'start'),
+                    effect.dom('text')
                 )
             }
 
             return effect.compose(
                 [effect.input([{ type: 'text', symbolic: text, semantic: text, blockId: block.id, inlineId: inline.id }])],
-                effect.caret(block.id, inline.id, caretPosition, 'start')
+                effect.caret(block.id, inline.id, caretPosition, 'start'),
+                effect.dom('text')
             )
         }
 
@@ -2069,7 +2102,8 @@ class Edit {
                                 { type: 'codeBlockMarker', text: markerText, language: '', blockId: block.id, inlineId: inline.id },
                                 { type: 'text', symbolic: text, semantic: text, blockId: block.id, inlineId: inline.id }
                             ])],
-                            effect.caret(block.id, inline.id, caretPosition, 'start')
+                            effect.caret(block.id, inline.id, caretPosition, 'start'),
+                            effect.dom('text')
                         )
                     } else {
                         inline.text.symbolic = newText + '\n'
@@ -2104,7 +2138,8 @@ class Edit {
 
                         return effect.compose(
                             [effect.update(newBlocks.map((b, idx) => ({ type: 'block', at: idx === 0 ? 'current' as const : 'next' as const, target: idx === 0 ? block : newBlocks[idx - 1], current: b })), [block])],
-                            effect.caret(newInline.blockId, newInline.id, newInline.position.end, 'start')
+                            effect.caret(newInline.blockId, newInline.id, newInline.position.end, 'start'),
+                            effect.dom('structure')
                         )
                     }
                 } else {
@@ -2122,7 +2157,8 @@ class Edit {
                         [effect.input([
                             { type: 'codeBlockMarker', text: text, language: newText, blockId: block.id, inlineId: inline.id },
                         ])],
-                        effect.caret(block.id, inline.id, caretPosition, 'start')
+                        effect.caret(block.id, inline.id, caretPosition, 'start'),
+                        effect.dom('text')
                     )
                 }
             }
@@ -2142,7 +2178,8 @@ class Edit {
 
                     return effect.compose(
                         [effect.input([{ type: 'text', symbolic: text, semantic: text, blockId: block.id, inlineId: inline.id }])],
-                        effect.caret(block.id, inline.id, caretPosition, 'start')
+                        effect.caret(block.id, inline.id, caretPosition, 'start'),
+                        effect.dom('text')
                     )
                 } else {
                     const inlineText = block.inlines.find(i => i.type === 'text')
@@ -2162,7 +2199,8 @@ class Edit {
                             effect.input([{ type: 'text', symbolic: inlineText.text.symbolic, semantic: inlineText.text.semantic, blockId: block.id, inlineId: inlineText.id }]),
                             effect.deleteInline([{ type: 'inline', blockId: block.id, inlineId: inline.id }]),
                         ],
-                        effect.caret(block.id, inlineText.id, inlineText.position.end, 'start')
+                        effect.caret(block.id, inlineText.id, inlineText.position.end, 'start'),
+                        effect.dom('text')
                     )
                 }
             }
@@ -2211,7 +2249,8 @@ class Edit {
 
                     return effect.compose(
                         [effect.update([{ type: 'block', at: 'previous', target: block, current: newBlock }])],
-                        effect.caret(block.id, inline.id, caretPosition, 'start')
+                        effect.caret(block.id, inline.id, caretPosition, 'start'),
+                        effect.dom('structure')
                     )
                 }
 
@@ -2239,7 +2278,8 @@ class Edit {
 
                     return effect.compose(
                         [effect.update(newBlocks.map((b, idx) => ({ type: 'block', at: idx === 0 ? 'current' as const : 'next' as const, target: idx === 0 ? oldBlock : newBlocks[idx - 1], current: b })), [oldBlock])],
-                        effect.caret(newInline.blockId, newInline.id, 0, 'start')
+                        effect.caret(newInline.blockId, newInline.id, 0, 'start'),
+                        effect.dom('structure')
                     )
                 }
 
@@ -2267,7 +2307,8 @@ class Edit {
                             { type: 'codeBlockMarker', text: inline.text.symbolic, language: block.language, blockId: block.id, inlineId: inline.id },
                             { type: 'text', symbolic: inlineText.text.symbolic, semantic: inlineText.text.semantic, blockId: block.id, inlineId: inlineText.id },
                         ])],
-                        effect.caret(block.id, inlineText.id, 0, 'start')
+                        effect.caret(block.id, inlineText.id, 0, 'start'),
+                        effect.dom('text')
                     )
                 }
             }
@@ -2286,7 +2327,8 @@ class Edit {
 
                     return effect.compose(
                         [effect.input([{ type: 'text', symbolic: inlineText.text.symbolic, semantic: inlineText.text.semantic, blockId: block.id, inlineId: inlineText.id }])],
-                        effect.caret(block.id, inline.id, 0, 'start')
+                        effect.caret(block.id, inline.id, 0, 'start'),
+                        effect.dom('text')
                     )
                 }
 
@@ -2313,7 +2355,8 @@ class Edit {
                             effect.deleteInline([{ type: 'inline', blockId: block.id, inlineId: inline.id }]),
                             effect.input([{ type: 'text', symbolic: inlineText.text.symbolic, semantic: inlineText.text.semantic, blockId: block.id, inlineId: inlineText.id }]),
                         ],
-                        effect.caret(block.id, inlineText.id, position, 'start')
+                        effect.caret(block.id, inlineText.id, position, 'start'),
+                        effect.dom('text')
                     )
                 }
 
@@ -2343,7 +2386,8 @@ class Edit {
 
                     return effect.compose(
                         [effect.update([{ type: 'block', at: 'next', target: block, current: newBlock }])],
-                        effect.caret(newBlock.id, newInline.id, newInline.position.end, 'start')
+                        effect.caret(newBlock.id, newInline.id, newInline.position.end, 'start'),
+                        effect.dom('structure')
                     )
                 }
             }
@@ -2363,7 +2407,8 @@ class Edit {
 
             return effect.compose(
                 [effect.input([{ type: 'text', symbolic: newText, semantic: newText, blockId: block.id, inlineId: inline.id }])],
-                effect.caret(block.id, inline.id, caretPosition + 1, 'start')
+                effect.caret(block.id, inline.id, caretPosition + 1, 'start'),
+                effect.dom('text')
             )
         }
 
@@ -2461,7 +2506,8 @@ class Edit {
 
             return effect.compose(
                 [effect.update([{ type: 'block', at: 'current', target: block, current: block }])],
-                effect.caret(block.id, inline.id, newCaretPosition, 'start')
+                effect.caret(block.id, inline.id, newCaretPosition, 'start'),
+                effect.dom('structure')
             )
         }
 
@@ -2483,7 +2529,8 @@ class Edit {
 
             return effect.compose(
                 [effect.update([{ type: 'block', at: 'current', target: block, current: block }])],
-                effect.caret(block.id, inline.id, newCaretPosition, 'start')
+                effect.caret(block.id, inline.id, newCaretPosition, 'start'),
+                effect.dom('structure')
             )
         }
 
@@ -2563,7 +2610,8 @@ class Edit {
 
         return effect.compose(
             [effect.update([{ type: 'block', at: 'current', target: block, current: block }])],
-            effect.caret(block.id, textInline.id, atOpenNewline ? 1 : 0, 'start')
+            effect.caret(block.id, textInline.id, atOpenNewline ? 1 : 0, 'start'),
+            effect.dom('structure')
         )
     }
 
@@ -2590,7 +2638,8 @@ class Edit {
 
         return effect.compose(
             [effect.update(effects, [oldBlock])],
-            effect.caret(newBlocks[0].id, newBlocks[0].inlines[newBlocks[0].inlines.length - 1].id, newBlocks[0].inlines[newBlocks[0].inlines.length - 1].position.end, 'start')
+            effect.caret(newBlocks[0].id, newBlocks[0].inlines[newBlocks[0].inlines.length - 1].id, newBlocks[0].inlines[newBlocks[0].inlines.length - 1].position.end, 'start'),
+            effect.dom('structure')
         )
     }
 
@@ -2648,7 +2697,8 @@ class Edit {
 
         return effect.compose(
             [effect.update(updateEffects, [block])],
-            effect.caret(firstBlock.id, focusInline.id, 0, 'start')
+            effect.caret(firstBlock.id, focusInline.id, 0, 'start'),
+            effect.dom('structure')
         )
     }
 
@@ -2675,7 +2725,8 @@ class Edit {
 
         return effect.compose(
             [effect.update([{ type: 'block', at: 'current', target: block, current: block }])],
-            effect.caret(block.id, textInline.id, 1, 'start')
+            effect.caret(block.id, textInline.id, 1, 'start'),
+            effect.dom('structure')
         )
     }
 
