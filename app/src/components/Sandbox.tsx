@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react'
-import { SyntheticText } from '@semigarden/synthetic-md-react'
+import { SyntheticText } from 'synthetic-md-react'
 import styles from '../styles/Sandbox.module.scss'
 import { saveText, loadText } from '../utils'
 

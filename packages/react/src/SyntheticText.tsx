@@ -1,5 +1,5 @@
 import { useEffect, forwardRef, useRef } from 'react'
-import { defineElement } from '@semigarden/synthetic-md'
+import { defineElement } from 'synthetic-md'
 
 type Props = {
     ref?: React.RefObject<HTMLTextAreaElement | null>
