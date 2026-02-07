@@ -38,7 +38,7 @@ npm install @semigarden/synthetic-md-react
 
 #### Vanilla
 ```js
-import { defineElement } from '@semigarden/synthetic-md'
+import { defineElement } from 'synthetic-md'
 
 defineElement()
 
@@ -57,7 +57,7 @@ syntheticElement.value = '# Hello'
 #### React
 ```tsx
 import { useState } from 'react'
-import { SyntheticText } from '@semigarden/synthetic-md-react'
+import { SyntheticText } from 'synthetic-md-react'
 
 const App = () => {
     const [text, setText] = useState('')
