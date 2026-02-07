@@ -89,17 +89,15 @@ class Editor {
             const result = this.execute(astEffect)
             if (!result) continue
 
-            const { renderEffect, caretEffect } = result
+            const { renderEffect, caretEffect, domEffect } = result
 
             this.caretToken++
             this.caret.beginSelectionSuppress(this.caretToken)
 
             this.ast.normalize()
             this.render.apply(renderEffect)
-            const isStructural =
-                astEffect.type !== 'input' &&
-                astEffect.type !== 'inputCodeBlock'
-            const mode = isStructural ? 'raf2' : 'microtask'
+
+            const mode = domEffect === 'text' ? 'microtask' : 'raf2'
             if (caretEffect) this.caret.apply(caretEffect, this.caretToken, mode)
             this.emitChange()
         }

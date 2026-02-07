@@ -121,9 +121,15 @@ export type CaretEffect = {
     }
 }
 
+export type DomEffect = 
+    | 'text'
+    | 'structure'
+    | 'unknown'
+
 export type AstApplyEffect = {
     renderEffect: RenderEffect[]
     caretEffect?: CaretEffect
+    domEffect?: DomEffect // define for every effect what type of dom effect it is
 }
 
 export type EditEffect = {

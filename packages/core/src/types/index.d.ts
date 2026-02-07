@@ -45,6 +45,7 @@ export type {
     Render,
     RenderEffect,
     CaretEffect,
+    DomEffect,
     AstApplyEffect,
     EditEffect,
 } from './effect'

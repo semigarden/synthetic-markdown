@@ -1,4 +1,4 @@
-import type { AstApplyEffect, Block, RenderDelete, RenderInsert, RenderInput } from '../../../types'
+import type { AstApplyEffect, Block, DomEffect, RenderDelete, RenderInsert, RenderInput } from '../../../types'
 
 class Effect {
     update(insert: RenderInsert[], remove: Block[] = []): AstApplyEffect['renderEffect'] {
@@ -29,8 +29,12 @@ class Effect {
         return { type: 'restore', caret: { blockId, inlineId, position, affinity } }
     }
 
-    compose(renderEffect: AstApplyEffect['renderEffect'][], caretEffect?: AstApplyEffect['caretEffect']): AstApplyEffect {
-        return { renderEffect: renderEffect.flat() as AstApplyEffect['renderEffect'], caretEffect }
+    dom(domEffect: DomEffect): AstApplyEffect['domEffect'] {
+        return domEffect
+    }
+
+    compose(renderEffect: AstApplyEffect['renderEffect'][], caretEffect?: AstApplyEffect['caretEffect'], domEffect?: AstApplyEffect['domEffect']): AstApplyEffect {
+        return { renderEffect: renderEffect.flat() as AstApplyEffect['renderEffect'], caretEffect, domEffect }
     }
 
     updateCurrent(target: Block, current: Block, remove: Block[] = []) {

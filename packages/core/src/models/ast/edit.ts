@@ -76,11 +76,12 @@ class Edit {
             block.inlines = newInlines
             newInlines.forEach((i: Inline) => (i.blockId = block.id))
 
-            console.log('input 0')
+            console.log('input 0', caretPosition, position)
 
             return effect.compose(
                 [effect.update([{ type: 'block', at: 'current', target: block, current: block }])],
-                effect.caret(block.id, newInline.id, position, 'start')
+                effect.caret(block.id, newInline.id, position, 'start'),
+                effect.dom('structure')
             )
         }
 
@@ -95,7 +96,8 @@ class Edit {
 
         return effect.compose(
             [effect.input([{ type: 'text', symbolic: inline.text.symbolic, semantic: inline.text.semantic, blockId: block.id, inlineId: inline.id }])],
-            effect.caret(block.id, inline.id, caretPosition, 'start')
+            effect.caret(block.id, inline.id, caretPosition, 'start'),
+            effect.dom('text')
         )
     }
 
