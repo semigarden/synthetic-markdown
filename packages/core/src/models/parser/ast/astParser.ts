@@ -9,6 +9,14 @@ import { addParagraph, getOpenParagraph, hasOpenBlockQuote, resolveBlankLine } f
 import { tryOpenBlockQuote, tryOpenList, tryOpenLeafBlock } from './openers'
 import { uuid } from '../../../utils/utils'
 
+function sanitize(text: string) {
+    // important: NBSP -> normal space, do not delete it
+    return text
+      .replace(/\u00A0/g, ' ')
+      .replace(/[\u200C\u200D\uFEFF]/g, '')
+      .replace(/\r$/, '')
+}
+
 class AstParser {
     public linkReferences = new LinkReferenceState()
     public openBlocks: OpenBlock[] = []
@@ -23,9 +31,8 @@ class AstParser {
 
     public parse(text: string): Block[] {
         this.reset()
+        text = sanitize(text)
         parseLinkReferenceDefinitions(text, this.linkReferences)
-
-        text = text.replace(/[\u00A0\u200C\u200D\uFEFF]/g, '').replace(/\r$/, '')
 
         this.block.reset()
 

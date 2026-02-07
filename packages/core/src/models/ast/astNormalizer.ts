@@ -179,6 +179,7 @@ class AstNormalizer {
                 return text
             }
 
+            // disabled
             // if (block.type === 'taskListItem') {
             //     const indent = '  '.repeat(listDepth)
 
@@ -332,6 +333,7 @@ class AstNormalizer {
             //     return text
             // }
 
+            // disabled
             // if (block.type === 'tableCell' || block.type === 'tableHeader') {
             //     const parts: string[] = []
 
@@ -370,7 +372,7 @@ class AstNormalizer {
         this.text = parts.join('')
 
         // console.log('norm text', JSON.stringify(this.text, null, 2))
-        // console.log('norm blocks', JSON.stringify(blocks, null, 2))
+        console.log('norm blocks', JSON.stringify(blocks, null, 2))
     }
 }
 

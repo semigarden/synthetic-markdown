@@ -1,14 +1,16 @@
+import Ast from './ast/ast'
 import Input from './input'
 import Intent from './intent'
 import Editor from './editor'
 import Select from './select/select'
-import { Intent as IntentType } from '../types'
+import { Block, Intent as IntentType } from '../types'
 
 class Interaction {
     private isComposing = false
 
     constructor(
         private rootElement: HTMLElement,
+        private ast: Ast,
         private select: Select,
         private editor: Editor,
         private input: Input,
@@ -186,14 +188,26 @@ class Interaction {
             if (key === 'z') return event.shiftKey ? 'redo' : 'undo'
         }
 
-        if (event.shiftKey) {
-            if (key === 'tab') return 'outdent'
-            if (key === 'enter') return 'splitInCell'
-            if (key === 'backspace') return 'insertRowAbove'
-        }
-
         const context = this.select.resolveInlineContext()
         const isInCodeBlock = context?.block?.type === 'codeBlock'
+
+        if (event.shiftKey) {
+            if (key === 'tab') return 'outdent'
+            if (key === 'enter') {
+                const parentBlock = this.ast.query.getParentBlock(context?.block as Block)
+                if (parentBlock?.type === 'listItem') {
+                    return 'indent'
+                }
+                return 'splitInCell'
+            }
+            if (key === 'backspace') {
+                const parentBlock = this.ast.query.getParentBlock(context?.block as Block)
+                if (parentBlock?.type === 'listItem') {
+                    return 'outdent'
+                }
+                return 'insertRowAbove'
+            }
+        }
 
         if (isInCodeBlock) {
             if (event.ctrlKey && key === 'enter') {
