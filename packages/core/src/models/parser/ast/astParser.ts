@@ -1,13 +1,9 @@
 import BlockParser from '../block/blockParser'
 import InlineParser from '../inline/inlineParser'
 import LinkReferenceState from './linkReferenceState'
-import type { OpenBlock, Block, List, BlockQuote, CodeBlock } from '../../../types'
-
 import { parseLinkReferenceDefinitions } from './linkReferences'
-import { continueBlocks } from './blockState'
-import { addParagraph, getOpenParagraph, hasOpenBlockQuote, resolveBlankLine } from './paragraph'
-import { tryOpenBlockQuote, tryOpenList, tryOpenLeafBlock } from './openers'
-import { uuid } from '../../../utils/utils'
+import { nestLists } from '../block/list/listNest'
+import type { OpenBlock, Block, List, BlockQuote, CodeBlock } from '../../../types'
 
 function sanitize(text: string) {
     // important: NBSP -> normal space, do not delete it
@@ -78,6 +74,8 @@ class AstParser {
 
         this.mergeAdjacent(blocks)
 
+        nestLists(blocks)
+
         for (const block of blocks) {
             this.inline.applyRecursive(block)
         }
@@ -140,7 +138,7 @@ class AstParser {
         for (const block of blocks) {
             this.inline.applyRecursive(block)
         }
-    
+
         return blocks
     }    
 
