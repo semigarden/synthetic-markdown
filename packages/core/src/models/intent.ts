@@ -199,7 +199,7 @@ class Intent {
         const list = this.ast.query.getListFromBlock(context.block)
         const previousInline = list && list.blocks.length > 1 ? this.ast.query.getPreviousInlineInList(context.inline) ?? this.ast.query.getPreviousInline(context.inline.id) : this.ast.query.getPreviousInline(context.inline.id)
 
-        if (previousInline && strip(previousInline.text.symbolic).length > 0) {
+        if (previousInline && strip(previousInline.text.symbolic).length > 0 && this.caret.position === 0) {
             // if (previousInline.type === 'marker' && context.block.type === 'codeBlock') {
             //     return {
             //         preventDefault: true,

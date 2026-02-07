@@ -198,8 +198,6 @@ class Edit {
     public mergeInline(inlineAId: string, inlineBId: string): AstApplyEffect | null {
         const { ast, query, mutation, transform, effect } = this.context
 
-        console.log('mergeInline', inlineAId, inlineBId)
-
         const flattened = query.flattenInlines(ast.blocks)
         const iA = flattened.findIndex(i => i.inline.id === inlineAId)
         const iB = flattened.findIndex(i => i.inline.id === inlineBId)
