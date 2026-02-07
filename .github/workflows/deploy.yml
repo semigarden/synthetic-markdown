@@ -29,10 +29,10 @@ jobs:
       - name: Clean
         working-directory: app
         run: |
-          rm -rf dist
-          rm -rf node_modules
-          rm -f  *.tsbuildinfo
-          rm -f  **/*.tsbuildinfo
+          rm -rf app/dist
+          rm -rf app/node_modules
+          rm -f  app/*.tsbuildinfo
+          rm -f  app/**/*.tsbuildinfo
 
       - name: Install
         working-directory: app
