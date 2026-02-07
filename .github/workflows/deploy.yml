@@ -26,14 +26,6 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
 
-      - name: Clean
-        working-directory: app
-        run: |
-          rm -rf app/dist
-          rm -rf app/node_modules
-          rm -f  app/*.tsbuildinfo
-          rm -f  app/**/*.tsbuildinfo
-
       - name: Install
         working-directory: app
         run: npm ci
