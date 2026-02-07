@@ -2,7 +2,7 @@ import Ast from './ast'
 import AstQuery from './astQuery'
 import AstParser from '../parser/ast/astParser'
 import { Block, Inline } from '../../types'
-import { uuid } from '../../utils/utils'
+import { uuid, strip } from '../../utils/utils'
 
 class AstMutation {
     constructor(private ast: Ast, private parser: AstParser) {}
@@ -85,11 +85,11 @@ class AstMutation {
 
         if (sameOwner && leftOwner) {
             const owner = leftOwner
-            let mergedText = leftInline.text.symbolic.slice(0, -1) + rightInline.text.symbolic
+            let mergedText = strip(leftInline.text.symbolic.slice(0, -1) + rightInline.text.symbolic)
 
             if (leftOwner.type === 'blockQuote') {
                 if (leftInline.type === 'marker') {
-                    mergedText = rightInline.text.symbolic
+                    mergedText = strip(rightInline.text.symbolic)
     
                     return {
                         leftBlock: rightBlock,
@@ -153,9 +153,7 @@ class AstMutation {
         }
 
         if (leftBlock.id === rightBlock.id) {
-            const mergedText =
-                leftInline.text.symbolic.slice(0, -1) +
-                rightInline.text.symbolic
+            const mergedText = strip(leftInline.text.symbolic.slice(0, -1) + rightInline.text.symbolic)
 
             const mergedInlines = this.parser.inline.parseInline(
                 mergedText,
@@ -172,9 +170,7 @@ class AstMutation {
             return { leftBlock, mergedInline: mergedInlines[0] }
         }
 
-        const mergedText =
-            leftInline.text.symbolic +
-            rightInline.text.symbolic
+        const mergedText = strip(leftInline.text.symbolic + rightInline.text.symbolic)
 
         const mergedInlines = this.parser.inline.parseInline(
             mergedText,

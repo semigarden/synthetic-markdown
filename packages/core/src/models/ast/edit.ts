@@ -102,9 +102,6 @@ class Edit {
     public split(blockId: string, inlineId: string, caretPosition: number): AstApplyEffect | null {
         const { ast, query, parser, mutation, effect } = this.context
 
-        console.log('split', blockId, inlineId, caretPosition)
-
-        // return null
         const block = query.getBlockById(blockId)
         if (!block) return null
 
@@ -216,6 +213,8 @@ class Edit {
 
         const { leftBlock, mergedInline, removedBlock } = result
 
+        console.log('mergedInline', JSON.stringify(mergedInline, null, 2))
+
         const mergeAdjacentIn = (arr: Block[]) => {
             let i = 0
             while (i < arr.length - 1) {
@@ -292,9 +291,10 @@ class Edit {
             }
         }
 
+        const pureLeftInlineText = strip(leftInline.text.symbolic)
         const caretPositionInMergedInline = removedBlock
-            ? leftInline.text.symbolic.length
-            : leftInline.text.symbolic.length - 1
+            ? pureLeftInlineText.length
+            : pureLeftInlineText.length - 1
 
         const newText = leftBlock.inlines.map(i => i.text.symbolic).join('')
         const detectedBlock = detectBlockType(newText)
@@ -307,6 +307,8 @@ class Edit {
         if (blockTypeChanged && !ignoreTypes.includes(detectedBlock.type)) {
             return transform.transformBlock(newText, leftBlock, detectedBlock, caretPositionInMergedInline, removedBlocks)
         }
+
+        console.log('mergeInline caretPositionInMergedInline', caretPositionInMergedInline, leftInline.text.symbolic.length)
 
         return effect.compose(
             [effect.update([{ type: 'block', at: 'current', target: leftBlock, current: leftBlock }], removedBlocks)],

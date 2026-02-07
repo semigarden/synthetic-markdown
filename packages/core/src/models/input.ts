@@ -2,6 +2,7 @@ import Ast from './ast/ast'
 import Caret from './caret'
 import Select from './select/select'
 import { SelectionRange, EditEffect, InputEvent, Block, Inline } from '../types'
+import { strip } from '../utils/utils'
 
 class Input {
     constructor(
@@ -208,14 +209,10 @@ class Input {
             return this.resolveCodeBlockDelete(direction, block, inline, range)
         }
 
-        inline.text.symbolic = inline.text.symbolic
-            .replace(/[\u00A0\u200C\u200D\uFEFF]/g, '')
-            .replace(/\r$/, '')
+        const list = this.ast.query.getListFromBlock(block)
+        const previousInline = list && list.blocks.length > 1 ? this.ast.query.getPreviousInlineInList(inline) ?? this.ast.query.getPreviousInline(inline.id) : this.ast.query.getPreviousInline(inline.id)
 
-        if (inline.text.symbolic === '') {
-            const list = this.ast.query.getListFromBlock(block)
-            const previousInline = list && list.blocks.length > 1 ? this.ast.query.getPreviousInlineInList(inline) ?? this.ast.query.getPreviousInline(inline.id) : this.ast.query.getPreviousInline(inline.id)
-
+        if (previousInline && (strip(inline.text.symbolic).length === 0 || strip(previousInline.text.symbolic).length === 0)) {
             if (previousInline) {
                 return {
                     preventDefault: true,
@@ -251,7 +248,7 @@ class Input {
             newCaretPosition = position
         }
 
-        console.log('input resolveDelete', direction, newText, newCaretPosition)
+        console.log('input resolveDelete', direction, newText, newCaretPosition, positionInline, this.caret.position)
 
         return {
             preventDefault: true,

@@ -3,6 +3,7 @@ import Caret from './caret'
 import Render from './render/render'
 import Select from './select/select'
 import { BlockQuote, CodeBlock, EditContext, EditEffect, Intent as IntentType } from '../types'
+import { strip } from '../utils/utils'
 
 class Intent {
     constructor(
@@ -108,8 +109,6 @@ class Intent {
             }
         }
 
-        console.log('resolveSplit', this.caret.position, caretPosition)
-
         return {
             preventDefault: true,
             ast: [{
@@ -200,7 +199,7 @@ class Intent {
         const list = this.ast.query.getListFromBlock(context.block)
         const previousInline = list && list.blocks.length > 1 ? this.ast.query.getPreviousInlineInList(context.inline) ?? this.ast.query.getPreviousInline(context.inline.id) : this.ast.query.getPreviousInline(context.inline.id)
 
-        if (previousInline) {
+        if (previousInline && strip(previousInline.text.symbolic).length > 0) {
             // if (previousInline.type === 'marker' && context.block.type === 'codeBlock') {
             //     return {
             //         preventDefault: true,

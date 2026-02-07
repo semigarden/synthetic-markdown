@@ -82,8 +82,6 @@ class Caret {
     public restoreCaret(inlineId: string | null = this.inlineId, position: number | null = this.position) {
         if (inlineId === null || position === null) return
 
-        console.log('restoreCaret', inlineId, position)
-
         const inlineEl = this.rootElement.querySelector(`[data-inline-id="${inlineId}"]`) as HTMLElement
         if (!inlineEl) return
 
@@ -113,7 +111,6 @@ class Caret {
         range.setStart(textNode, clamped)
         range.collapse(true)
         selection.addRange(range)
-        console.log('restoreCaret selection', selection.rangeCount)
     }
 
     public apply(effect: CaretEffect, caretToken: number, mode: 'microtask' | 'raf' | 'raf2') {
