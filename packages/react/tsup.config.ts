@@ -6,7 +6,7 @@ export default defineConfig({
     dts: true,
     clean: true,
     target: 'es2020',
-    external: ['react', 'react/jsx-runtime', 'synthetic-md'],
+    external: ['react', 'react/jsx-runtime', 'synthtext'],
     outExtension({ format }) {
         return { js: format === "esm" ? ".esm.js" : ".cjs.js" };
     },

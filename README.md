@@ -1,12 +1,10 @@
-# Synthetic Markdown
-
-Synthetic Markdown is a UI primitive for editing and rendering Markdown in a unified interface, removing the need for split panes. The core is framework-agnostic and has zero runtime dependencies.
+# Synthetic Text
 
 > [!NOTE]
 > The project is designed as a building block rather than a complete editor application
 
 > [!TIP]
-> Try it online: <https://semigarden.github.io/synthetic-md/>
+> Try it online: <https://semigarden.github.io/synthtext/>
 
 > [!IMPORTANT]
 > This project is still in development. Interactions with the following blocks are not yet fully implemented:
@@ -17,7 +15,7 @@ Synthetic Markdown is a UI primitive for editing and rendering Markdown in a uni
 ---
 
 <p align="center">
-  <img src="app/public/synthetic.gif" alt="Synthetic Markdown" />
+  <img src="app/public/synthetic.gif" alt="Synthetic Text" />
 </p>
 
 ---
@@ -26,45 +24,51 @@ Synthetic Markdown is a UI primitive for editing and rendering Markdown in a uni
 
 #### Vanilla
 ```
-npm install synthetic-md
+npm install synthtext
 ```
 
 #### React
 ```
-npm install synthetic-md-react
+npm install synthtext-react
 ```
 
 ## Usage
 
 #### Vanilla
-```js
-import { defineElement } from 'synthetic-md'
+```
+<html>
+    <body>
+        <synthetic-text />
 
-defineElement()
+        <script type="module">
+            import 'synthtext'
 
-const syntheticElement = document.querySelector('#synthetic')
+            const element = document.querySelector('synthtext')
 
-syntheticElement.addClasses(['synthetic'])
+            let value = ''
+            element.value = value
 
-syntheticElement.addEventListener('change', (e) => {
-    const text = e.target.value
-    console.log(text)
-})
-
-syntheticElement.value = '# Hello'
+            element.addEventListener('input', (event) => {
+                value = event.target.value
+            })
+        </script>
+    </body>
+</html>
 ```
 
 #### React
-```tsx
+```
 import { useState } from 'react'
-import { SyntheticText } from 'synthetic-md-react'
+import { SynthText } from 'synthtext-react'
 
 const App = () => {
     const [text, setText] = useState('')
-    const onChange = (e: Event) => {
-        const text = (e.target as HTMLTextAreaElement).value
+
+    const onInput = (event) => {
+        const text = event.target.value
         setText(text)
     }
-    return <SyntheticText className={styles.synthetic} value={text} onChange={onChange} />
+
+    return <SynthText value={text} onInput={onInput} />
 }
 ```

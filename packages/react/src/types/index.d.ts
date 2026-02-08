@@ -3,13 +3,12 @@ export {}
 declare module 'react/jsx-runtime' {
     namespace JSX {
         interface IntrinsicElements {
-            'synthetic-text': {
+            'synthtext': {
                 ref?: any
+                className?: string
+                autofocus?: boolean
                 value?: string
-                // onChange?: (e: {
-                //     nativeEvent: CustomEvent<{ value: string }>
-                // }) => void
-                onChange?: (e: Event) => void
+                onInput?: (event: Event) => void
                 children?: any
                 [key: string]: any
             }

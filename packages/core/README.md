@@ -1,22 +1,22 @@
-# Synthetic Markdown
-
-A UI primitive for unified Markdown editing and rendering
-
----
+# Synthetic Text
 
 ```
-import { defineElement } from 'synthetic-md'
+<html>
+    <body>
+        <synthetic-text />
 
-defineElement()
+        <script type="module">
+            import 'synthtext'
 
-const syntheticElement = document.querySelector<any>('#synthetic')
+            const element = document.querySelector('synthtext')
 
-syntheticElement.addClasses(['synthetic'])
+            let value = ''
+            element.value = value
 
-syntheticElement.addEventListener('change', (e) => {
-    const text = e.target.value
-    console.log(text)
-})
-
-syntheticElement.value = '# Hello'
+            element.addEventListener('input', (event) => {
+                value = event.target.value
+            })
+        </script>
+    </body>
+</html>
 ```

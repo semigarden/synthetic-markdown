@@ -1,19 +1,18 @@
-# Synthetic Markdown
+# Synthetic Text
 
-A UI primitive for unified Markdown editing and rendering
-
----
 
 ```
 import { useState } from 'react'
-import { SyntheticText } from 'synthetic-md-react'
+import { SynthText } from 'synthtext-react'
 
 const App = () => {
     const [text, setText] = useState('')
-    const onChange = (e: Event) => {
-        const text = (e.target as HTMLTextAreaElement).value
+
+    const onInput = (event) => {
+        const text = event.target.value
         setText(text)
     }
-    return <SyntheticText className={styles.synthetic} value={text} onChange={onChange} />
+
+    return <SynthText value={text} onInput={onInput} />
 }
 ```

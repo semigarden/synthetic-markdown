@@ -1,7 +1,7 @@
 {
-    "name": "synthetic-md-react",
-    "version": "0.0.18",
-    "description": "A UI primitive for unified Markdown editing and rendering",
+    "name": "synthtext-react",
+    "version": "0.0.2",
+    "description": "",
     "license": "MIT",
     "author": {
         "name": "semigarden",
@@ -9,13 +9,13 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/semigarden/synthetic-md.git",
-        "directory": "synthetic-md/packages/react"
+        "url": "git+https://github.com/semigarden/synthtext.git",
+        "directory": "synthtext/packages/react"
     },
     "bugs": {
-        "url": "https://github.com/semigarden/synthetic-md/issues"
+        "url": "https://github.com/semigarden/synthtext/issues"
     },
-    "homepage": "https://github.com/semigarden/synthetic-md#readme",
+    "homepage": "https://github.com/semigarden/synthtext#readme",
     "type": "module",
     "publishConfig": {
         "access": "public"
@@ -43,7 +43,7 @@
     },
     "peerDependencies": {
         "react": "^19.2.0",
-        "synthetic-md": "^0.0.27"
+        "synthtext": "^0.0.2"
     },
     "devDependencies": {
         "@types/react": "^19.2.9",

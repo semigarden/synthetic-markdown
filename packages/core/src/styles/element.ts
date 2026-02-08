@@ -1,6 +1,6 @@
 let styled = false
 
-export function injectStyles(cssText: string, id = 'synthetic-md-core-styles') {
+export function injectStyles(cssText: string, id = 'style') {
     if (typeof document === 'undefined') return
     if (styled) return
 
