@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react'
-import { SyntheticText } from 'synthetic-md-react'
+import { SynthText } from 'synthtext-react'
 import styles from '../styles/Sandbox.module.scss'
 import { saveText, loadText } from '../utils'
 
@@ -18,15 +18,15 @@ const Sandbox = ({ className = '', active = false }: { className?: string, activ
         setAutofocus(active)
     }, [active])
 
-    const onChange = (e: Event) => {
-        const text = (e.target as HTMLTextAreaElement).value
+    const onInput = (event: Event) => {
+        const text = (event.target as HTMLTextAreaElement).value
         setText(text)
         saveText(text)
     }
 
     return (
         <div className={`${styles.sandbox} ${active && styles.active} ${className}`}>
-            <SyntheticText ref={syntheticRef} className={styles.synthetic} value={text} onChange={onChange} autofocus={autofocus} />
+            <SynthText ref={syntheticRef} className={styles.synthetic} value={text} onInput={onInput} autofocus={autofocus} />
         </div>
     )
 }

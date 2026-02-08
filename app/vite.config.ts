@@ -4,7 +4,7 @@ import svgr from 'vite-plugin-svgr'
 import path from 'path'
 
 export default defineConfig({
-    base: '/synthetic-md/',
+    base: '/synthtext/',
     plugins: [
         react(),
         svgr({

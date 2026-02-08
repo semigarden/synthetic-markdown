@@ -3,31 +3,37 @@ import { createHighlighter } from 'shiki'
 import styles from '../styles/Guide.module.scss'
 import CopyIcon from '../assets/copy.svg?react'
 
-const usageVanilla = `import { defineElement } from 'synthetic-md'
+const usageVanilla = `<html>
+    <body>
+        <synthtext />
 
-defineElement()
+        <script type="module">
+            import 'synthtext'
 
-const syntheticElement = document.querySelector('#synthetic')
+            const element = document.querySelector('synthtext')
 
-syntheticElement.addClasses(['synthetic'])
+            let value = ''
+            element.value = value
 
-syntheticElement.addEventListener('change', (e) => {
-    const text = e.target.value
-    console.log(text)
-})
-
-syntheticElement.value = '# Hello'`
+            element.addEventListener('input', (event) => {
+                value = event.target.value
+            })
+        </script>
+    </body>
+</html>`
 
 const usageReact = `import { useState } from 'react'
-import { SyntheticText } from 'synthetic-md-react'
+import { SynthText } from 'synthtext-react'
 
 const App = () => {
     const [text, setText] = useState('')
-    const onChange = (e: Event) => {
-        const text = (e.target as HTMLTextAreaElement).value
+
+    const onInput = (event) => {
+        const text = event.target.value
         setText(text)
     }
-    return <SyntheticText className={styles.synthetic} value={text} onChange={onChange} />
+
+    return <SynthText value={text} onInput={onInput} />
 }`
 
 const Guide = ({ className = '', active = false, theme = 'dark' }: { className?: string, active?: boolean, theme?: string }) => {
@@ -40,12 +46,12 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
         let cancelled = false
 
         const code = usageTab === 'react' ? usageReact : usageVanilla
-        const lang = usageTab === 'react' ? 'tsx' : 'js';
+        const lang = usageTab === 'react' ? 'jsx' : 'html';
 
         (async () => {
             const highlighter = await createHighlighter({
                 themes: ['tokyo-night', 'min-light'],
-                langs: usageTab === 'react' ? ['tsx'] : ['js'],
+                langs: usageTab === 'react' ? ['jsx'] : ['html'],
             })
         
             const codeTheme =
@@ -74,7 +80,7 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
     return (
         <div className={`${styles.guide} ${active && styles.active} ${className}`}>
             <h2 className={styles.overview}>Overview</h2>
-            <p>Synthetic Markdown is a lightweight editor built as a primitive UI element.
+            <p>Synthetic Text is a lightweight editor built as a primitive UI element.
                 It behaves like a textarea while rendering in real time on a unified editing surface, removing the need for split views or mode switching.
                 Its core is framework-agnostic and currently available for Vanilla JS and React, with a minimal controlled API.
             </p>
@@ -100,8 +106,8 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
                         <div className={`${styles.tab} ${installTab === 'react' && styles.active}`} onClick={() => setInstallTab('react')}>React</div>
                     </div>
                     <button className={styles.button} onClick={() => {
-                        if (installTab === 'vanilla') copy('install-vanilla', 'npm install synthetic-md')
-                        else copy('install-react', 'npm install synthetic-md-react')
+                        if (installTab === 'vanilla') copy('install-vanilla', 'npm install synthtext')
+                        else copy('install-react', 'npm install synthtext-react')
                     }}
                     title="Copy">
                         {copiedKey === 'install-vanilla' || copiedKey === 'install-react' ? <span className={styles.icon} title="Copied">✓</span> : <CopyIcon className={styles.icon} title="Copy" />}
@@ -113,7 +119,7 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
                         <span className={styles.language}>bash</span>
                         <pre>
                             <code>
-                                npm install synthetic-md
+                                npm install synthtext
                             </code>
                         </pre>
                     </div>}
@@ -121,7 +127,7 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
                         <span className={styles.language}>bash</span>
                         <pre>
                             <code>
-                                npm install synthetic-md-react
+                                npm install synthtext-react
                             </code>
                         </pre>
                     </div>}
@@ -146,7 +152,7 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
                 </div>
                 <div className={styles.blocks}>
                     <div className={styles.content}>
-                        <span className={styles.language}>{usageTab === 'vanilla' ? 'ts' : 'tsx'}</span>
+                        <span className={styles.language}>{usageTab === 'vanilla' ? 'html' : 'jsx'}</span>
                         <code className={styles.code} dangerouslySetInnerHTML={{ __html: html }} />
                     </div>
                 </div>

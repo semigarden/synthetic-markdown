@@ -1,5 +1,5 @@
 {
-  "name": "synthetic-md-app",
+  "name": "synthtext-app",
   "license": "MIT",
   "author": {
     "name": "semigarden",
@@ -7,13 +7,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/semigarden/synthetic-md.git",
-    "directory": "synthetic-md/app"
+    "url": "git+https://github.com/semigarden/synthtext.git",
+    "directory": "synthtext/app"
   },
   "bugs": {
-    "url": "https://github.com/semigarden/synthetic-md/issues"
+    "url": "https://github.com/semigarden/synthtext/issues"
   },
-  "homepage": "https://github.com/semigarden/synthetic-md#readme",
+  "homepage": "https://github.com/semigarden/synthtext#readme",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -28,7 +28,7 @@
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.13.0",
     "shiki": "^3.21.0",
-    "synthetic-md-react": "^0.0.18"
+    "synthtext-react": "^0.0.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

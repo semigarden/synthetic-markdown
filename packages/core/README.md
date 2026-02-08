@@ -3,7 +3,7 @@
 ```
 <html>
     <body>
-        <synthetic-text />
+        <synthtext />
 
         <script type="module">
             import 'synthtext'
