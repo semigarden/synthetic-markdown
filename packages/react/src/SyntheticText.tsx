@@ -1,4 +1,5 @@
 import { forwardRef, useRef } from 'react'
+import 'syntxt'
 
 type Props = {
     ref?: React.RefObject<HTMLTextAreaElement | null>
