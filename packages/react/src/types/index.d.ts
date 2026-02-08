@@ -3,7 +3,7 @@ export {}
 declare module 'react/jsx-runtime' {
     namespace JSX {
         interface IntrinsicElements {
-            'synthtext': {
+            'synthetic-text': {
                 ref?: any
                 className?: string
                 autofocus?: boolean

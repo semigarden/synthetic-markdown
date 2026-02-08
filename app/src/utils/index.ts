@@ -1,4 +1,4 @@
-const DB_NAME = 'synthtext'
+const DB_NAME = 'synthetic-text'
 const STORE = 'documents'
 const KEY = 'text'
 

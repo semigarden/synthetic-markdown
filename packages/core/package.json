@@ -1,6 +1,6 @@
 {
-    "name": "synthtext",
-    "version": "0.0.4",
+    "name": "syntxt",
+    "version": "0.0.1",
     "description": "",
     "license": "MIT",
     "author": {
@@ -9,13 +9,13 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/semigarden/synthtext.git",
-        "directory": "synthtext/packages/core"
+        "url": "git+https://github.com/semigarden/syntxt.git",
+        "directory": "syntxt/packages/core"
     },
     "bugs": {
-        "url": "https://github.com/semigarden/synthtext/issues"
+        "url": "https://github.com/semigarden/syntxt/issues"
     },
-    "homepage": "https://github.com/semigarden/synthtext#readme",
+    "homepage": "https://github.com/semigarden/synthxt#readme",
     "type": "module",
     "publishConfig": {
         "access": "public"

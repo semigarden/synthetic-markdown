@@ -6,7 +6,7 @@
         "packages/*"
     ],
     "scripts": {
-        "dev": "npm -w dev/synthtext-dev-vanilla run dev",
+        "dev": "npm -w dev/syntxt-dev-react run dev",
         "build": "npm -ws run build",
         "typecheck": "npm -ws run typecheck",
         "lint": "npm -ws run lint"

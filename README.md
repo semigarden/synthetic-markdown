@@ -1,10 +1,10 @@
-# Synthetic Text
+<!-- # Synthetic Text
 
 > [!NOTE]
 > The project is designed as a building block rather than a complete editor application
 
 > [!TIP]
-> Try it online: <https://semigarden.github.io/synthtext/>
+> Try it online: <https://semigarden.github.io/syntxt/>
 
 > [!IMPORTANT]
 > This project is still in development. Interactions with the following blocks are not yet fully implemented:
@@ -24,12 +24,12 @@
 
 #### Vanilla
 ```
-npm install synthtext
+npm install syntxt
 ```
 
 #### React
 ```
-npm install synthtext-react
+npm install syntxt-react
 ```
 
 ## Usage
@@ -38,12 +38,12 @@ npm install synthtext-react
 ```
 <html>
     <body>
-        <synthtext />
+        <synthetic-text />
 
         <script type="module">
-            import 'synthtext'
+            import 'syntxt'
 
-            const element = document.querySelector('synthtext')
+            const element = document.querySelector('synthetic-text')
 
             let value = ''
             element.value = value
@@ -59,7 +59,7 @@ npm install synthtext-react
 #### React
 ```
 import { useState } from 'react'
-import { SynthText } from 'synthtext-react'
+import { SyntheticText } from 'syntxt-react'
 
 const App = () => {
     const [text, setText] = useState('')
@@ -69,6 +69,6 @@ const App = () => {
         setText(text)
     }
 
-    return <SynthText value={text} onInput={onInput} />
+    return <SyntheticText value={text} onInput={onInput} />
 }
-```
+``` -->

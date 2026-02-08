@@ -1,5 +1,4 @@
-import { useEffect, forwardRef, useRef } from 'react'
-import { defineElement } from 'synthtext'
+import { forwardRef, useRef } from 'react'
 
 type Props = {
     ref?: React.RefObject<HTMLTextAreaElement | null>
@@ -9,15 +8,11 @@ type Props = {
     onInput: (event: Event) => void
 }
 
-const SynthText = forwardRef(({ className, autofocus = false, value = '', onInput }: Props, ref) => {
+const SyntheticText = forwardRef(({ className, autofocus = false, value = '', onInput }: Props, ref) => {
     const elementRef = useRef<HTMLElement>(null)
 
-    useEffect(() => {
-        defineElement()
-    }, [])
-
     return (
-        <synthtext
+        <synthetic-text
             ref={(node: HTMLElement | null) => {
                 elementRef.current = node
                 if (typeof ref === 'function') {
@@ -34,4 +29,4 @@ const SynthText = forwardRef(({ className, autofocus = false, value = '', onInpu
     )
 })
 
-export default SynthText
+export default SyntheticText

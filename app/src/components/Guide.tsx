@@ -5,12 +5,12 @@ import CopyIcon from '../assets/copy.svg?react'
 
 const usageVanilla = `<html>
     <body>
-        <synthtext />
+        <synthetic-text />
 
         <script type="module">
-            import 'synthtext'
+            import 'syntxt'
 
-            const element = document.querySelector('synthtext')
+            const element = document.querySelector('synthetic-text')
 
             let value = ''
             element.value = value
@@ -23,7 +23,7 @@ const usageVanilla = `<html>
 </html>`
 
 const usageReact = `import { useState } from 'react'
-import { SynthText } from 'synthtext-react'
+import { SyntheticText } from 'syntxt-react'
 
 const App = () => {
     const [text, setText] = useState('')
@@ -33,7 +33,7 @@ const App = () => {
         setText(text)
     }
 
-    return <SynthText value={text} onInput={onInput} />
+    return <SyntheticText value={text} onInput={onInput} />
 }`
 
 const Guide = ({ className = '', active = false, theme = 'dark' }: { className?: string, active?: boolean, theme?: string }) => {
@@ -106,8 +106,8 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
                         <div className={`${styles.tab} ${installTab === 'react' && styles.active}`} onClick={() => setInstallTab('react')}>React</div>
                     </div>
                     <button className={styles.button} onClick={() => {
-                        if (installTab === 'vanilla') copy('install-vanilla', 'npm install synthtext')
-                        else copy('install-react', 'npm install synthtext-react')
+                        if (installTab === 'vanilla') copy('install-vanilla', 'npm install syntxt')
+                        else copy('install-react', 'npm install syntxt-react')
                     }}
                     title="Copy">
                         {copiedKey === 'install-vanilla' || copiedKey === 'install-react' ? <span className={styles.icon} title="Copied">✓</span> : <CopyIcon className={styles.icon} title="Copy" />}
@@ -119,7 +119,7 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
                         <span className={styles.language}>bash</span>
                         <pre>
                             <code>
-                                npm install synthtext
+                                npm install syntxt
                             </code>
                         </pre>
                     </div>}
@@ -127,7 +127,7 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
                         <span className={styles.language}>bash</span>
                         <pre>
                             <code>
-                                npm install synthtext-react
+                                npm install syntxt-react
                             </code>
                         </pre>
                     </div>}

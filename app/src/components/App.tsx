@@ -14,8 +14,8 @@ const App = ({ tab = 'guide' }: { tab?: 'guide' | 'sandbox' }) => {
     useEffect(() => {
         const path = window.location.pathname
 
-        if (path === '/synthtext' || path === '/synthtext/') {
-            history.replaceState({}, '', '/synthtext/guide')
+        if (path === '/syntxt' || path === '/syntxt/') {
+            history.replaceState({}, '', '/syntxt/guide')
         }
     }, [])
 
@@ -24,10 +24,10 @@ const App = ({ tab = 'guide' }: { tab?: 'guide' | 'sandbox' }) => {
             const path = window.location.pathname
 
             switch (path) {
-                case '/synthtext/sandbox':
+                case '/syntxt/sandbox':
                     go('sandbox')
                     break
-                case '/synthtext/guide':
+                case '/syntxt/guide':
                 default:
                     go('guide')
                     break
@@ -45,10 +45,10 @@ const App = ({ tab = 'guide' }: { tab?: 'guide' | 'sandbox' }) => {
 
         const url =
           tab === 'sandbox'
-            ? '/synthtext/sandbox'
-            : '/synthtext/guide'
+            ? '/syntxt/sandbox'
+            : '/syntxt/guide'
 
-        document.title = `synthtext - ${tab === 'sandbox' ? 'Sandbox' : 'Guide'}`
+        document.title = `Synthetic Text - ${tab === 'sandbox' ? 'Sandbox' : 'Guide'}`
       
         history.pushState({}, '', url)
     }
@@ -69,7 +69,7 @@ const App = ({ tab = 'guide' }: { tab?: 'guide' | 'sandbox' }) => {
                 <div className={`${styles.title} ${activeTab === 'sandbox' && styles.active}`} onClick={() => go('sandbox')}>
                     Sandbox
                 </div>
-                <div className={`${styles.title}`} onClick={() => window.open('https://github.com/semigarden/synthtext#readme', '_blank')}>
+                <div className={`${styles.title}`} onClick={() => window.open('https://github.com/semigarden/syntxt#readme', '_blank')}>
                     <img className={styles.icon} src={github} alt="github" /> GitHub
                 </div>
                 <div className={`${styles.title} ${styles.theme}`} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>

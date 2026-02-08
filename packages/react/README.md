@@ -3,7 +3,7 @@
 
 ```
 import { useState } from 'react'
-import { SynthText } from 'synthtext-react'
+import { SyntheticText } from 'syntxt-react'
 
 const App = () => {
     const [text, setText] = useState('')
@@ -13,6 +13,6 @@ const App = () => {
         setText(text)
     }
 
-    return <SynthText value={text} onInput={onInput} />
+    return <SyntheticText value={text} onInput={onInput} />
 }
 ```

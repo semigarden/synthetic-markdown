@@ -1,6 +1,6 @@
 {
-    "name": "synthtext-react",
-    "version": "0.0.5",
+    "name": "syntxt-react",
+    "version": "0.0.1",
     "description": "",
     "license": "MIT",
     "author": {
@@ -9,13 +9,13 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/semigarden/synthtext.git",
-        "directory": "synthtext/packages/react"
+        "url": "git+https://github.com/semigarden/syntxt.git",
+        "directory": "syntxt/packages/react"
     },
     "bugs": {
-        "url": "https://github.com/semigarden/synthtext/issues"
+        "url": "https://github.com/semigarden/syntxt/issues"
     },
-    "homepage": "https://github.com/semigarden/synthtext#readme",
+    "homepage": "https://github.com/semigarden/syntxt#readme",
     "type": "module",
     "publishConfig": {
         "access": "public"
@@ -42,7 +42,7 @@
         "prepublishOnly": "npm run build"
     },
     "dependencies": {
-        "synthtext": "^0.0.4"
+        "syntxt": "^0.0.1"
     },
     "peerDependencies": {
         "react": ">=18"

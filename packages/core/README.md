@@ -3,12 +3,12 @@
 ```
 <html>
     <body>
-        <synthtext />
+        <synthetic-text />
 
         <script type="module">
-            import 'synthtext'
+            import 'syntxt'
 
-            const element = document.querySelector('synthtext')
+            const element = document.querySelector('synthetic-text')
 
             let value = ''
             element.value = value
