@@ -1,6 +1,6 @@
 {
     "name": "synthtext-react",
-    "version": "0.0.2",
+    "version": "0.0.5",
     "description": "",
     "license": "MIT",
     "author": {
@@ -41,13 +41,15 @@
         "lint": "eslint .",
         "prepublishOnly": "npm run build"
     },
+    "dependencies": {
+        "synthtext": "^0.0.4"
+    },
     "peerDependencies": {
-        "react": "^19.2.0",
-        "synthtext": "^0.0.2"
+        "react": ">=18"
     },
     "devDependencies": {
-        "@types/react": "^19.2.9",
-        "react": "^19.2.0",
+        "@types/react": ">=18",
+        "react": ">=18",
         "tsup": "^8.0.0",
         "typescript": "^5.3.0"
     }
