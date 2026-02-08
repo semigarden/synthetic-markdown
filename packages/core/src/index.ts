@@ -1,10 +1,14 @@
 import Element from './models/element'
 
-function defineElement() {
-    if (!customElements.get('synthetic-text')) {
-        customElements.define('synthetic-text', Element)
+function defineElement(tag = 'synthetic-text') {
+    if (typeof window === 'undefined') return
+    if (!('customElements' in window)) return
+    if (!customElements.get(tag)) {
+        customElements.define(tag, Element)
     }
 }
+
+defineElement()
 
 export { defineElement, Element }
 export default Element
