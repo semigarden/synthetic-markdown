@@ -209,6 +209,58 @@ class Input {
             return this.resolveCodeBlockDelete(direction, block, inline, range)
         }
 
+        if (block.type === 'thematicBreak' && inline.type === 'marker') {
+            const positionInline = range.start.position
+            const position = this.caret.position ?? positionInline
+            const currentText = inline.text.symbolic
+
+            let newText: string
+            let newCaretPosition: number
+
+            if (direction === 'backward') {
+                if (block.position.start === 0 && position === 0) {
+                    return { preventDefault: true }
+                }
+                if (position === 0) {
+                    const list = this.ast.query.getListFromBlock(block)
+                    const previousInline = list && list.blocks.length > 1 ? this.ast.query.getPreviousInlineInList(inline) ?? this.ast.query.getPreviousInline(inline.id) : this.ast.query.getPreviousInline(inline.id)
+
+                    if (previousInline && (strip(inline.text.symbolic).length === 0 || strip(previousInline.text.symbolic).length === 0)) {
+                        if (previousInline) {
+                            return {
+                                preventDefault: true,
+                                ast: [{
+                                    type: 'mergeInline',
+                                    leftInlineId: previousInline.id,
+                                    rightInlineId: inline.id,
+                                }],
+                            }
+                        }
+                    }
+                    return { preventDefault: true }
+                }
+                newText = currentText.slice(0, position - 1) + currentText.slice(position)
+                newCaretPosition = position - 1
+            } else {
+                if (position >= currentText.length) {
+                    return { preventDefault: true }
+                }
+                newText = currentText.slice(0, position) + currentText.slice(position + 1)
+                newCaretPosition = position
+            }
+
+            return {
+                preventDefault: true,
+                ast: [{
+                    type: 'input',
+                    blockId: block.id,
+                    inlineId: inline.id,
+                    text: newText,
+                    caretPosition: newCaretPosition,
+                }],
+            }
+        }
+
         const list = this.ast.query.getListFromBlock(block)
         const previousInline = list && list.blocks.length > 1 ? this.ast.query.getPreviousInlineInList(inline) ?? this.ast.query.getPreviousInline(inline.id) : this.ast.query.getPreviousInline(inline.id)
 

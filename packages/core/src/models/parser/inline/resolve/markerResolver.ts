@@ -12,6 +12,8 @@ class MarkerResolver {
     ): Inline | null {
         if (stream.position() !== 0) return null
 
+        text = text.trim()
+
         if (blockType === 'heading') {
             const match = text.match(/^(#{1,6})(\s+|$)/)
             if (!match) return null
