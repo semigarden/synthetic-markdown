@@ -38,7 +38,7 @@ class Intent {
     }
 
     public resolveSplit(context: EditContext): EditEffect {
-        const caretPositionInline = this.caret.getPositionInInline(context.inlineElement)
+        const {position: caretPositionInline, affinity} = this.caret.getPositionInInline(context.inlineElement)
         const caretPosition = this.caret.position ?? caretPositionInline
         const parentBlock = this.ast.query.getParentBlock(context.block)
 
@@ -121,7 +121,8 @@ class Intent {
     }
 
     private resolveMerge(context: EditContext): EditEffect {
-        if (this.caret.getPositionInInline(context.inlineElement) !== 0) return { preventDefault: false }
+        const {position: caretPositionInline, affinity} = this.caret.getPositionInInline(context.inlineElement)
+        if (caretPositionInline !== 0) return { preventDefault: false }
 
         const parentBlock = this.ast.query.getParentBlock(context.block)
         if (parentBlock?.type === 'tableCell' || parentBlock?.type === 'tableHeader') {
@@ -227,7 +228,7 @@ class Intent {
 
     private resolveIndent(context: EditContext): EditEffect {
         if (context.block.type === 'codeBlock') {
-            const caretPositionInline = this.caret.getPositionInInline(context.inlineElement)
+            const {position: caretPositionInline} = this.caret.getPositionInInline(context.inlineElement)
             const caretPosition = this.caret.position ?? caretPositionInline
             const tabSpaces = '  '
             
@@ -249,7 +250,7 @@ class Intent {
 
         const parentBlock = this.ast.query.getParentBlock(context.block)
         if (parentBlock?.type === 'tableCell' || parentBlock?.type === 'tableHeader') {
-            const caretPositionInline = this.caret.getPositionInInline(context.inlineElement)
+            const {position: caretPositionInline} = this.caret.getPositionInInline(context.inlineElement)
             const caretPosition = this.caret.position ?? caretPositionInline
             return {
                 preventDefault: true,
@@ -368,7 +369,7 @@ class Intent {
         const tableCell = this.ast.query.getParentBlock(context.block)
         if (tableCell?.type !== 'tableCell' && tableCell?.type !== 'tableHeader') return { preventDefault: false }
 
-        const caretPositionInline = this.caret.getPositionInInline(context.inlineElement)
+        const {position: caretPositionInline} = this.caret.getPositionInInline(context.inlineElement)
         const caretPosition = this.caret.position ?? caretPositionInline
 
         return {
@@ -384,9 +385,12 @@ class Intent {
     }
 
     private resolveToggleTask(context: EditContext): EditEffect {
+        const {position: caretPositionInline} = this.caret.getPositionInInline(context.inlineElement)
+        const caretPosition = this.caret.position ?? caretPositionInline
+
         return {
             preventDefault: true,
-            ast: [{ type: 'toggleTask', blockId: context.block.id, inlineId: context.inline.id, caretPosition: this.caret.getPositionInInline(context.inlineElement) }],
+            ast: [{ type: 'toggleTask', blockId: context.block.id, inlineId: context.inline.id, caretPosition: caretPosition }],
         }
     }
 

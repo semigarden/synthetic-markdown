@@ -63,38 +63,48 @@ class Caret {
         this.affinity = undefined
     }
 
-    getPositionInInline(inlineEl: HTMLElement) {
+    getPositionInInline(inlineEl: HTMLElement): { position: number, affinity: 'start' | 'end' } {
         const target = (inlineEl.querySelector('.symbolic') as HTMLElement | null) ?? inlineEl
         const selection = target.ownerDocument.getSelection()
 
-        let caretPositionInInline = 0
+        let position = 0
         if (selection && selection.rangeCount > 0) {
             const range = selection.getRangeAt(0)
             const preRange = target.ownerDocument.createRange()
             preRange.selectNodeContents(target)
             preRange.setEnd(range.startContainer, range.startOffset)
-            caretPositionInInline = preRange.toString().length
+            position = preRange.toString().length
         }
 
-        return caretPositionInInline
+        const text = target.textContent ?? ''
+        const affinity: 'start' | 'end' = position >= text.length ? 'end' : 'start'
+
+        return { position, affinity }
     }
 
-    public restoreCaret(inlineId: string | null = this.inlineId, position: number | null = this.position) {
+    public restoreCaret(inlineId: string | null = this.inlineId, position: number | null = this.position, affinity: 'start' | 'end' | undefined = this.affinity) {
         if (inlineId === null || position === null) return
 
         const inlineEl = this.rootElement.querySelector(`[data-inline-id="${inlineId}"]`) as HTMLElement
         if (!inlineEl) return
+
+        if (position === 0 && affinity === 'end') {
+            const prev = inlineEl.previousElementSibling as HTMLElement | null
+            if (prev && prev.dataset.inlineId) {
+                this.restoreCaret(prev.dataset.inlineId, Number.MAX_SAFE_INTEGER, 'start')
+                return
+            }
+        }
 
         const target = (inlineEl.querySelector('.symbolic') as HTMLElement | null) ?? inlineEl
         let textNode = target.firstChild instanceof Text ? target.firstChild : null
 
         if (!textNode) {
             target.textContent = ''
-            textNode = target.ownerDocument.createTextNode('\u200B')
+            textNode = target.ownerDocument.createTextNode('\u00A0')
             target.appendChild(textNode)
         }
 
-      
         const root = this.rootElement.getRootNode() as ShadowRoot | Document
         const selection =
             'getSelection' in root ? root.getSelection() : target.ownerDocument.getSelection()
@@ -105,7 +115,11 @@ class Caret {
 
         const range = target.ownerDocument.createRange()
         const max = textNode.data.length
-        const clamped = Math.min(position, max)
+        let clamped = Math.min(position, max)
+
+        if (textNode.data === '\u00A0' && max === 1) {
+            clamped = affinity === 'end' ? 1 : 0
+        }
 
         selection.removeAllRanges()
         range.setStart(textNode, clamped)
@@ -123,13 +137,13 @@ class Caret {
                 this.affinity = affinity
 
                 this.beginSelectionSuppress(caretToken)
-                this.scheduleRestore(caretToken, inlineId, position, mode)
+                this.scheduleRestore(caretToken, inlineId, position, affinity, mode)
                 break
             }
         }
     }
 
-    private scheduleRestore(caretToken: number, inlineId: string, position: number, mode: 'microtask' | 'raf' | 'raf2') {
+    private scheduleRestore(caretToken: number, inlineId: string, position: number, affinity: 'start' | 'end' | undefined, mode: 'microtask' | 'raf' | 'raf2') {
         this.restoreToken = caretToken
 
         if (this.restoreRafId !== null) cancelAnimationFrame(this.restoreRafId)
@@ -137,7 +151,7 @@ class Caret {
         const run = () => {
             if (this.composing) return
             if (caretToken !== this.restoreToken) return
-            this.restoreCaret(inlineId, position)
+            this.restoreCaret(inlineId, position, affinity)
         }
         
         if (mode === 'microtask') {
