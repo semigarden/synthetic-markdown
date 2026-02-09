@@ -212,6 +212,8 @@ class Intent {
             //         }],
             //     }
             // }
+            
+            console.log('merge inline', JSON.stringify(previousInline.text.symbolic, null, 2), '.', strip(previousInline.text.symbolic).length, affinity)
 
             return {
                 preventDefault: true,

@@ -341,7 +341,7 @@ class Edit {
         }
 
         const pureLeftInlineText = strip(leftInline.text.symbolic)
-        const caretPositionInMergedInline = removedBlock
+        const caretPosition = removedBlock
             ? pureLeftInlineText.length
             : pureLeftInlineText.length - 1
 
@@ -354,12 +354,12 @@ class Edit {
 
         const ignoreTypes = ['blankLine', 'table']
         if (blockTypeChanged && !ignoreTypes.includes(detectedBlock.type)) {
-            return transform.transformBlock(newText, leftBlock, detectedBlock, caretPositionInMergedInline, removedBlocks)
+            return transform.transformBlock(newText, leftBlock, detectedBlock, 0, removedBlocks)
         }
 
         return effect.compose(
             [effect.update([{ type: 'block', at: 'current', target: leftBlock, current: leftBlock }], removedBlocks)],
-            effect.caret(leftBlock.id, mergedInline.id, caretPositionInMergedInline, 'start'),
+            effect.caret(leftBlock.id, mergedInline.id, caretPosition, 'start'),
             effect.dom('structure')
         )
     }
