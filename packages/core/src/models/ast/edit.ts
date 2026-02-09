@@ -969,18 +969,46 @@ class Edit {
 
         const sublistIndex = sublist.blocks.indexOf(listItem)
         const parentIndex = parentList.blocks.indexOf(parentListItem)
+        if (sublistIndex === -1 || parentIndex === -1) return null
 
-        sublist.blocks.splice(sublistIndex, 1)
+        const itemsAfter = sublist.blocks.slice(sublistIndex + 1)
+
+        sublist.blocks.splice(sublistIndex)
+
+        if (itemsAfter.length > 0) {
+            const tailList: List = {
+                id: uuid(),
+                type: 'list',
+                ordered: sublist.ordered,
+                listStart: sublist.listStart,
+                tight: sublist.tight,
+                blocks: itemsAfter,
+                inlines: [],
+                text: '',
+                position: { start: 0, end: 0 },
+            }
+
+            const existingNestedIndex = listItem.blocks.findIndex(b => b.type === 'list')
+            if (existingNestedIndex !== -1) {
+                listItem.blocks.splice(existingNestedIndex, 1)
+            }
+            listItem.blocks.push(tailList)
+        }
 
         if (sublist.blocks.length === 0) {
             const sublistIdx = parentListItem.blocks.indexOf(sublist)
-            parentListItem.blocks.splice(sublistIdx, 1)
+            if (sublistIdx !== -1) parentListItem.blocks.splice(sublistIdx, 1)
         }
 
         parentList.blocks.splice(parentIndex + 1, 0, listItem)
 
         return effect.compose(
-            [effect.update([{ type: 'block', at: 'current', target: parentListItem, current: parentListItem }, { type: 'block', at: 'next', target: parentListItem, current: listItem }])],
+            [
+                effect.update([
+                    { type: 'block', at: 'current', target: parentListItem, current: parentListItem },
+                    { type: 'block', at: 'next', target: parentListItem, current: listItem },
+                ])
+            ],
             effect.caret(listItem.id, listItem.blocks[0].inlines[0].id, 0, 'start'),
             effect.dom('structure')
         )
@@ -1185,18 +1213,46 @@ class Edit {
 
         const sublistIndex = sublist.blocks.indexOf(taskListItem)
         const parentIndex = parentList.blocks.indexOf(parentTaskListItem)
+        if (sublistIndex === -1 || parentIndex === -1) return null
 
-        sublist.blocks.splice(sublistIndex, 1)
+        const itemsAfter = sublist.blocks.slice(sublistIndex + 1)
+
+        sublist.blocks.splice(sublistIndex)
+
+        if (itemsAfter.length > 0) {
+            const tailList: List = {
+                id: uuid(),
+                type: 'list',
+                ordered: sublist.ordered,
+                listStart: sublist.listStart,
+                tight: sublist.tight,
+                blocks: itemsAfter,
+                inlines: [],
+                text: '',
+                position: { start: 0, end: 0 },
+            }
+
+            const existingNestedIndex = taskListItem.blocks.findIndex(b => b.type === 'list')
+            if (existingNestedIndex !== -1) {
+                taskListItem.blocks.splice(existingNestedIndex, 1)
+            }
+            taskListItem.blocks.push(tailList)
+        }
 
         if (sublist.blocks.length === 0) {
             const sublistIdx = parentTaskListItem.blocks.indexOf(sublist)
-            parentTaskListItem.blocks.splice(sublistIdx, 1)
+            if (sublistIdx !== -1) parentTaskListItem.blocks.splice(sublistIdx, 1)
         }
 
         parentList.blocks.splice(parentIndex + 1, 0, taskListItem)
 
         return effect.compose(
-            [effect.update([{ type: 'block', at: 'current', target: parentTaskListItem, current: parentTaskListItem }, { type: 'block', at: 'next', target: parentTaskListItem, current: taskListItem }])],
+            [
+                effect.update([
+                    { type: 'block', at: 'current', target: parentTaskListItem, current: parentTaskListItem },
+                    { type: 'block', at: 'next', target: parentTaskListItem, current: taskListItem }
+                ])
+            ],
             effect.caret(taskListItem.id, taskListItem.blocks[0].inlines[0].id, 0, 'start'),
             effect.dom('structure')
         )
