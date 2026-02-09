@@ -6,9 +6,8 @@ import { nestLists } from '../block/list/listNest'
 import type { OpenBlock, Block, List, BlockQuote, CodeBlock } from '../../../types'
 
 function sanitize(text: string) {
-    // important: NBSP -> normal space, do not delete it
     return text
-      .replace(/\u00A0/g, ' ')
+    //   .replace(/\u200B/g, '')
       .replace(/[\u200C\u200D\uFEFF]/g, '')
       .replace(/\r$/, '')
 }
@@ -27,7 +26,9 @@ class AstParser {
 
     public parse(text: string): Block[] {
         this.reset()
-        text = sanitize(text)
+        console.log('parse', JSON.stringify(text, null, 2))
+        // text = sanitize(text)
+        console.log('parse sanitize', JSON.stringify(text, null, 2))
         parseLinkReferenceDefinitions(text, this.linkReferences)
 
         this.block.reset()
@@ -122,7 +123,7 @@ class AstParser {
     public reparseTextFragment(text: string, offset: number): Block[] {
         this.block.reset()
     
-        text = text.replace(/[\u00A0\u200C\u200D\uFEFF]/g, '').replace(/\r$/, '')
+        text = text.replace(/[\u200B\u200C\u200D\uFEFF]/g, '').replace(/\r$/, '')
     
         const blocks: Block[] = []
     
@@ -138,6 +139,8 @@ class AstParser {
         for (const block of blocks) {
             this.inline.applyRecursive(block)
         }
+
+        console.log('reparseTextFragment', JSON.stringify(blocks, null, 2))
 
         return blocks
     }    

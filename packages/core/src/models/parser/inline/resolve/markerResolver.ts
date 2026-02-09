@@ -1,6 +1,6 @@
 import InlineStream from "../inlineStream"
 import { Inline } from "../../../../types"
-import { uuid } from "../../../../utils/utils"
+import { uuid, strip } from "../../../../utils/utils"
 
 class MarkerResolver {
     public tryParse(
@@ -12,9 +12,10 @@ class MarkerResolver {
     ): Inline | null {
         if (stream.position() !== 0) return null
 
-        text = text.trim()
+        text = strip(text)
 
         if (blockType === 'heading') {
+            text = text.trim()
             const match = text.match(/^(#{1,6})(\s+|$)/)
             if (!match) return null
 
@@ -36,6 +37,7 @@ class MarkerResolver {
         }
 
         if (blockType === 'thematicBreak') {
+            text = text.trim()
             const match = /^\s{0,3}([-*_])(?:\s*\1){2,}\s*$/.test(text)
             if (!match) return null
 
@@ -54,6 +56,7 @@ class MarkerResolver {
         }
 
         if (blockType === 'blockQuote') {
+            text = text.trim()
             const match = text.match(/^(\s{0,3}>\s?)/)
             if (!match) return null
         

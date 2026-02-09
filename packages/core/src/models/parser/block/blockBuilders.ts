@@ -23,6 +23,7 @@ function buildThematicBreak(line: string, start: number, end: number): Block {
 }
 
 function buildParagraph(line: string, start: number, end: number): Block {
+    console.log('buildParagraph', JSON.stringify(line, null, 2), start, end)
     return {
         id: uuid(),
         type: 'paragraph',

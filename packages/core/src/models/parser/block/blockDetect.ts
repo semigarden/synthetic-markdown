@@ -2,7 +2,7 @@ import type { DetectedBlock } from '../../../types'
 
 function detectBlockType(line: string): DetectedBlock {
     line = line
-        .replace(/[\u00A0\u200C\u200D\uFEFF]/g, '')
+        .replace(/[\u200B\u200C\u200D\uFEFF]/g, '')
         .replace(/\r$/, '')
 
     const trimmed = line.trim()

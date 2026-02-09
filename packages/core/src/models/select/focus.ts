@@ -123,7 +123,7 @@ class Focus {
         const target = (inlineEl.querySelector('.symbolic') as HTMLElement | null) ?? inlineEl
 
         if (target.childNodes.length === 0) {
-            target.appendChild(document.createTextNode('\u00A0'))
+            target.appendChild(document.createTextNode('\u200B'))
         }
 
         this.rootElement.focus()

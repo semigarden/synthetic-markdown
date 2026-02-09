@@ -153,6 +153,7 @@ class Intent {
         }
 
         if (parentBlock?.type === 'listItem' || parentBlock?.type === 'taskListItem') {
+            console.log('resolveMerge listItem', JSON.stringify(parentBlock, null, 2))
             const list = this.ast.query.getListFromBlock(parentBlock)
             if (list) {
                 const itemIndex = list.blocks.indexOf(parentBlock)
@@ -163,6 +164,7 @@ class Intent {
                 
                 if (isFirstItem && isNestedList) {
                     if (parentBlock.type === 'listItem') {
+                        console.log('resolveMerge listItem', JSON.stringify(parentBlock, null, 2))
                         return {
                             preventDefault: true,
                             ast: [{ type: 'outdentListItem', listItemId: parentBlock.id }],

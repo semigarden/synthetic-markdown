@@ -10,7 +10,8 @@ const uuid = (): string => {
     })
 }
 
-const strip = (string: string) => string.replace(/\u00A0/g, '')
+// const strip = (string: string) => string.replace(/\u200B/g, '')
+const strip = (s: string) => s.replace(/[\u200C\u200D\uFEFF]/g, '');
 
 const namedEntities: Record<string, string> = {
     // Basic HTML entities
@@ -21,7 +22,7 @@ const namedEntities: Record<string, string> = {
     "&apos;": "'",
     
     // Common typographic entities
-    "&nbsp;": "\u00A0",
+    "&nbsp;": "\u200B",
     "&iexcl;": "¡",
     "&cent;": "¢",
     "&pound;": "£",

@@ -90,7 +90,7 @@ class Caret {
 
         if (!textNode) {
             target.textContent = ''
-            textNode = target.ownerDocument.createTextNode('\u00A0')
+            textNode = target.ownerDocument.createTextNode('\u200B')
             target.appendChild(textNode)
         }
 

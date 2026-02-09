@@ -9,6 +9,8 @@ class Edit {
     public input(blockId: string, inlineId: string, text: string, caretPosition: number): AstApplyEffect | null {
         const { query, parser, transform, effect } = this.context
 
+        // text = strip(text)
+
         console.log('input', blockId, inlineId, text, caretPosition)
         const block = query.getBlockById(blockId)
         if (!block) return null
@@ -28,7 +30,7 @@ class Edit {
             text +
             block.inlines.slice(inlineIndex + 1).map(i => i.text.symbolic).join('')
 
-        newText = strip(newText)
+        // newText = strip(newText)
     
         const detectedBlock = detectBlockType(newText)
         const blockTypeChanged =
@@ -66,6 +68,7 @@ class Edit {
             (block.type === 'paragraph' && inListItem && taskPrefix)
         ) {
             if (detectedBlock.type === 'listItem' || detectedBlock.type === 'taskListItem' || detectedBlock.type === 'blockQuote') caretPosition = 0
+            console.log('input transformBlock listItem', JSON.stringify(detectedBlock, null, 2), caretPosition)
             return transform.transformBlock(newText, block, detectedBlock, caretPosition)
         }
     
@@ -181,7 +184,7 @@ class Edit {
         const t = cb.inlines?.find(i => i.type === 'text') ?? null
         if (!t) return
 
-        let sym = t.text.symbolic === '\u00A0' ? '' : (t.text.symbolic ?? '')
+        let sym = t.text.symbolic === '\u200B' ? '' : (t.text.symbolic ?? '')
         let sem = t.text.semantic ?? ''
 
         if (sym.startsWith('\n')) sym = sym.slice(1)
@@ -191,7 +194,7 @@ class Edit {
       
 
         if (sym.length === 0) {
-            t.text.symbolic = '\u00A0'
+            t.text.symbolic = '\u200B'
             t.text.semantic = ''
         } else {
             t.text.symbolic = sym
@@ -204,7 +207,7 @@ class Edit {
             t.position.end = t.position.start + t.text.symbolic.length
         }
 
-        cb.text = t.text.semantic.replace(/^\u00A0$/, '')
+        cb.text = t.text.semantic.replace(/^\u200B$/, '')
     }      
 
     public mergeInline(inlineAId: string, inlineBId: string): AstApplyEffect | null {
@@ -299,7 +302,7 @@ class Edit {
                 this.normalizeFencedCodeBlockPayloadNewlines(cb)
 
                 const t = cb.inlines?.find(i => i.type === 'text') ?? null
-                cb.text = t ? (t.text.semantic ?? '').replace(/^\u00A0$/, '') : ''
+                cb.text = t ? (t.text.semantic ?? '').replace(/^\u200B$/, '') : ''
             }
         }
 
@@ -511,7 +514,7 @@ class Edit {
     
             let p = q.blocks?.find(b => b.type === 'paragraph') as Block | undefined
             if (!p) {
-                const created = parser.reparseTextFragment('\u00A0', q.position.start)
+                const created = parser.reparseTextFragment('\u200B', q.position.start)
                 const para = created.find(b => b.type === 'paragraph') as Block | undefined
                 if (!para) return null
     
@@ -2232,7 +2235,7 @@ class Edit {
                         id: uuid(),
                         type: 'text',
                         blockId: block.id,
-                        text: { symbolic: '\u00A0', semantic: '' },
+                        text: { symbolic: '\u200B', semantic: '' },
                         position: { start: 0, end: 0 },
                     }
 
@@ -2240,7 +2243,7 @@ class Edit {
                         id: uuid(),
                         type: 'paragraph',
                         inlines: [newInline],
-                        text: '\u00A0',
+                        text: '\u200B',
                         position: { start: block.position.start, end: block.position.start },
                     }
 
@@ -2370,7 +2373,7 @@ class Edit {
                         id: uuid(),
                         type: 'text',
                         blockId: block.id,
-                        text: { symbolic: '\u00A0', semantic: '' },
+                        text: { symbolic: '\u200B', semantic: '' },
                         position: { start: 0, end: 0 },
                     }
 
@@ -2378,7 +2381,7 @@ class Edit {
                         id: uuid(),
                         type: 'paragraph',
                         inlines: [newInline],
-                        text: '\u00A0',
+                        text: '\u200B',
                         position: { start: block.position.start, end: block.position.start },
                     }
 
@@ -2527,7 +2530,7 @@ class Edit {
             inline.text.semantic = newSymbolic.slice(0)
             inline.position.end = inline.position.start + newSymbolic.length
 
-            block.text = inline.text.semantic.replace(/^\u00A0$/, '')
+            block.text = inline.text.semantic.replace(/^\u200B$/, '')
             block.position.end = block.position.start + this.calculateCodeBlockLength(block)
 
             const newCaretPosition = caretPosition - 1
@@ -2581,7 +2584,7 @@ class Edit {
 
         const moved = after.replace(/\n$/, '')
 
-        const current = textInline.text.semantic === '\u00A0' ? '' : (textInline.text.semantic ?? '')
+        const current = textInline.text.semantic === '\u200B' ? '' : (textInline.text.semantic ?? '')
 
         const indent = block.openIndent ?? 0
         let info = (block.infoString ? String(block.infoString) : (block.language ? String(block.language) : '')).trim()
@@ -2605,7 +2608,7 @@ class Edit {
             block.language = undefined
         }
 
-        textInline.text.symbolic = next.length === 0 ? '\u00A0' : next
+        textInline.text.symbolic = next.length === 0 ? '\u200B' : next
         textInline.text.semantic = next
         textInline.position.start = markerInline.position.end
         textInline.position.end = textInline.position.start + textInline.text.symbolic.length
@@ -2750,7 +2753,7 @@ class Edit {
         const lang = block.language || ''
         
         const open = ' '.repeat(indent) + fence + lang
-        const content = '\n' + (block.text || '\u00A0')
+        const content = '\n' + (block.text || '\u200B')
         const close = block.close || fence
         
         return open.length + content.length + (close ? close.length : 0)

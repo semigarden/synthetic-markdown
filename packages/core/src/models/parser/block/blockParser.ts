@@ -58,6 +58,7 @@ class BlockParser {
     }
 
     public line(line: string, offset: number): Block[] | null {
+        console.log('blockParser line', JSON.stringify(line, null, 2), offset)
         const start = offset
         const end = offset + line.length
 

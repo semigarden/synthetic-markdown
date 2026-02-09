@@ -41,7 +41,7 @@ function renderInline(inline: Inline): HTMLElement {
     inlineElement.classList.add('inline', inline.type)
 
     const symbolicText = document.createElement('span')
-    symbolicText.textContent = inline.text.symbolic
+    symbolicText.textContent = normalizeSymbolicText(inline.text.symbolic)
     symbolicText.classList.add('symbolic')
     // symbolicText.contentEditable = 'false'
 
@@ -54,7 +54,7 @@ function renderInline(inline: Inline): HTMLElement {
     inlineElement.appendChild(semanticText)
 
     if (inline.type === 'link') {
-        ;(inlineElement as HTMLAnchorElement).href = inline.url.replace(/[\u00A0\u200C\u200D\uFEFF]/g, '') || ''
+        ;(inlineElement as HTMLAnchorElement).href = inline.url.replace(/[\u200B\u200C\u200D\uFEFF]/g, '') || ''
         ;(inlineElement as HTMLAnchorElement).title = inline.title ? `${inline.title}\nCtrl + Click to follow link` : 'Ctrl + Click to follow link'
         inlineElement.classList.add('link')
     }
@@ -75,6 +75,14 @@ function renderInline(inline: Inline): HTMLElement {
     }
 
     return inlineElement
+}
+
+function normalizeSymbolicText(text: string): string {
+    console.log('normalizeSymbolicText', text)
+    if (/^\u200B+$/.test(text)) {
+        return '\u00A0'
+    }
+    return text
 }
 
 export { renderInlines, renderInline }

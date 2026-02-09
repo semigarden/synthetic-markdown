@@ -50,7 +50,7 @@ class AstNormalizer {
                             : raw0
                         codeBlock.text = raw
 
-                        const body = raw.length === 0 ? '\u00A0' : raw
+                        const body = raw.length === 0 ? '\u200B' : raw
                         const contentSymbolic = body
                         const contentSemantic = raw
 
@@ -132,7 +132,7 @@ class AstNormalizer {
                         }
                         
                         if (textInline) {
-                            textInline.text.symbolic = raw.length === 0 ? '\u00A0' : raw
+                            textInline.text.symbolic = raw.length === 0 ? '\u200B' : raw
                             textInline.text.semantic = raw
                             textInline.position = { start: start + 4, end: start + 4 + (raw.length === 0 ? 1 : raw.length) }
                         }
@@ -372,7 +372,7 @@ class AstNormalizer {
         this.text = parts.join('')
 
         // console.log('norm text', JSON.stringify(this.text, null, 2))
-        // console.log('norm blocks', JSON.stringify(blocks, null, 2))
+        console.log('norm blocks', JSON.stringify(blocks, null, 2))
     }
 }
 

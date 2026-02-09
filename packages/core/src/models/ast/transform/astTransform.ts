@@ -1,5 +1,6 @@
 import type { AstApplyEffect, Block, DetectedBlock, Inline, TableCell, TableHeader, List, ListItem, TaskListItem, BlockQuote, CodeBlock } from '../../../types'
 import type { AstContext } from '../astContext'
+import { strip } from '../../../utils/utils'
 
 class AstTransform {
     constructor(private ctx: AstContext) {}
@@ -13,7 +14,7 @@ class AstTransform {
     ): AstApplyEffect | null {
         const { ast, query, parser, effect } = this.ctx
 
-        text = text.replace(/[\u00A0\u200C\u200D\uFEFF]/g, '').replace(/\r$/, '')
+        text = text.replace(/[\u200B\u200C\u200D\uFEFF]/g, '').replace(/\r$/, '')
 
         if (detected.type === 'codeBlock') return this.toCodeBlock(text, block, caretPosition)
 
@@ -62,9 +63,14 @@ class AstTransform {
         const isListItemBlock = block.type === 'listItem' || block.type === 'taskListItem'
         const isListItemDetected = detected.type === 'listItem' || detected.type === 'taskListItem'
 
+        if (isListItemDetected) {
+            return this.toListItem(text, block, caretPosition)
+        }
+
         if (entry.parent && entry.parent.type === 'list' && isListItemBlock && !isListItemDetected) {
             const list = entry.parent as List
             const listEntry = flat.find(b => b.block.id === list.id)
+
             if (!listEntry) return null
 
             if (list.blocks.length > 1) {
@@ -121,8 +127,6 @@ class AstTransform {
             firstCodeBlock = firstCodeBlockEntry.block as CodeBlock
         }
 
-        console.log('firstCodeBlockEntry', JSON.stringify(firstCodeBlockEntry, null, 2))
-        // return null
         const removedBlocks = blocks.slice(entry.index + 1, firstCodeBlockEntry ? firstCodeBlockEntry.index : ast.blocks.length).map(b => b.block)
         const sliceTo = firstCodeBlockEntry ? firstCodeBlockEntry.block.position.start + 1 : this.ctx.ast.text.length
         let newText = text + ast.text.slice(block.position.start + (caretPosition ?? 0), sliceTo)
@@ -133,16 +137,8 @@ class AstTransform {
         }
 
         const newBlocks = parser.reparseTextFragment(newText, block.position.start)
-        console.log('newBlocks', JSON.stringify(newBlocks, null, 2))
-        console.log('newText', JSON.stringify(newText, null, 2))
         if (newBlocks.length === 0) return null
 
-        // console.log('newBlocks', JSON.stringify(newBlocks, null, 2))
-        console.log('text', JSON.stringify(text, null, 2))
-        console.log('slice', JSON.stringify(ast.text.slice(block.position.end + (caretPosition ?? 0), sliceTo), null, 2))
-        // console.log('newText', JSON.stringify(newText, null, 2))
-        // console.log('removedBlocks', JSON.stringify(removedBlocks, null, 2))
-        // return null
 
         const oldBlock = block
         ast.blocks.splice(entry.index, removedBlocks.length, ...newBlocks)
@@ -150,6 +146,29 @@ class AstTransform {
         return effect.compose(
             [effect.update([{ type: 'block', at: 'current', target: oldBlock, current: newBlocks[0] }], removedBlocks)],
             effect.caret(newBlocks[0].id, newBlocks[0].inlines[0].id, newBlocks[0].inlines[0].position.end, 'start'),
+            effect.dom('structure')
+        )
+    }
+
+    toListItem(text: string, block: Block, caretPosition: number | null = null): AstApplyEffect | null {
+        const { ast, query, parser, effect } = this.ctx
+
+        text = strip(text)
+
+        const blocks = query.flattenBlocks(ast.blocks)
+        const entry = blocks.find(b => b.block.id === block.id)
+        if (!entry) return null
+        
+        const newBlocks = parser.reparseTextFragment(text, block.position.start)
+        const inline = query.getFirstInline(newBlocks)
+        if (!inline) return null
+
+        const oldBlock = block
+        ast.blocks.splice(entry.index, 1, ...newBlocks)
+
+        return effect.compose(
+            [effect.update([{ type: 'block', at: 'current', target: oldBlock, current: newBlocks[0] }], [block])],
+            effect.caret(inline.blockId, inline.id, caretPosition ?? inline.position.start, 'start'),
             effect.dom('structure')
         )
     }

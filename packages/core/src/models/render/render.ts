@@ -162,7 +162,9 @@ class Render {
     }
 
     private setText(element: HTMLElement, value: string) {
-        const v = value.length ? value : '\u00A0'
+        const isSymbolic = element.classList.contains('symbolic')
+        console.log('setText', value.length, isSymbolic)
+        const v = value.length ? this.normalizeSymbolicText(value) : (isSymbolic ? '\u00A0' : '')
         const first = element.firstChild
         if (first instanceof Text) {
             first.data = v
@@ -173,6 +175,13 @@ class Render {
         element.appendChild(element.ownerDocument.createTextNode(v))
     }
 
+    private normalizeSymbolicText(text: string): string {
+        console.log('normalizeSymbolicText', text)
+        if (/^\u200B+$/.test(text)) {
+            return '\u00A0'
+        }
+        return text
+    }
 }
 
 export default Render
