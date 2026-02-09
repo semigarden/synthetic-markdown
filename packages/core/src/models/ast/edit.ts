@@ -1,5 +1,5 @@
 import { detectBlockType } from '../parser/block/blockDetect'
-import { uuid, strip } from '../../utils/utils'
+import { uuid, strip, isEmptyText } from '../../utils/utils'
 import type { AstContext } from './astContext'
 import type { AstApplyEffect, Block, Inline, List, ListItem, Table, TableRow, TableHeader, TableCell, TaskListItem, BlockQuote, Paragraph, CodeBlock, RenderInsert, RenderInput } from '../../types'
 
@@ -94,6 +94,11 @@ class Edit {
             block.position = { start: block.position.start, end: block.position.start + block.text.length }
             block.inlines = newInlines
             newInlines.forEach((i: Inline) => (i.blockId = block.id))
+
+            const isEmpty = newInlines.every(i => i.type === 'text' && isEmptyText(i.text.symbolic))
+            if (isEmpty) {
+                return transform.transformBlock(block.text, block, { type: 'paragraph' }, caretPosition)
+            }
 
             return effect.compose(
                 [effect.update([{ type: 'block', at: 'current', target: block, current: block }])],

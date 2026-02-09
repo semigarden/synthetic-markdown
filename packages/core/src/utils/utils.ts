@@ -11,7 +11,12 @@ const uuid = (): string => {
 }
 
 // const strip = (string: string) => string.replace(/\u200B/g, '')
-const strip = (s: string) => s.replace(/[\u200C\u200D\uFEFF]/g, '');
+const strip = (string: string) => string.replace(/[\u200C\u200D\uFEFF]/g, '')
+
+const isEmptyText = (string: string): boolean => string
+    .replace(/[\u200B\u00A0]/g, '')
+    .trim()
+    .length === 0
 
 const namedEntities: Record<string, string> = {
     // Basic HTML entities
@@ -330,4 +335,4 @@ function encodeHTMLEntities(text: string): string {
         .replace(/'/g, "&#39;");
 }
 
-export { uuid, decodeHTMLEntity, containsHTMLEntity, encodeHTMLEntities, strip };
+export { uuid, decodeHTMLEntity, containsHTMLEntity, encodeHTMLEntities, strip, isEmptyText };
