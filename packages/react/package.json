@@ -1,6 +1,6 @@
 {
     "name": "syntxt-react",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "description": "",
     "license": "MIT",
     "author": {
@@ -51,6 +51,6 @@
         "typescript": "^5.3.0"
     },
     "dependencies": {
-        "syntxt": "^0.0.2"
+        "syntxt": "^0.0.3"
     }
 }
