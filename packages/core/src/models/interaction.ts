@@ -46,14 +46,12 @@ class Interaction {
     }
 
     private onBeforeInput = (event: InputEvent) => {
-        console.log('onBeforeInput', event.inputType, event.data)
         if (event.inputType === 'insertFromPaste') {
             event.preventDefault()
             return
         }
 
         if (this.isComposing && event.isComposing) {
-            console.log('onBeforeInput composing', event.data)
             return
         }
 
@@ -186,8 +184,6 @@ class Interaction {
 
         const context = this.select.resolveInlineContext()
         const isInCodeBlock = context?.block?.type === 'codeBlock'
-
-        console.log('resolveIntentFromEvent', key, event.shiftKey, event.ctrlKey)
 
         if (event.shiftKey) {
             if (key === 'tab') return 'outdent'

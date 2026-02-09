@@ -12,13 +12,11 @@ class Input {
     ) {}
 
     public resolveEffect(event: InputEvent): EditEffect | null {
-        console.log('resolveEffect', JSON.stringify(event, null, 2))
         const isInsert = event.type.startsWith('insert')
         const isDelete = event.type.startsWith('delete')
         if (!isInsert && !isDelete) return null
     
         const range = this.select?.resolveRange()
-        console.log('range', JSON.stringify(range, null, 2))
         if (!range) return null
 
         const isCollapsed = range.start.blockId === range.end.blockId &&
@@ -40,27 +38,22 @@ class Input {
     }
 
     private resolveInsert(text: string, range: SelectionRange): EditEffect | null {
-        console.log('input resolveInsert', text, range)
         if (range.start.blockId !== range.end.blockId) {
             return this.resolveMultiBlockInsert(text, range)
         }
 
         const block = this.ast.query.getBlockById(range.start.blockId)
-        console.log('input resolveInsert block', JSON.stringify(block, null, 2))
         if (!block) return null
 
         const inline = this.ast.query.getInlineById(range.start.inlineId)
-        console.log('input resolveInsert inline', JSON.stringify(inline, null, 2))
         if (!inline) return null
 
         if (block.type === 'codeBlock') {
-            console.log('input resolveInsert codeBlock')
             return this.resolveCodeBlockInsert(text, block, inline, range)
         }
 
         const startInlineIndex = block.inlines.findIndex(i => i.id === inline.id)
         const endInline = this.ast.query.getInlineById(range.end.inlineId)
-        console.log('input resolveInsert endInline', JSON.stringify(endInline, null, 2))
         if (!endInline) return null
 
         if (inline.id === endInline.id) {
@@ -86,9 +79,7 @@ class Input {
             const newText =
                 currentText.slice(0, startPos) + text + currentText.slice(endPos)
               
-              const newCaretPosition = startPos + text.length
-
-            console.log('input resolveInsert', isCollapsed,newText, startPos, endPos, newCaretPosition)
+            const newCaretPosition = startPos + text.length
 
             return {
                 preventDefault: true,
@@ -117,8 +108,6 @@ class Input {
         
         const newText = textBefore + text + textAfter
         const newCaretPosition = textBefore.length + text.length
-
-        console.log('input resolveInsert 2', newText, textBefore.length, newCaretPosition)
 
         return {
             preventDefault: true,
@@ -299,8 +288,6 @@ class Input {
             newText = currentText.slice(0, position) + currentText.slice(position + 1)
             newCaretPosition = position
         }
-
-        console.log('input resolveDelete', direction, newText, newCaretPosition, positionInline, this.caret.position)
 
         return {
             preventDefault: true,

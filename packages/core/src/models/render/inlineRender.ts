@@ -78,7 +78,6 @@ function renderInline(inline: Inline): HTMLElement {
 }
 
 function normalizeSymbolicText(text: string): string {
-    console.log('normalizeSymbolicText', text)
     if (/^\u200B+$/.test(text)) {
         return '\u00A0'
     }

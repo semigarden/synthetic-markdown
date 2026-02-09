@@ -126,13 +126,6 @@ class InlineParser {
 
         const inlines = this.parseInline(text, block.id, block.type, 0)
 
-        // if (block.type === 'listItem') {
-            console.log('parse', JSON.stringify(block, null, 2), JSON.stringify(inlines, null, 2), JSON.stringify(text, null, 2))
-        // }
-
-        console.log(
-            [...text].map(c => `${c} U+${c.codePointAt(0)!.toString(16).padStart(4,'0')}`).join(' | ')
-          );
         return inlines.map(i => ({ ...i, id: uuid(), blockId: block.id }))
     }
 
@@ -161,8 +154,6 @@ class InlineParser {
                 text: { symbolic: '\u200B', semantic: '' },
                 position: { start: position, end: position }
             })
-
-            console.log('parseInline empty', JSON.stringify(result, null, 2))
 
             return result
         }

@@ -163,7 +163,6 @@ class Render {
 
     private setText(element: HTMLElement, value: string) {
         const isSymbolic = element.classList.contains('symbolic')
-        console.log('setText', value.length, isSymbolic)
         const v = value.length ? this.normalizeSymbolicText(value) : (isSymbolic ? '\u00A0' : '')
         const first = element.firstChild
         if (first instanceof Text) {
@@ -176,7 +175,6 @@ class Render {
     }
 
     private normalizeSymbolicText(text: string): string {
-        console.log('normalizeSymbolicText', text)
         if (/^\u200B+$/.test(text)) {
             return '\u00A0'
         }

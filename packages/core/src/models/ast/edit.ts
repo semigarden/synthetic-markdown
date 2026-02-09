@@ -9,9 +9,6 @@ class Edit {
     public input(blockId: string, inlineId: string, text: string, caretPosition: number): AstApplyEffect | null {
         const { query, parser, transform, effect } = this.context
 
-        // text = strip(text)
-
-        console.log('input', blockId, inlineId, text, caretPosition)
         const block = query.getBlockById(blockId)
         if (!block) return null
     
@@ -68,7 +65,6 @@ class Edit {
             (block.type === 'paragraph' && inListItem && taskPrefix)
         ) {
             if (detectedBlock.type === 'listItem' || detectedBlock.type === 'taskListItem' || detectedBlock.type === 'blockQuote') caretPosition = 0
-            console.log('input transformBlock listItem', JSON.stringify(detectedBlock, null, 2), caretPosition)
             return transform.transformBlock(newText, block, detectedBlock, caretPosition)
         }
     
@@ -2051,7 +2047,6 @@ class Edit {
             const newBlocks = parser.reparseTextFragment(block.text, block.position.start)
             if (newBlocks.length === 0) return null
 
-            console.log('newBlocks', JSON.stringify(newBlocks, null, 2))
             const newCodeBlock = newBlocks.find(b => b.type === 'codeBlock')
             if (!newCodeBlock) return null
 
@@ -2087,11 +2082,9 @@ class Edit {
         if (inline.type === 'marker') {
             if (inline === block.inlines[0]) {
                 const newText = text.replace(block.fenceChar?.repeat(block.fenceLength ?? 3) ?? '', '').trim()
-                console.log('newText', JSON.stringify(text, null, 2), JSON.stringify(block.fenceChar ?? '', null, 2), JSON.stringify(newText, null, 2))
                 
                 const markerText = text.slice(0, caretPosition)
                 const isMarkerOnly = new RegExp(`^${block.fenceChar}+$`).test(markerText)
-                console.log('markerText', JSON.stringify(markerText, null, 2), isMarkerOnly)
 
                 if (isMarkerOnly) {
                     if (markerText.length >= 3) {
@@ -2102,8 +2095,6 @@ class Edit {
                         block.fenceLength = markerText.length
                         block.text = block.inlines.map(i => i.text.symbolic).join('')
                         block.position.end = block.position.start + block.text.length
-
-                        console.log('block', JSON.stringify(block, null, 2))
 
                         return effect.compose(
                             [effect.input([
@@ -2158,8 +2149,6 @@ class Edit {
                     block.language = newText
                     block.text = block.inlines.map(i => i.text.symbolic).join('')
                     block.position.end = block.position.start + block.text.length
-
-                    console.log('blocks', JSON.stringify(block, null, 2))
 
                     return effect.compose(
                         [effect.input([
@@ -2460,8 +2449,6 @@ class Edit {
 
     public mergeCodeBlockContent(blockId: string, inlineId: string, caretPosition: number): AstApplyEffect | null {
         const { query, transform, effect } = this.context
-
-        console.log('mergeCodeBlockContent', blockId, inlineId, caretPosition)
 
         const block = query.getBlockById(blockId) as CodeBlock
         if (!block || block.type !== 'codeBlock') return null

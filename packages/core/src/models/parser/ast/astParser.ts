@@ -26,9 +26,6 @@ class AstParser {
 
     public parse(text: string): Block[] {
         this.reset()
-        console.log('parse', JSON.stringify(text, null, 2))
-        // text = sanitize(text)
-        console.log('parse sanitize', JSON.stringify(text, null, 2))
         parseLinkReferenceDefinitions(text, this.linkReferences)
 
         this.block.reset()
@@ -83,8 +80,8 @@ class AstParser {
 
         this.blocks = blocks
 
-        console.log('blocks', JSON.stringify(this.blocks, null, 2))
-        console.log('text', JSON.stringify(text, null, 2))
+        // console.log('blocks', JSON.stringify(this.blocks, null, 2))
+        // console.log('text', JSON.stringify(text, null, 2))
 
         return this.blocks
     }
@@ -139,8 +136,6 @@ class AstParser {
         for (const block of blocks) {
             this.inline.applyRecursive(block)
         }
-
-        console.log('reparseTextFragment', JSON.stringify(blocks, null, 2))
 
         return blocks
     }    
