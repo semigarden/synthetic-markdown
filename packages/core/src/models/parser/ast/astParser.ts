@@ -137,8 +137,8 @@ class AstParser {
             this.inline.applyRecursive(block)
         }
 
-        console.log('reparseTextFragment blocks', JSON.stringify(blocks, null, 2))
-        
+        // console.log('reparseTextFragment blocks', JSON.stringify(blocks, null, 2))
+
         return blocks
     }    
 

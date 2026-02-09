@@ -139,7 +139,6 @@ class AstTransform {
         const newBlocks = parser.reparseTextFragment(newText, block.position.start)
         if (newBlocks.length === 0) return null
 
-
         const oldBlock = block
         ast.blocks.splice(entry.index, removedBlocks.length, ...newBlocks)
 
@@ -158,7 +157,7 @@ class AstTransform {
         const blocks = query.flattenBlocks(ast.blocks)
         const entry = blocks.find(b => b.block.id === block.id)
         if (!entry) return null
-        
+
         const newBlocks = parser.reparseTextFragment(text, block.position.start)
         const inline = query.getFirstInline(newBlocks)
         if (!inline) return null
@@ -167,7 +166,7 @@ class AstTransform {
         ast.blocks.splice(entry.index, 1, ...newBlocks)
 
         return effect.compose(
-            [effect.update([{ type: 'block', at: 'current', target: oldBlock, current: newBlocks[0] }], [block])],
+            [effect.update([{ type: 'block', at: 'current', target: oldBlock, current: newBlocks[0] }])],
             effect.caret(inline.blockId, inline.id, caretPosition ?? inline.position.start, 'start'),
             effect.dom('structure')
         )
