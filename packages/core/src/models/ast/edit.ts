@@ -9,6 +9,8 @@ class Edit {
     public input(blockId: string, inlineId: string, text: string, caretPosition: number): AstApplyEffect | null {
         const { query, parser, transform, effect } = this.context
 
+        console.log('input blockId', blockId)
+
         const block = query.getBlockById(blockId)
         if (!block) return null
     
@@ -83,8 +85,11 @@ class Edit {
 
         if (!newInline) return null
 
-        const inlineTypeChanged = newInline.type !== inline.type
-        if (inlineTypeChanged || newInlines.length !== block.inlines.length) {
+        const shapeChanged =
+            newInlines.length !== block.inlines.length ||
+            newInlines.some((ni, idx) => ni.type !== block.inlines[idx]?.type)
+
+        if (shapeChanged) {
             block.text = newInlines.map((i: Inline) => i.text.symbolic).join('')
             block.position = { start: block.position.start, end: block.position.start + block.text.length }
             block.inlines = newInlines
@@ -97,16 +102,44 @@ class Edit {
             )
         }
 
-        inline.text.symbolic = newInline.text.symbolic
-        inline.text.semantic = newInline.text.semantic
-        inline.position.end = inline.position.start + newInline.text.symbolic.length
-        
+        const inputEffects: any[] = []
+        let localPos = 0
+
+        for (let i = 0; i < block.inlines.length; i++) {
+            const cur = block.inlines[i]
+            const nxt = newInlines[i]
+
+            const changed =
+                cur.text.symbolic !== nxt.text.symbolic ||
+                cur.text.semantic !== nxt.text.semantic
+
+            cur.text.symbolic = nxt.text.symbolic
+            cur.text.semantic = nxt.text.semantic
+
+            const len = cur.text.symbolic.length
+            cur.position = { start: localPos, end: localPos + len }
+            localPos += len
+
+            if (changed) {
+                inputEffects.push({
+                    type: 'text',
+                    symbolic: cur.text.symbolic,
+                    semantic: cur.text.semantic,
+                    blockId: block.id,
+                    inlineId: cur.id
+                })
+            }
+        }
+
         block.text = block.inlines.map(i => i.text.symbolic).join('')
         block.position.end = block.position.start + block.text.length
 
+        const caretIndex = newInlines.findIndex(i => i === newInline)
+        const caretInline = block.inlines[Math.max(0, caretIndex)]
+
         return effect.compose(
-            [effect.input([{ type: 'text', symbolic: inline.text.symbolic, semantic: inline.text.semantic, blockId: block.id, inlineId: inline.id }])],
-            effect.caret(block.id, inline.id, caretPosition, 'start'),
+            inputEffects.length > 0 ? [effect.input(inputEffects)] : [],
+            effect.caret(block.id, caretInline.id, position, 'start'),
             effect.dom('text')
         )
     }
