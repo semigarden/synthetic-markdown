@@ -1,6 +1,6 @@
 {
     "name": "syntxt",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "description": "",
     "license": "MIT",
     "author": {
@@ -33,7 +33,10 @@
     "files": [
         "dist"
     ],
-    "sideEffects": false,
+    "sideEffects": [
+        "./dist/index.esm.js",
+        "./dist/index.cjs.js"
+    ],
     "scripts": {
         "build:css": "sass src/styles/element.scss src/styles/element.css --no-source-map",
         "build:css-ts": "node src/scripts/generate-css-ts.js",
