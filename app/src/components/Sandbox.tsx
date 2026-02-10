@@ -5,7 +5,7 @@ import { saveText, loadText } from '../utils'
 
 const Sandbox = ({ className = '', active = false }: { className?: string, active?: boolean }) => {
     const syntheticRef = useRef<HTMLTextAreaElement | null>(null)
-    const [autofocus, setAutofocus] = useState(active)
+    const [autoFocus, setAutoFocus] = useState(active)
     const [text, setText] = useState('')
     
     useEffect(() => {
@@ -15,10 +15,10 @@ const Sandbox = ({ className = '', active = false }: { className?: string, activ
     }, [])
 
     useEffect(() => {
-        setAutofocus(active)
+        setAutoFocus(active)
     }, [active])
 
-    const onInput = (event: Event) => {
+    const onChange = (event: Event) => {
         const text = (event.target as HTMLTextAreaElement).value
         setText(text)
         saveText(text)
@@ -26,7 +26,7 @@ const Sandbox = ({ className = '', active = false }: { className?: string, activ
 
     return (
         <div className={`${styles.sandbox} ${active && styles.active} ${className}`}>
-            <SyntheticMarkdown ref={syntheticRef} className={styles.synthetic} value={text} onInput={onInput} autofocus={autofocus} />
+            <SyntheticMarkdown ref={syntheticRef} className={styles.synthetic} value={text} onChange={onChange} autoFocus={autoFocus} />
         </div>
     )
 }
