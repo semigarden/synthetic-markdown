@@ -15,7 +15,7 @@ const usageVanilla = `<!doctype html>
             let value = ''
             element.value = value
 
-            element.addEventListener('input', (event) => {
+            element.addEventListener('change', (event: Event) => {
                 value = event.target.value
             })
         </script>
@@ -28,12 +28,12 @@ import { SyntheticMarkdown } from 'synthetic-markdown-react'
 const App = () => {
     const [text, setText] = useState('')
 
-    const onInput = (event) => {
+    const onChange = (event: Event) => {
         const text = event.target.value
         setText(text)
     }
 
-    return <SyntheticMarkdown value={text} onInput={onInput} />
+    return <SyntheticMarkdown value={text} onChange={onChange} />
 }
     
 export default App
@@ -226,9 +226,9 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td><strong>input</strong></td>
+                                            <td><strong>change</strong></td>
                                             <td><p>
-                                                Fired when the value changes. Use <code>element.addEventListener('input', handler)</code></p><p>
+                                                Fired when the value changes. Use <code>element.addEventListener('change', handler)</code></p><p>
                                                 The new value is available as <code>event.target.value</code> (string)</p>
                                             </td>
                                         </tr>
@@ -260,13 +260,13 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
                                             <td>Value of the editor</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>autofocus</strong></td>
+                                            <td><strong>autoFocus</strong></td>
                                             <td><code>boolean</code></td>
                                             <td><code>false</code></td>
                                             <td>If true, the editor will be focused on mount</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>onInput</strong></td>
+                                            <td><strong>onChange</strong></td>
                                             <td><code>function</code></td>
                                             <td><code>-</code></td>
                                             <td><p>
