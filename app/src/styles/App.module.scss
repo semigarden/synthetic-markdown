@@ -25,14 +25,14 @@
             padding: 8px 4px;
             cursor: pointer;
             color: var(--color-button-text);
-            transition: color 1s;
+            transition: color 0.5s ease-in-out;
 
             .icon {
                 width: 20px;
                 height: 20px;
                 object-fit: contain;
                 filter: invert(1);
-                transition: filter 1s;
+                transition: filter 0.5s ease-in-out;
 
                 &.theme {
                     transform: rotateY(180deg);
@@ -47,10 +47,10 @@
                 right: 0;
                 margin: 0 auto;
                 width: 0;
-                height: 2px;
+                height: 1px;
                 background-color: transparent;
                 opacity: 0;
-                transition: width 0.5s, background-color 0.5s, opacity 0.5s;
+                transition: width 0.5s ease-in-out, background-color 0.5s ease-in-out, opacity 0.5s ease-in-out;
             }
 
             &:hover {

@@ -3,24 +3,20 @@ import { createHighlighter } from 'shiki'
 import styles from '../styles/Guide.module.scss'
 import CopyIcon from '../assets/copy.svg?react'
 
-const usageVanilla = `<html>
-    <body>
-        <synthetic-markdown />
+const usageVanilla = `<synthetic-markdown />
 
-        <script type="module">
-            import 'synthetic-markdown'
+<script type='module'>
+    import 'synthetic-markdown'
 
-            const element = document.querySelector('synthetic-markdown')
+    const element = document.querySelector('synthetic-markdown')
 
-            let value = ''
-            element.value = value
+    let value = ''
+    element.value = value
 
-            element.addEventListener('input', (event) => {
-                value = event.target.value
-            })
-        </script>
-    </body>
-</html>`
+    element.addEventListener('input', (event) => {
+        value = event.target.value
+    })
+</script>`
 
 const usageReact = `import { useState } from 'react'
 import { SyntheticMarkdown } from 'synthetic-markdown-react'
@@ -80,18 +76,11 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
     return (
         <div className={`${styles.guide} ${active && styles.active} ${className}`}>
             <h2 className={styles.overview}>Overview</h2>
-            <p>Synthetic Markdown is a lightweight editor built as a primitive UI element.
-                It behaves like a textarea while rendering in real time on a unified editing surface, removing the need for split views or mode switching.
-                Its core is framework-agnostic and currently available for Vanilla JS and React, with a minimal controlled API.
+            <p><strong>Synthetic Markdown</strong> is a WYSIWYG editor built as a primitive UI component. It's core is written in TypeScript and can be adapted to any modern framework. The project is designed as a building block, rather than a full editor and aims to be minimalistic and self sufficient. No external dependencies are required. No need for toolbars or menus. Just a simple component that you can use to create any type of application you want.
             </p>
             <hr/>
             <h2>Status</h2>
-            <div>This project is still in development. Interactions with the following blocks are not yet fully implemented:
-                <ul>
-                    <li>Tables</li>
-                    <li>Task Lists</li>
-                    <li>Code Blocks</li>
-                </ul>
+            <div>This project is still in development. Interactions with the following blocks are not yet fully implemented: <em>Tables, Task Lists, Code Blocks</em>
             </div>
             <hr/>
             <h2>Try It Online</h2>
@@ -137,6 +126,11 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
             <p/>
             <hr/>
             <h2>Usage</h2>
+            {/* <h4>Supported Blocks</h4>
+            <p><span className={styles.blocks}>Paragraph, Heading, Block Quote, List, List Item, Thematic Break</span></p>
+            <h4>Supported Inlines</h4>
+            <p><span className={styles.inlines}>Text, Strong, Emphasis, Strikethrough, Code Span, Link, Autolink, Image</span></p>
+            <br/> */}
             <div className={styles.code}>
                 <div className={styles.header}>
                     <div className={styles.tabs}>
@@ -157,6 +151,11 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
                     </div>
                 </div>
             </div>
+            {/* <hr/>
+            <h2>API</h2>
+            <div className={styles.api}>
+                
+            </div> */}
         </div>
     )
 }
