@@ -16,7 +16,8 @@ function detectBlockType(line: string): DetectedBlock {
 
     if (/^\s{0,3}([-*_])(?:\s*\1){2,}\s*$/.test(line)) return { type: 'thematicBreak' }
 
-    if (/^\s{0,3}(```+|~~~+)/.test(line)) return { type: 'codeBlock' }
+    // disabled
+    // if (/^\s{0,3}(```+|~~~+)/.test(line)) return { type: 'codeBlock' }
 
     // disabled
     // const taskListMatch = /^\s*([-*+])\s+\[([ xX])\](?:\s+|$)/.exec(line)
@@ -40,8 +41,9 @@ function detectBlockType(line: string): DetectedBlock {
         }
     }
 
+    // disabled
     // indented fenced code block
-    if (/^ {4,}[^ ]/.test(line)) return { type: 'codeBlock' }
+    // if (/^ {4,}[^ ]/.test(line)) return { type: 'codeBlock' }
 
     if (/^\[\^[^\]]+\]:/.test(trimmed)) return { type: 'footnote' }
 
