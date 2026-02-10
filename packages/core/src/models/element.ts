@@ -131,7 +131,7 @@ class Element extends HTMLElement {
     }
 
     private emitChange() {
-        this.dispatchEvent(new Event('input', {
+        this.dispatchEvent(new Event('change', {
             bubbles: true,
             composed: true,
         }))

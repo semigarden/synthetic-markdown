@@ -13,7 +13,7 @@
             let value = ''
             element.value = value
 
-            element.addEventListener('input', (event) => {
+            element.addEventListener('change', (event) => {
                 value = event.target.value
             })
         </script>

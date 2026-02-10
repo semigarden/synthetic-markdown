@@ -6,9 +6,9 @@ declare module 'react/jsx-runtime' {
             'synthetic-markdown': {
                 ref?: any
                 className?: string
-                autofocus?: boolean
+                autoFocus?: boolean
                 value?: string
-                onInput?: (event: Event) => void
+                onChange?: (event: Event) => void
                 children?: any
                 [key: string]: any
             }

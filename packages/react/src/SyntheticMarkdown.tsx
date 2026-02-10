@@ -4,12 +4,12 @@ import 'synthetic-markdown'
 type Props = {
     ref?: React.RefObject<HTMLTextAreaElement | null>
     className?: string
-    autofocus?: boolean
+    autoFocus?: boolean
     value?: string
-    onInput: (event: Event) => void
+    onChange: (event: Event) => void
 }
 
-const SyntheticMarkdown = forwardRef(({ className, autofocus = false, value = '', onInput }: Props, ref) => {
+const SyntheticMarkdown = forwardRef(({ className, autoFocus = false, value = '', onChange }: Props, ref) => {
     const elementRef = useRef<HTMLElement>(null)
 
     return (
@@ -24,8 +24,8 @@ const SyntheticMarkdown = forwardRef(({ className, autofocus = false, value = ''
             }} 
             className={className} 
             value={value} 
-            onInput={onInput}
-            autofocus={autofocus}
+            onChange={onChange}
+            autofocus={autoFocus}
         />
     )
 })
