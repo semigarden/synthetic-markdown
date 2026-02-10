@@ -1,6 +1,6 @@
 {
-    "name": "syntxt-react",
-    "version": "0.0.6",
+    "name": "synthetic-markdown-react",
+    "version": "0.0.1",
     "description": "",
     "license": "MIT",
     "author": {
@@ -9,13 +9,13 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/semigarden/syntxt.git",
-        "directory": "syntxt/packages/react"
+        "url": "git+https://github.com/semigarden/synthetic-markdown.git",
+        "directory": "synthetic-markdown/packages/react"
     },
     "bugs": {
-        "url": "https://github.com/semigarden/syntxt/issues"
+        "url": "https://github.com/semigarden/synthetic-markdown/issues"
     },
-    "homepage": "https://github.com/semigarden/syntxt#readme",
+    "homepage": "https://github.com/semigarden/synthetic-markdown#readme",
     "type": "module",
     "publishConfig": {
         "access": "public"
@@ -51,6 +51,6 @@
         "typescript": "^5.3.0"
     },
     "dependencies": {
-        "syntxt": "^0.0.5"
+        "synthetic-markdown": "^0.0.2"
     }
 }

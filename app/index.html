@@ -4,7 +4,7 @@
         <meta charset="UTF-8" />
         <link rel="icon" type="image/svg+xml" href="icon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Synthetic Text</title>
+        <title>Synthetic Markdown</title>
     </head>
     <body>
         <div id="root"></div>
@@ -12,7 +12,7 @@
             const params = new URLSearchParams(location.search)
             const path = params.get('p')
             if (path) {
-                history.replaceState(null, '', '/syntxt' + path)
+                history.replaceState(null, '', '/synthetic-markdown' + path)
             }
         </script>
         <script type="module" src="/src/index.tsx"></script>

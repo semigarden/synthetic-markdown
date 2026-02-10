@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react'
-import { SyntheticText } from 'syntxt-react'
+import { SyntheticMarkdown } from 'synthetic-markdown-react'
 import styles from '../styles/Sandbox.module.scss'
 import { saveText, loadText } from '../utils'
 
@@ -26,7 +26,7 @@ const Sandbox = ({ className = '', active = false }: { className?: string, activ
 
     return (
         <div className={`${styles.sandbox} ${active && styles.active} ${className}`}>
-            <SyntheticText ref={syntheticRef} className={styles.synthetic} value={text} onInput={onInput} autofocus={autofocus} />
+            <SyntheticMarkdown ref={syntheticRef} className={styles.synthetic} value={text} onInput={onInput} autofocus={autofocus} />
         </div>
     )
 }

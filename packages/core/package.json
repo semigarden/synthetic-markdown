@@ -1,6 +1,6 @@
 {
-    "name": "syntxt",
-    "version": "0.0.5",
+    "name": "synthetic-markdown",
+    "version": "0.0.2",
     "description": "",
     "license": "MIT",
     "author": {
@@ -9,13 +9,13 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/semigarden/syntxt.git",
-        "directory": "syntxt/packages/core"
+        "url": "git+https://github.com/semigarden/synthetic-markdown.git",
+        "directory": "synthetic-markdown/packages/core"
     },
     "bugs": {
-        "url": "https://github.com/semigarden/syntxt/issues"
+        "url": "https://github.com/semigarden/synthetic-markdown/issues"
     },
-    "homepage": "https://github.com/semigarden/synthxt#readme",
+    "homepage": "https://github.com/semigarden/synthetic-markdown#readme",
     "type": "module",
     "publishConfig": {
         "access": "public"

@@ -1,5 +1,5 @@
 import { forwardRef, useRef } from 'react'
-import 'syntxt'
+import 'synthetic-markdown'
 
 type Props = {
     ref?: React.RefObject<HTMLTextAreaElement | null>
@@ -9,11 +9,11 @@ type Props = {
     onInput: (event: Event) => void
 }
 
-const SyntheticText = forwardRef(({ className, autofocus = false, value = '', onInput }: Props, ref) => {
+const SyntheticMarkdown = forwardRef(({ className, autofocus = false, value = '', onInput }: Props, ref) => {
     const elementRef = useRef<HTMLElement>(null)
 
     return (
-        <synthetic-text
+        <synthetic-markdown
             ref={(node: HTMLElement | null) => {
                 elementRef.current = node
                 if (typeof ref === 'function') {
@@ -30,4 +30,4 @@ const SyntheticText = forwardRef(({ className, autofocus = false, value = '', on
     )
 })
 
-export default SyntheticText
+export default SyntheticMarkdown

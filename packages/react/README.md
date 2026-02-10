@@ -1,9 +1,9 @@
-# Synthetic Text
+# Synthetic Markdown
 
 
 ```
 import { useState } from 'react'
-import { SyntheticText } from 'syntxt-react'
+import { SyntheticText } from 'synthetic-markdown-react'
 
 const App = () => {
     const [text, setText] = useState('')
@@ -13,6 +13,6 @@ const App = () => {
         setText(text)
     }
 
-    return <SyntheticText value={text} onInput={onInput} />
+    return <SyntheticMarkdown value={text} onInput={onInput} />
 }
 ```

@@ -1,5 +1,5 @@
 {
-  "name": "syntxt-app",
+  "name": "synthetic-markdown-app",
   "license": "MIT",
   "author": {
     "name": "semigarden",
@@ -7,13 +7,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/semigarden/syntxt.git",
-    "directory": "syntxt/app"
+    "url": "git+https://github.com/semigarden/synthetic-markdown.git",
+    "directory": "synthetic-markdown/app"
   },
   "bugs": {
-    "url": "https://github.com/semigarden/syntxt/issues"
+    "url": "https://github.com/semigarden/synthetic-markdown/issues"
   },
-  "homepage": "https://github.com/semigarden/syntxt#readme",
+  "homepage": "https://github.com/semigarden/synthetic-markdown#readme",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -28,7 +28,7 @@
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.13.0",
     "shiki": "^3.21.0",
-    "syntxt-react": "^0.0.6"
+    "synthetic-markdown-react": "^0.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

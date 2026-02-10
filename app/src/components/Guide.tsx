@@ -5,12 +5,12 @@ import CopyIcon from '../assets/copy.svg?react'
 
 const usageVanilla = `<html>
     <body>
-        <synthetic-text />
+        <synthetic-markdown />
 
         <script type="module">
-            import 'syntxt'
+            import 'synthetic-markdown'
 
-            const element = document.querySelector('synthetic-text')
+            const element = document.querySelector('synthetic-markdown')
 
             let value = ''
             element.value = value
@@ -23,7 +23,7 @@ const usageVanilla = `<html>
 </html>`
 
 const usageReact = `import { useState } from 'react'
-import { SyntheticText } from 'syntxt-react'
+import { SyntheticMarkdown } from 'synthetic-markdown-react'
 
 const App = () => {
     const [text, setText] = useState('')
@@ -33,7 +33,7 @@ const App = () => {
         setText(text)
     }
 
-    return <SyntheticText value={text} onInput={onInput} />
+    return <SyntheticMarkdown value={text} onInput={onInput} />
 }`
 
 const Guide = ({ className = '', active = false, theme = 'dark' }: { className?: string, active?: boolean, theme?: string }) => {
@@ -80,7 +80,7 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
     return (
         <div className={`${styles.guide} ${active && styles.active} ${className}`}>
             <h2 className={styles.overview}>Overview</h2>
-            <p>Synthetic Text is a lightweight editor built as a primitive UI element.
+            <p>Synthetic Markdown is a lightweight editor built as a primitive UI element.
                 It behaves like a textarea while rendering in real time on a unified editing surface, removing the need for split views or mode switching.
                 Its core is framework-agnostic and currently available for Vanilla JS and React, with a minimal controlled API.
             </p>
@@ -106,8 +106,8 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
                         <div className={`${styles.tab} ${installTab === 'react' && styles.active}`} onClick={() => setInstallTab('react')}>React</div>
                     </div>
                     <button className={styles.button} onClick={() => {
-                        if (installTab === 'vanilla') copy('install-vanilla', 'npm install syntxt')
-                        else copy('install-react', 'npm install syntxt-react')
+                        if (installTab === 'vanilla') copy('install-vanilla', 'npm install synthetic-markdown')
+                        else copy('install-react', 'npm install synthetic-markdown-react')
                     }}
                     title="Copy">
                         {copiedKey === 'install-vanilla' || copiedKey === 'install-react' ? <span className={styles.icon} title="Copied">✓</span> : <CopyIcon className={styles.icon} title="Copy" />}
@@ -119,7 +119,7 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
                         <span className={styles.language}>bash</span>
                         <pre>
                             <code>
-                                npm install syntxt
+                                npm install synthetic-markdown
                             </code>
                         </pre>
                     </div>}
@@ -127,7 +127,7 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
                         <span className={styles.language}>bash</span>
                         <pre>
                             <code>
-                                npm install syntxt-react
+                                npm install synthetic-markdown-react
                             </code>
                         </pre>
                     </div>}

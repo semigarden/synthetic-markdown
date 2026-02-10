@@ -1,14 +1,14 @@
-# Synthetic Text
+# Synthetic Markdown
 
 ```
 <html>
     <body>
-        <synthetic-text />
+        <synthetic-markdown />
 
         <script type="module">
-            import 'syntxt'
+            import 'synthetic-markdown'
 
-            const element = document.querySelector('synthetic-text')
+            const element = document.querySelector('synthetic-markdown')
 
             let value = ''
             element.value = value

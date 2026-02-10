@@ -1,6 +1,6 @@
 import Element from './models/element'
 
-function defineElement(tag = 'synthetic-text') {
+function defineElement(tag = 'synthetic-markdown') {
     if (typeof window === 'undefined') return
     if (!('customElements' in window)) return
     if (!customElements.get(tag)) {

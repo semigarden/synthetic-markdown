@@ -1,1 +1,1 @@
-export { default as SyntheticText } from './SyntheticText.js'
+export { default as SyntheticMarkdown } from './SyntheticMarkdown.js'

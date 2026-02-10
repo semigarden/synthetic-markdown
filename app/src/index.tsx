@@ -9,9 +9,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <BrowserRouter>
             <Routes>
                 <Route index element={<App />} />
-                <Route path='/syntxt/' element={<App tab='guide' />} />
-                <Route path='/syntxt/guide' element={<App tab='guide' />} />
-                <Route path='/syntxt/sandbox' element={<App tab='sandbox' />} />
+                <Route path='/synthetic-markdown/' element={<App tab='guide' />} />
+                <Route path='/synthetic-markdown/guide' element={<App tab='guide' />} />
+                <Route path='/synthetic-markdown/sandbox' element={<App tab='sandbox' />} />
             </Routes>
         </BrowserRouter>
     </StrictMode>
