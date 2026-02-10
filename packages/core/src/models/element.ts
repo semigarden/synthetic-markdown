@@ -23,16 +23,19 @@ class Element extends HTMLElement {
     
     private styled = false
     private hasAcceptedExternalValue = false
+    private appliedClasses: string[] = []
+
+    private customClass = ''
 
     public hasAutofocus = false
-
-    static get observedAttributes() {
-        return ['autofocus']
-    }
 
     constructor() {
         super()
         this.shadowRootElement = this.attachShadow({ mode: 'open' })
+    }
+
+    static get observedAttributes() {
+        return ['class', 'autofocus']
     }
 
     get value() {
@@ -64,16 +67,24 @@ class Element extends HTMLElement {
         this.hasAutofocus = on
     }
 
-    attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
+    attributeChangedCallback(name: string, _oldValue: string | null, newValue: string | null) {
+        if (name === 'class') {
+            this.customClass = (newValue ?? '').trim()
+            this.applyClass()
+            return
+        }
+
         if (name === 'autofocus') {
             this.hasAutofocus = this.hasAttribute('autofocus')
             this.setAutoFocus()
+            return
         }
     }
 
     connectedCallback() {
         const attrValue = this.getAttribute('value') ?? ''
         this.hasAutofocus = this.hasAttribute('autofocus')
+        this.customClass = (this.getAttribute('class') ?? '').trim()
 
         this.ast.setText(attrValue)
 
@@ -128,6 +139,22 @@ class Element extends HTMLElement {
 
         this.shadowRootElement.appendChild(div)
         this.rootElement = div
+        this.applyClass()
+    }
+
+    private applyClass() {
+        if (!this.rootElement) return
+        if (this.appliedClasses.length) {
+            this.rootElement.classList.remove(...this.appliedClasses)
+            this.appliedClasses = []
+        }
+
+        if (!this.customClass) return
+        const classes = this.customClass.split(/\s+/).filter(Boolean)
+        if (classes.length) {
+            this.rootElement.classList.add(...classes)
+            this.appliedClasses = classes
+        }
     }
 
     private emitChange() {
