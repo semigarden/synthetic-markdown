@@ -3,20 +3,24 @@ import { createHighlighter } from 'shiki'
 import styles from '../styles/Guide.module.scss'
 import CopyIcon from '../assets/copy.svg?react'
 
-const usageVanilla = `<synthetic-markdown />
+const usageVanilla = `<!doctype html>
+<html>
+    <body>
+        <synthetic-markdown />
+        <script type='module'>
+            import 'synthetic-markdown'
 
-<script type='module'>
-    import 'synthetic-markdown'
+            const element = document.querySelector('synthetic-markdown')
 
-    const element = document.querySelector('synthetic-markdown')
+            let value = ''
+            element.value = value
 
-    let value = ''
-    element.value = value
-
-    element.addEventListener('input', (event) => {
-        value = event.target.value
-    })
-</script>`
+            element.addEventListener('input', (event) => {
+                value = event.target.value
+            })
+        </script>
+    </body>
+</html>`
 
 const usageReact = `import { useState } from 'react'
 import { SyntheticMarkdown } from 'synthetic-markdown-react'
@@ -30,11 +34,15 @@ const App = () => {
     }
 
     return <SyntheticMarkdown value={text} onInput={onInput} />
-}`
+}
+    
+export default App
+`
 
 const Guide = ({ className = '', active = false, theme = 'dark' }: { className?: string, active?: boolean, theme?: string }) => {
     const [installTab, setInstallTab] = useState('vanilla')
     const [usageTab, setUsageTab] = useState('vanilla')
+    const [apiTab, setApiTab] = useState('vanilla')
     const [copiedKey, setCopiedKey] = useState<string | null>(null)
     const [html, setHtml] = useState('')
 
@@ -80,7 +88,24 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
             </p>
             <hr/>
             <h2>Status</h2>
-            <div>This project is still in development. Interactions with the following blocks are not yet fully implemented: <em>Tables, Task Lists, Code Blocks</em>
+            <p>This project is still in development. Interactions with the following blocks are not yet fully implemented: <em>Tables, Task Lists, Code Blocks</em>.</p>
+            <div className={styles.supported}>
+                <div className={styles.supportGroup}>
+                    <span className={styles.supportLabel}>Blocks</span>
+                    <div className={styles.supportTags}>
+                        {['Paragraph', 'Heading', 'Block Quote', 'List', 'List Item', 'Thematic Break'].map((name) => (
+                            <span key={name} className={styles.tag}>{name}</span>
+                        ))}
+                    </div>
+                </div>
+                <div className={styles.supportGroup}>
+                    <span className={styles.supportLabel}>Inlines</span>
+                    <div className={styles.supportTags}>
+                        {['Text', 'Strong', 'Emphasis', 'Strikethrough', 'Code Span', 'Link', 'Autolink', 'Image'].map((name) => (
+                            <span key={name} className={styles.tag}>{name}</span>
+                        ))}
+                    </div>
+                </div>
             </div>
             <hr/>
             <h2>Try It Online</h2>
@@ -126,11 +151,6 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
             <p/>
             <hr/>
             <h2>Usage</h2>
-            {/* <h4>Supported Blocks</h4>
-            <p><span className={styles.blocks}>Paragraph, Heading, Block Quote, List, List Item, Thematic Break</span></p>
-            <h4>Supported Inlines</h4>
-            <p><span className={styles.inlines}>Text, Strong, Emphasis, Strikethrough, Code Span, Link, Autolink, Image</span></p>
-            <br/> */}
             <div className={styles.code}>
                 <div className={styles.header}>
                     <div className={styles.tabs}>
@@ -151,11 +171,119 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
                     </div>
                 </div>
             </div>
-            {/* <hr/>
+            <hr/>
             <h2>API</h2>
             <div className={styles.api}>
-                
-            </div> */}
+                <div className={styles.code}>
+                    <div className={styles.header}>
+                        <div className={styles.tabs}>
+                            <div className={`${styles.tab} ${apiTab === 'vanilla' && styles.active}`} onClick={() => setApiTab('vanilla')}>Vanilla</div>
+                            <div className={`${styles.tab} ${apiTab === 'react' && styles.active}`} onClick={() => setApiTab('react')}>React</div>
+                        </div>
+                    </div>
+                    <div className={styles.blocks}>
+                        <div className={styles.docs}>
+                            {apiTab === 'vanilla' && <>
+                                <h4>Attributes &amp; properties</h4>
+                                <table className={styles.table}>
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Type</th>
+                                            <th>Default</th>
+                                            <th>Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><strong>class</strong></td>
+                                            <td><code>string</code></td>
+                                            <td><code>-</code></td>
+                                            <td>Class name to apply to the host element (<code>element.className</code>)</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>value</strong></td>
+                                            <td><code>string</code></td>
+                                            <td><code>-</code></td>
+                                            <td>Value of the editor. Set via <code>element.value</code> or initial <code>value</code> attribute</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>autofocus</strong></td>
+                                            <td><code>boolean</code></td>
+                                            <td><code>false</code></td>
+                                            <td>If set, the editor will be focused on mount (<code>element.autofocus</code> or <code>autofocus</code> attribute)</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <h4>Events</h4>
+                                <table className={styles.table}>
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><strong>input</strong></td>
+                                            <td><p>
+                                                Fired when the value changes. Use <code>element.addEventListener('input', handler)</code></p><p>
+                                                The new value is available as <code>event.target.value</code> (string)</p>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </>}
+                            {apiTab === 'react' && <>
+                                <h4>Props</h4>
+                                <table className={styles.table}>
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Type</th>
+                                            <th>Default</th>
+                                            <th>Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><strong>className</strong></td>
+                                            <td><code>string</code></td>
+                                            <td><code>-</code></td>
+                                            <td>Class name to apply to the component</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>value</strong></td>
+                                            <td><code>string</code></td>
+                                            <td><code>-</code></td>
+                                            <td>Value of the editor</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>autofocus</strong></td>
+                                            <td><code>boolean</code></td>
+                                            <td><code>false</code></td>
+                                            <td>If true, the editor will be focused on mount</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>onInput</strong></td>
+                                            <td><code>function</code></td>
+                                            <td><code>-</code></td>
+                                            <td><p>
+                                                Callback fired when value is changed.</p><p>
+                                                <code>{`function(event: Event) => void`}</code>
+                                                <ul>
+                                                    <li><code>event</code> - The event source of the callback. You can access the new value via <code>event.target.value</code> (string)</li>
+                                                </ul>
+                                            </p>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </>}
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     )
 }
