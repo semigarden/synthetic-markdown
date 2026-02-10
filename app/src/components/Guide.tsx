@@ -184,7 +184,7 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
                     <div className={styles.blocks}>
                         <div className={styles.docs}>
                             {apiTab === 'vanilla' && <>
-                                <h4>Attributes &amp; properties</h4>
+                                <h4>Attributes &amp; Properties</h4>
                                 <table className={styles.table}>
                                     <thead>
                                         <tr>
@@ -215,6 +215,7 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
                                         </tr>
                                     </tbody>
                                 </table>
+                                <hr/>
                                 <h4>Events</h4>
                                 <table className={styles.table}>
                                     <thead>
