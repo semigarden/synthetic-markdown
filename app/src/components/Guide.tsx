@@ -171,8 +171,37 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
                         <span className={styles.language}>{usageTab === 'vanilla' ? 'html' : 'jsx'}</span>
                         <code className={styles.code} dangerouslySetInnerHTML={{ __html: html }} />
                     </div>
+                    <hr/>
+                    <div className={styles.docs}>
+                        <h4>Interactions</h4>
+                        <br/>
+                        <table className={styles.table}>
+                            <thead>
+                                <tr>
+                                    <th>Event</th>
+                                    <th>Block</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Tab</strong> <br/> <strong>4 Spaces</strong> <br/> <strong>Shift</strong> + <strong>Enter</strong></td>
+                                    <td><span className={styles.tag}>List Item</span> <br/> <span className={styles.tag}>Block Quote</span></td>
+                                    <td>Indent</td>
+              
+                                </tr>
+                                <tr>
+                                    <td><strong>Shift</strong> + <strong>Tab</strong> <br/> <strong>Shift</strong> + <strong>Backspace</strong></td>
+                                    <td><span className={styles.tag}>List Item</span> <br/> <span className={styles.tag}>Block Quote</span></td>
+                                    <td>Outdent</td>
+              
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
+            
             <hr/>
             <h2>API</h2>
             <div className={styles.api}>
