@@ -84,16 +84,18 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
     return (
         <div className={`${styles.guide} ${active && styles.active} ${className}`}>
             <h2 className={styles.overview}>Overview</h2>
-            <p><strong>Synthetic Markdown</strong> is a WYSIWYG editor built as a primitive UI component. It's core is written in TypeScript and can be adapted to any modern framework. The project is designed as a building block, rather than a full editor and aims to be minimalistic and self sufficient. No external dependencies are required. No need for toolbars or menus. Just a simple component that you can use to create any type of application you want.
+            <p><strong>Synthetic Markdown</strong> is a WYSIWYG editor built as a composable UI component. Its core is written in TypeScript and can be adapted to any modern framework.</p>
+            <p>The project is designed as a building block, rather than a full editor and aims to be minimalistic and self-sufficient. No external dependencies are required. No need for toolbars or menus. Just a simple component that you can use to build any type of application.
             </p>
             <hr/>
             <h2>Status</h2>
-            <p>This project is still in development. Interactions with the following blocks are not yet fully implemented: <em>Tables, Task Lists, Code Blocks</em>.</p>
+            <p>This project is still in development. Interactions with the following blocks are not yet fully implemented and are currently inactive: <em>Table, Task List, Code Block</em>.</p>
+            <h4>Supported Features</h4>
             <div className={styles.supported}>
                 <div className={styles.supportGroup}>
                     <span className={styles.supportLabel}>Blocks</span>
                     <div className={styles.supportTags}>
-                        {['Paragraph', 'Heading', 'Block Quote', 'List', 'List Item', 'Thematic Break'].map((name) => (
+                        {['Paragraph', 'Heading', 'Block Quote', 'List', 'Thematic Break'].map((name) => (
                             <span key={name} className={styles.tag}>{name}</span>
                         ))}
                     </div>
@@ -208,6 +210,12 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
                                             <td>Value of the editor. Set via <code>element.value</code> or initial <code>value</code> attribute</td>
                                         </tr>
                                         <tr>
+                                            <td><strong>editable</strong></td>
+                                            <td><code>boolean</code></td>
+                                            <td><code>true</code></td>
+                                            <td>If set, the editor will be editable (<code>element.editable</code>)</td>
+                                        </tr>
+                                        <tr>
                                             <td><strong>autofocus</strong></td>
                                             <td><code>boolean</code></td>
                                             <td><code>false</code></td>
@@ -258,6 +266,12 @@ const Guide = ({ className = '', active = false, theme = 'dark' }: { className?:
                                             <td><code>string</code></td>
                                             <td><code>-</code></td>
                                             <td>Value of the editor</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>editable</strong></td>
+                                            <td><code>boolean</code></td>
+                                            <td><code>true</code></td>
+                                            <td>If true, the editor will be editable</td>
                                         </tr>
                                         <tr>
                                             <td><strong>autoFocus</strong></td>

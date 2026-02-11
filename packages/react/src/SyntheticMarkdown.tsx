@@ -5,11 +5,12 @@ type Props = {
     ref?: React.RefObject<HTMLTextAreaElement | null>
     className?: string
     autoFocus?: boolean
+    editable?: boolean
     value?: string
     onChange: (event: Event) => void
 }
 
-const SyntheticMarkdown = forwardRef(({ className, autoFocus = false, value = '', onChange }: Props, ref) => {
+const SyntheticMarkdown = forwardRef(({ className, autoFocus = false, editable = true, value = '', onChange }: Props, ref) => {
     const elementRef = useRef<HTMLElement>(null)
 
     return (
@@ -26,6 +27,7 @@ const SyntheticMarkdown = forwardRef(({ className, autoFocus = false, value = ''
             value={value} 
             onChange={onChange}
             autofocus={autoFocus}
+            editable={editable}
         />
     )
 })

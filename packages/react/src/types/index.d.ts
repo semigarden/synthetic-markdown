@@ -7,6 +7,7 @@ declare module 'react/jsx-runtime' {
                 ref?: any
                 className?: string
                 autoFocus?: boolean
+                editable?: boolean
                 value?: string
                 onChange?: (event: Event) => void
                 children?: any

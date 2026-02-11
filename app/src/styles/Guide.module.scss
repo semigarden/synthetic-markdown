@@ -80,16 +80,16 @@
                 display: flex;
                 flex-wrap: wrap;
                 gap: 6px;
-
-                .tag {
-                    font-size: 12px;
-                    padding: 4px 10px;
-                    border-radius: 6px;
-                    background-color: var(--color-background);
-                    color: var(--color-text);
-                }
             }
         }
+    }
+
+    .tag {
+        font-size: 12px;
+        padding: 4px 10px;
+        border-radius: 6px;
+        background-color: var(--color-background);
+        color: var(--color-text);
     }
 
     .code {

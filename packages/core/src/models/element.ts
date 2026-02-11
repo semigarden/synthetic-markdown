@@ -28,6 +28,7 @@ class Element extends HTMLElement {
     private customClass = ''
 
     public hasAutofocus = false
+    public isEditable = true
 
     constructor() {
         super()
@@ -35,7 +36,7 @@ class Element extends HTMLElement {
     }
 
     static get observedAttributes() {
-        return ['class', 'autofocus']
+        return ['class', 'autofocus', 'editable']
     }
 
     get value() {
@@ -49,6 +50,7 @@ class Element extends HTMLElement {
             this.ast.setText(value)
             this.renderDOM()
             this.setAutoFocus()
+            this.setEditable()
             this.hasAcceptedExternalValue = true
         }
     }
@@ -67,6 +69,15 @@ class Element extends HTMLElement {
         this.hasAutofocus = on
     }
 
+    get editable() {
+        return this.isEditable
+    }
+
+    set editable(value: any) {
+        this.isEditable = value === true || value === '' || value === 'true' || value === 1 || value === '1'
+        this.setEditable()
+    }
+
     attributeChangedCallback(name: string, _oldValue: string | null, newValue: string | null) {
         if (name === 'class') {
             this.customClass = (newValue ?? '').trim()
@@ -75,16 +86,23 @@ class Element extends HTMLElement {
         }
 
         if (name === 'autofocus') {
-            this.hasAutofocus = this.hasAttribute('autofocus')
+            this.hasAutofocus = newValue === '' || newValue === 'true' || newValue === '1'
             this.setAutoFocus()
             return
         }
+
+        if (name === 'editable') {
+            this.isEditable = newValue === '' || newValue === 'true' || newValue === '1'
+            this.setEditable()
+            return
+        }   
     }
 
     connectedCallback() {
         const attrValue = this.getAttribute('value') ?? ''
-        this.hasAutofocus = this.hasAttribute('autofocus')
         this.customClass = (this.getAttribute('class') ?? '').trim()
+        this.hasAutofocus = this.hasAttribute('autofocus')
+        this.isEditable = this.editable
 
         this.ast.setText(attrValue)
 
@@ -105,6 +123,7 @@ class Element extends HTMLElement {
 
         this.renderDOM()
         this.setAutoFocus()
+        this.setEditable()
     }
 
     disconnectedCallback() {
@@ -135,11 +154,11 @@ class Element extends HTMLElement {
     
         const div = document.createElement('div')
         div.classList.add('element')
-        div.contentEditable = 'true'
 
         this.shadowRootElement.appendChild(div)
         this.rootElement = div
         this.applyClass()
+        this.setEditable()
     }
 
     private applyClass() {
@@ -166,6 +185,12 @@ class Element extends HTMLElement {
 
     private setAutoFocus() {
         if (this.hasAutofocus && this.rootElement && this.select) this.select.autoFocus()
+    }
+
+    private setEditable() {
+        if (this.rootElement) {
+            this.rootElement.contentEditable = this.isEditable ? 'true' : 'false'
+        }
     }
 }
 
