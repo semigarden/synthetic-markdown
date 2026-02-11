@@ -1,6 +1,6 @@
 {
     "name": "synthetic-markdown-react",
-    "version": "0.0.8",
+    "version": "0.0.9",
     "description": "",
     "license": "MIT",
     "author": {
@@ -51,6 +51,6 @@
         "typescript": "^5.3.0"
     },
     "dependencies": {
-        "synthetic-markdown": "^0.0.9"
+        "synthetic-markdown": "^0.0.10"
     }
 }

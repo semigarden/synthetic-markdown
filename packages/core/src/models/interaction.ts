@@ -15,9 +15,12 @@ class Interaction {
         private editor: Editor,
         private input: Input,
         private intent: Intent,
+        private editable: boolean,
     ) {}
 
     attach() {
+        if (!this.editable) return
+        
         this.rootElement.addEventListener('beforeinput', this.onBeforeInput)
         this.rootElement.addEventListener('compositionstart', this.onCompositionStart)
         this.rootElement.addEventListener('compositionend', this.onCompositionEnd)

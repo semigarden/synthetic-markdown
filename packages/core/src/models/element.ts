@@ -118,7 +118,7 @@ class Element extends HTMLElement {
         this.input = new Input(this.ast, this.caret, this.select)
         this.intent = new Intent(this.ast, this.caret, this.select, this.render)
 
-        this.interaction = new Interaction(this.rootElement!, this.ast, this.select, this.editor, this.input, this.intent)
+        this.interaction = new Interaction(this.rootElement!, this.ast, this.select, this.editor, this.input, this.intent, this.editable)
         this.interaction.attach()
 
         this.renderDOM()
