@@ -2,11 +2,11 @@
 
 A WYSIWYG editor built as a composable UI component
 > [!NOTE]
-> **Supported Features**
+> **Supported Elements**
 > 
-> Blocks: `Paragraph` `Heading` `Block Quote` `List` `Thematic Break`
+> `Paragraph` `Heading` `Block Quote` `List` `Thematic Break`
 > 
-> Inlines: `Text` `Strong` `Emphasis` `Strikethrough` `Code Span` `Link` `Autolink` `Image`
+> `Text` `Strong` `Emphasis` `Strikethrough` `Code Span` `Link` `Autolink` `Image`
 
 > [!TIP]
 > See guide or try it online: <https://semigarden.github.io/synthetic-markdown>
@@ -79,3 +79,20 @@ const App = () => {
     
 export default App
 ```
+
+## Interactions
+
+#### Indent
+`List Item` `Block Quote`
+
+- **Tab**
+- **4 Spaces**
+- **Shift + Enter**
+
+---
+
+#### Outdent
+`List Item` `Block Quote`
+
+- **Shift + Tab**
+- **Shift + Backspace**
