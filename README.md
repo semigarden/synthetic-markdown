@@ -1,13 +1,18 @@
-<!-- # Synthetic Text
+# Synthetic Markdown
 
+A WYSIWYG editor built as a composable UI component
 > [!NOTE]
-> The project is designed as a building block rather than a complete editor application
+> **Supported Features**
+> 
+> Blocks: `Paragraph` `Heading` `Block Quote` `List` `Thematic Break`
+> 
+> Inlines: `Text` `Strong` `Emphasis` `Strikethrough` `Code Span` `Link` `Autolink` `Image`
 
 > [!TIP]
-> Try it online: <https://semigarden.github.io/syntxt/>
+> See guide or try it online: <https://semigarden.github.io/synthetic-markdown>
 
 > [!IMPORTANT]
-> This project is still in development. Interactions with the following blocks are not yet fully implemented:
+> This project is still in development. Interactions with the following blocks are partially implemented and are currently inactive:
 > - Tables
 > - Task Lists
 > - Code Blocks
@@ -15,7 +20,7 @@
 ---
 
 <p align="center">
-  <img src="app/public/synthetic.gif" alt="Synthetic Text" />
+  <img src="app/public/synthetic.gif" alt="Synthetic Markdown" />
 </p>
 
 ---
@@ -24,31 +29,31 @@
 
 #### Vanilla
 ```
-npm install syntxt
+npm install synthetic-markdown
 ```
 
 #### React
 ```
-npm install syntxt-react
+npm install synthetic-markdown-react
 ```
 
 ## Usage
 
 #### Vanilla
 ```
+<!doctype html>
 <html>
     <body>
-        <synthetic-text />
+        <synthetic-markdown />
+        <script type='module'>
+            import 'synthetic-markdown'
 
-        <script type="module">
-            import 'syntxt'
-
-            const element = document.querySelector('synthetic-text')
+            const element = document.querySelector('synthetic-markdown')
 
             let value = ''
             element.value = value
 
-            element.addEventListener('input', (event) => {
+            element.addEventListener('change', (event: Event) => {
                 value = event.target.value
             })
         </script>
@@ -59,16 +64,18 @@ npm install syntxt-react
 #### React
 ```
 import { useState } from 'react'
-import { SyntheticText } from 'syntxt-react'
+import { SyntheticMarkdown } from 'synthetic-markdown-react'
 
 const App = () => {
     const [text, setText] = useState('')
 
-    const onInput = (event) => {
+    const onChange = (event: Event) => {
         const text = event.target.value
         setText(text)
     }
 
-    return <SyntheticText value={text} onInput={onInput} />
+    return <SyntheticMarkdown value={text} onChange={onChange} />
 }
-``` -->
+    
+export default App
+```
