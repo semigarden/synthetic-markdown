@@ -22,7 +22,6 @@ class Element extends HTMLElement {
     private intent: Intent | null = null
     
     private styled = false
-    private hasAcceptedExternalValue = false
     private appliedClasses: string[] = []
 
     private customClass = ''
@@ -45,14 +44,10 @@ class Element extends HTMLElement {
 
     set value(value: string) {
         if (value === this.ast.text) return
-
-        if (!this.hasAcceptedExternalValue && value !== '' || value !== '' && value !== this.ast.text) {
-            this.ast.setText(value)
-            this.renderDOM()
-            this.setAutoFocus()
-            this.setEditable()
-            this.hasAcceptedExternalValue = true
-        }
+        this.ast.setText(value ?? '')
+        this.renderDOM()
+        this.setAutoFocus()
+        this.setEditable()
     }
 
     get autofocus() {
@@ -99,12 +94,9 @@ class Element extends HTMLElement {
     }
 
     connectedCallback() {
-        // const attrValue = this.getAttribute('value') ?? ''
         this.customClass = (this.getAttribute('class') ?? '').trim()
         this.hasAutofocus = this.hasAttribute('autofocus')
         this.isEditable = this.editable
-
-        // this.ast.setText(attrValue)
 
         this.addStyles()
         this.addDOM()
