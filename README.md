@@ -1,6 +1,6 @@
 # Synthetic Markdown
 
-A WYSIWYG editor built as a composable UI component
+A WYSIWYG editor as a composable UI component
 > [!NOTE]
 > **Supported Elements**
 > 
