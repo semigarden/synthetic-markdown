@@ -99,12 +99,12 @@ class Element extends HTMLElement {
     }
 
     connectedCallback() {
-        const attrValue = this.getAttribute('value') ?? ''
+        // const attrValue = this.getAttribute('value') ?? ''
         this.customClass = (this.getAttribute('class') ?? '').trim()
         this.hasAutofocus = this.hasAttribute('autofocus')
         this.isEditable = this.editable
 
-        this.ast.setText(attrValue)
+        // this.ast.setText(attrValue)
 
         this.addStyles()
         this.addDOM()
