@@ -1,7 +1,7 @@
 import type { AstApplyEffect, Block, DetectedBlock, Inline, TableCell, TableHeader, List, ListItem, TaskListItem, BlockQuote, CodeBlock, HTMLBlock } from '../../../types'
 import type { AstContext } from '../astContext'
-import { strip, isEmptyText } from '../../../utils/utils'
-import { matchHtmlBlockStart, matchHtmlBlockEnd } from '../../parser/block/blockDetect'
+import { strip } from '../../../utils/utils'
+import { matchHtmlBlockStart, isHtmlBlockClosed } from '../../parser/block/blockDetect'
 
 class AstTransform {
     constructor(private ctx: AstContext) {}
@@ -372,16 +372,9 @@ class AstTransform {
                 const next = ast.blocks[i]
                 const piece = String(next.text ?? '').replace(/^\u200B$/, '')
 
-                if (htmlType === 6 || htmlType === 7) {
-                    if (isEmptyText(piece)) break
-                    newText += '\n' + piece
-                    absorbed.push(next)
-                    continue
-                }
-
                 newText += '\n' + piece
                 absorbed.push(next)
-                if (matchHtmlBlockEnd(htmlType, piece)) break
+                if (isHtmlBlockClosed(newText, htmlType)) break
             }
         }
 

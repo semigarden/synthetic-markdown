@@ -31,6 +31,7 @@ type AstEffect =
     | { type: 'toggleTask'; blockId: string; inlineId: string; caretPosition: number }
     | { type: 'inputCodeBlock'; text: string; blockId: string; inlineId: string; caretPosition: number; caretInlineId?: string }
     | { type: 'splitCodeBlock'; blockId: string; inlineId: string; caretPosition: number }
+    | { type: 'splitHtmlBlock'; blockId: string; inlineId: string; caretPosition: number }
     | { type: 'mergeCodeBlockContent'; blockId: string; inlineId: string; caretPosition: number }
     | { type: 'exitCodeBlock'; blockId: string; direction: 'above' | 'below' | 'current' }
     | { type: 'unwrapCodeBlock'; blockId: string }

@@ -3,9 +3,9 @@ import InlineParser from '../inline/inlineParser'
 import LinkReferenceState from './linkReferenceState'
 import { syncLinkReferencesFromBlocks } from './linkReferences'
 import { nestLists } from '../block/list/listNest'
-import { matchSetextUnderline } from '../block/blockDetect'
+import { matchSetextUnderline, matchHtmlBlockStart, splitHtmlBlockSource } from '../block/blockDetect'
 import { isEmptyText } from '../../../utils/utils'
-import type { OpenBlock, Block, List, BlockQuote, CodeBlock, Heading } from '../../../types'
+import type { OpenBlock, Block, List, BlockQuote, CodeBlock, Heading, HTMLBlock } from '../../../types'
 
 function sanitize(text: string) {
     return text
@@ -95,17 +95,19 @@ class AstParser {
         const flushed = this.block.flush(offset)
         if (flushed) blocks.push(...flushed)
 
-        this.mergeAdjacent(blocks)
+        const refined = this.refineUnclosedHtmlBlocks(blocks)
 
-        nestLists(blocks)
+        this.mergeAdjacent(refined)
 
-        syncLinkReferencesFromBlocks(blocks, this.linkReferences)
+        nestLists(refined)
 
-        for (const block of blocks) {
+        syncLinkReferencesFromBlocks(refined, this.linkReferences)
+
+        for (const block of refined) {
             this.inline.applyRecursive(block)
         }
 
-        this.blocks = blocks
+        this.blocks = refined
 
         return this.blocks
     }
@@ -146,6 +148,19 @@ class AstParser {
 
         text = text.replace(/\r$/, '')
 
+        const blocks = this.parseLinesToBlocks(text, offset)
+        const refined = this.refineUnclosedHtmlBlocks(blocks)
+
+        for (const block of refined) {
+            this.inline.applyRecursive(block)
+        }
+
+        return refined
+    }
+
+    private parseLinesToBlocks(text: string, offset: number): Block[] {
+        this.block.reset()
+
         const blocks: Block[] = []
 
         for (const line of text.split('\n')) {
@@ -165,12 +180,41 @@ class AstParser {
         const flushed = this.block.flush(offset)
         if (flushed) blocks.push(...flushed)
 
+        return blocks
+    }
+
+    private refineUnclosedHtmlBlocks(blocks: Block[]): Block[] {
+        const out: Block[] = []
+
         for (const block of blocks) {
-            this.inline.applyRecursive(block)
+            if (block.type !== 'htmlBlock') {
+                out.push(block)
+                continue
+            }
+
+            const html = block as HTMLBlock
+            const raw = String(html.text ?? '')
+            const htmlType =
+                html.htmlType ??
+                matchHtmlBlockStart(raw.split('\n')[0] ?? '') ??
+                6
+            const { htmlPart, trailing } = splitHtmlBlockSource(raw, htmlType)
+
+            if (!trailing) {
+                out.push(block)
+                continue
+            }
+
+            const head = this.parseLinesToBlocks(htmlPart, block.position.start)
+            const tail = this.parseLinesToBlocks(
+                trailing,
+                block.position.start + htmlPart.length + 1
+            )
+            out.push(...this.refineUnclosedHtmlBlocks([...head, ...tail]))
         }
 
-        return blocks
-    }    
+        return out
+    }
 
     private reset() {
         this.openBlocks = []

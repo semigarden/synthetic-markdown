@@ -16,6 +16,7 @@ import {
     matchLinkReferenceDefinition,
     matchHtmlBlockStart,
     matchHtmlBlockEnd,
+    isHtmlBlockClosed,
 } from './blockDetect'
 import type { ParseBlockContext, Block, DetectedBlock, CodeBlock, HTMLBlock } from '../../../types'
 
@@ -137,8 +138,7 @@ class BlockParser {
         const htmlType = this.context.htmlBlockType
         const end = offset + line.length
 
-        if ((htmlType === 6 || htmlType === 7) && matchHtmlBlockEnd(htmlType, line)) {
-            htmlBlock.position.end = offset
+        if (isHtmlBlockClosed(String(htmlBlock.text ?? ''), htmlType)) {
             this.context.isHtmlBlock = false
             this.context.htmlBlockType = 0
             this.context.currentHtmlBlock = null
@@ -148,7 +148,10 @@ class BlockParser {
         htmlBlock.text = htmlBlock.text + '\n' + line
         htmlBlock.position.end = end
 
-        if (matchHtmlBlockEnd(htmlType, line)) {
+        if (
+            (htmlType >= 1 && htmlType <= 5 && matchHtmlBlockEnd(htmlType, line)) ||
+            isHtmlBlockClosed(String(htmlBlock.text ?? ''), htmlType)
+        ) {
             this.context.isHtmlBlock = false
             this.context.htmlBlockType = 0
             this.context.currentHtmlBlock = null
@@ -236,7 +239,10 @@ class BlockParser {
                 const block = buildHtmlBlock(line, start, end, htmlType) as HTMLBlock
                 blocks.push(block)
 
-                if (htmlType <= 5 && matchHtmlBlockEnd(htmlType, line)) {
+                if (
+                    (htmlType <= 5 && matchHtmlBlockEnd(htmlType, line)) ||
+                    isHtmlBlockClosed(line, htmlType)
+                ) {
                     break
                 }
 

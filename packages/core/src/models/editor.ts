@@ -36,6 +36,7 @@ class Editor {
         toggleTask: (effect) => this.ast.toggleTask(effect.blockId, effect.inlineId, effect.caretPosition),
         inputCodeBlock: (effect) => this.ast.inputCodeBlock(effect.text, effect.blockId, effect.inlineId, effect.caretPosition, effect.caretInlineId),
         splitCodeBlock: (effect) => this.ast.splitCodeBlock(effect.blockId, effect.inlineId, effect.caretPosition),
+        splitHtmlBlock: (effect) => this.ast.splitHtmlBlock(effect.blockId, effect.inlineId, effect.caretPosition),
         mergeCodeBlockContent: (effect) => this.ast.mergeCodeBlockContent(effect.blockId, effect.inlineId, effect.caretPosition),
         exitCodeBlock: (effect) => this.ast.exitCodeBlock(effect.blockId, effect.direction),
         unwrapCodeBlock: (effect) => this.ast.unwrapCodeBlock(effect.blockId),

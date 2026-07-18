@@ -61,24 +61,87 @@ function matchHtmlBlockStart(line: string): 1 | 2 | 3 | 4 | 5 | 6 | 7 | null {
 }
 
 function matchHtmlBlockEnd(htmlType: number, line: string): boolean {
-    const normalized = normalizeDetectLine(line)
+    const raw = line.replace(/\r$/, '')
     switch (htmlType) {
         case 1:
-            return /<\/(?:script|pre|style|textarea)>/i.test(normalized)
+            return /<\/(?:script|pre|style|textarea)>/i.test(raw)
         case 2:
-            return /-->/.test(normalized)
+            return /-->/.test(raw)
         case 3:
-            return /\?>/.test(normalized)
+            return /\?>/.test(raw)
         case 4:
-            return />/.test(normalized)
+            return />/.test(raw)
         case 5:
-            return /\]\]>/.test(normalized)
+            return /\]\]>/.test(raw)
         case 6:
         case 7:
-            return normalized.trim() === ''
+            return /^[ \t]*$/.test(raw)
         default:
             return false
     }
+}
+
+function isHtmlBlockClosed(text: string, htmlType: number): boolean {
+    const raw = text.replace(/\r$/, '')
+    if (htmlType >= 1 && htmlType <= 5) {
+        return raw.split('\n').some(line => matchHtmlBlockEnd(htmlType, line))
+    }
+
+    const lines = raw.split('\n').map(line => line.replace(/[\u200B\u200C\u200D\uFEFF]/g, ''))
+    const last = [...lines].reverse().find(line => line.trim() !== '')
+    if (!last) return false
+
+    const trimmed = last.trim()
+
+    if (/^<\/[a-zA-Z][a-zA-Z0-9-]*\s*>\s*$/.test(trimmed)) return true
+
+    if (
+        /^<(?:hr|br|img|input|meta|link|base|area|col|embed|source|track|wbr)\b[^>]*>\s*$/i.test(trimmed) ||
+        /\/\s*>\s*$/.test(trimmed)
+    ) {
+        return true
+    }
+
+    if (/^<([a-zA-Z][a-zA-Z0-9-]*)\b[^>]*>[\s\S]*<\/\1\s*>\s*$/i.test(trimmed)) return true
+
+    return false
+}
+
+function isHtmlStructuralBlank(line: string): boolean {
+    return normalizeDetectLine(line).trim() === ''
+}
+
+function splitHtmlBlockSource(
+    text: string,
+    htmlType: number
+): { htmlPart: string; trailing: string } {
+    const raw = text.replace(/\r$/, '')
+    const lines = raw.split('\n')
+    const htmlLines: string[] = []
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i]
+
+        if (htmlLines.length > 0 && isHtmlStructuralBlank(line)) {
+            const candidate = [...htmlLines, ...lines.slice(i)].join('\n')
+            if (!isHtmlBlockClosed(candidate, htmlType)) {
+                return {
+                    htmlPart: htmlLines.join('\n'),
+                    trailing: lines.slice(i).join('\n'),
+                }
+            }
+        }
+
+        htmlLines.push(line)
+        if (isHtmlBlockClosed(htmlLines.join('\n'), htmlType)) {
+            return {
+                htmlPart: htmlLines.join('\n'),
+                trailing: lines.slice(i + 1).join('\n'),
+            }
+        }
+    }
+
+    return { htmlPart: raw, trailing: '' }
 }
 
 function matchLinkReferenceDefinition(line: string): {
@@ -167,4 +230,6 @@ export {
     matchLinkReferenceDefinition,
     matchHtmlBlockStart,
     matchHtmlBlockEnd,
+    isHtmlBlockClosed,
+    splitHtmlBlockSource,
 }

@@ -43,22 +43,22 @@ class Intent {
         const parentBlock = this.ast.query.getParentBlock(context.block)
 
         if (context.block.type === 'codeBlock') {
-            // if (context.inline.type === 'marker') {
-            //     return {
-            //         preventDefault: true,
-            //         ast: [{
-            //             type: 'splitCodeBlockFromMarker',
-            //             blockId: context.block.id,
-            //             inlineId: context.inline.id,
-            //             caretPosition: caretPosition,
-            //         }],
-            //     }
-            // }
-
             return {
                 preventDefault: true,
                 ast: [{
                     type: 'splitCodeBlock',
+                    blockId: context.block.id,
+                    inlineId: context.inline.id,
+                    caretPosition: caretPosition,
+                }],
+            }
+        }
+
+        if (context.block.type === 'htmlBlock') {
+            return {
+                preventDefault: true,
+                ast: [{
+                    type: 'splitHtmlBlock',
                     blockId: context.block.id,
                     inlineId: context.inline.id,
                     caretPosition: caretPosition,

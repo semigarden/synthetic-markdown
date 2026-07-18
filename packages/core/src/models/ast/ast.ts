@@ -106,6 +106,7 @@ class Ast {
     public toggleTask(...args: Parameters<Edit['toggleTask']>) { return this.edit.toggleTask(...args) }
     public inputCodeBlock(...args: Parameters<Edit['inputCodeBlock']>) { return this.edit.inputCodeBlock(...args) }
     public splitCodeBlock(...args: Parameters<Edit['splitCodeBlock']>) { return this.edit.splitCodeBlock(...args) }
+    public splitHtmlBlock(...args: Parameters<Edit['splitHtmlBlock']>) { return this.edit.splitHtmlBlock(...args) }
     public mergeCodeBlockContent(...args: Parameters<Edit['mergeCodeBlockContent']>) { return this.edit.mergeCodeBlockContent(...args) }
     public exitCodeBlock(...args: Parameters<Edit['exitCodeBlock']>) { return this.edit.exitCodeBlock(...args) }
     public unwrapCodeBlock(...args: Parameters<Edit['unwrapCodeBlock']>) { return this.edit.unwrapCodeBlock(...args) }

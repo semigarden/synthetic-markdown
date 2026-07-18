@@ -1,7 +1,7 @@
-import { detectBlockType, matchSetextUnderline, matchSetextHeading } from '../parser/block/blockDetect'
+import { detectBlockType, matchSetextUnderline, matchSetextHeading, matchHtmlBlockStart, matchHtmlBlockEnd, isHtmlBlockClosed, splitHtmlBlockSource } from '../parser/block/blockDetect'
 import { uuid, strip, isEmptyText } from '../../utils/utils'
 import type { AstContext } from './astContext'
-import type { AstApplyEffect, Block, Inline, List, ListItem, Table, TableRow, TableHeader, TableCell, TaskListItem, BlockQuote, Paragraph, CodeBlock, Heading, RenderInsert, RenderInput } from '../../types'
+import type { AstApplyEffect, Block, Inline, List, ListItem, Table, TableRow, TableHeader, TableCell, TaskListItem, BlockQuote, Paragraph, CodeBlock, Heading, HTMLBlock, RenderInsert, RenderInput } from '../../types'
 
 class Edit {
     constructor(private context: AstContext) {}
@@ -30,6 +30,19 @@ class Edit {
             block.inlines.slice(inlineIndex + 1).map(i => i.text.symbolic).join('')
 
         // newText = strip(newText)
+
+        if (block.type === 'htmlBlock') {
+            return this.applyHtmlBlockText(block as HTMLBlock, newText, absoluteCaretPosition)
+        }
+
+        // Continue an open HTML block: following paragraphs belong inside it (not markdown).
+        if (block.type === 'paragraph') {
+            const prev = this.getPreviousBlock(block)
+            if (prev?.type === 'htmlBlock') {
+                const merged = this.tryContinueHtmlBlock(prev as HTMLBlock, block, newText, absoluteCaretPosition)
+                if (merged) return merged
+            }
+        }
 
         const setextUnderline = matchSetextUnderline(newText)
         if (setextUnderline) {
@@ -1528,6 +1541,200 @@ class Edit {
         const index = ast.blocks.findIndex(b => b.id === block.id)
         if (index <= 0) return null
         return ast.blocks[index - 1]
+    }
+
+    private applyHtmlBlockText(
+        block: HTMLBlock,
+        newText: string,
+        absoluteCaretPosition: number
+    ): AstApplyEffect | null {
+        const { ast, query, parser, transform, effect } = this.context
+
+        const firstLine = newText.split('\n')[0] ?? newText
+        const detected = detectBlockType(firstLine)
+        if (detected.type !== 'htmlBlock') {
+            return transform.transformBlock(
+                newText,
+                block,
+                detected.type === 'blankLine' ? { type: 'paragraph' } : detected,
+                absoluteCaretPosition
+            )
+        }
+
+        const htmlType =
+            detected.htmlType ??
+            matchHtmlBlockStart(firstLine) ??
+            block.htmlType ??
+            6
+
+        const { htmlPart, trailing } = splitHtmlBlockSource(newText, htmlType)
+        const index = ast.blocks.findIndex(b => b.id === block.id)
+        if (index === -1) return null
+
+        if (!trailing) {
+            block.text = htmlPart
+            block.htmlType = htmlType as HTMLBlock['htmlType']
+            const newInlines = parser.inline.apply(block)
+            block.inlines = newInlines
+            newInlines.forEach(i => (i.blockId = block.id))
+            block.position = { start: block.position.start, end: block.position.start + block.text.length }
+
+            const hit = query.getInlineAtPosition(block.inlines, absoluteCaretPosition)
+            const newInline = hit?.inline ?? block.inlines[0]
+            const position = hit?.position ?? 0
+            if (!newInline) return null
+
+            return effect.compose(
+                [effect.update([{ type: 'block', at: 'current', target: block, current: block }])],
+                effect.caret(block.id, newInline.id, position, 'start'),
+                effect.dom('structure')
+            )
+        }
+
+        const htmlBlocks = parser.reparseTextFragment(htmlPart, block.position.start)
+        const trailBlocks = parser.reparseTextFragment(trailing, block.position.start + htmlPart.length + 1)
+        const newBlocks = [...htmlBlocks, ...trailBlocks]
+        if (newBlocks.length === 0) return null
+
+        ast.blocks.splice(index, 1, ...newBlocks)
+
+        let caretInline: Inline | undefined
+        let caretPos = absoluteCaretPosition
+        let offset = 0
+        for (const b of newBlocks) {
+            for (const i of b.inlines) {
+                const len = i.text.symbolic.length
+                if (absoluteCaretPosition <= offset + len) {
+                    caretInline = i
+                    caretPos = Math.max(0, absoluteCaretPosition - offset)
+                    break
+                }
+                offset += len
+            }
+            if (caretInline) break
+            offset += 1
+        }
+        if (!caretInline) {
+            const last = newBlocks[newBlocks.length - 1]
+            caretInline = query.getFirstInline([last]) ?? last.inlines[0]
+            caretPos = caretInline ? caretInline.text.symbolic.length : 0
+        }
+        if (!caretInline) return null
+
+        const inserts = newBlocks.map((b, idx) => ({
+            type: 'block' as const,
+            at: (idx === 0 ? 'current' : 'next') as 'current' | 'next',
+            target: idx === 0 ? block : newBlocks[idx - 1],
+            current: b,
+        }))
+
+        return effect.compose(
+            [effect.update(inserts, [block])],
+            effect.caret(caretInline.blockId, caretInline.id, caretPos, 'start'),
+            effect.dom('structure')
+        )
+    }
+
+    public splitHtmlBlock(blockId: string, inlineId: string, caretPosition: number): AstApplyEffect | null {
+        const { ast, query, effect } = this.context
+
+        const block = query.getBlockById(blockId) as HTMLBlock | null
+        if (!block || block.type !== 'htmlBlock') return null
+
+        const inline = query.getInlineById(inlineId)
+        if (!inline) return null
+
+        const inlineIndex = block.inlines.findIndex(i => i.id === inlineId)
+        const absoluteCaret =
+            block.inlines.slice(0, inlineIndex).reduce((s, i) => s + i.text.symbolic.length, 0) +
+            caretPosition
+
+        const text = block.inlines.map(i => i.text.symbolic).join('')
+
+        const atEnd = absoluteCaret >= text.length
+        if (atEnd && /(?:^|\n)[ \t]*$/.test(text)) {
+            const newInline: Inline = {
+                id: uuid(),
+                type: 'text',
+                blockId: '',
+                text: { symbolic: '\u200B', semantic: '' },
+                position: { start: 0, end: 0 },
+            }
+            const paragraph: Block = {
+                id: uuid(),
+                type: 'paragraph',
+                text: '\u200B',
+                position: { start: block.position.end, end: block.position.end },
+                inlines: [newInline],
+            }
+            newInline.blockId = paragraph.id
+
+            const index = ast.blocks.findIndex(b => b.id === block.id)
+            if (index === -1) return null
+            ast.blocks.splice(index + 1, 0, paragraph)
+
+            return effect.compose(
+                [effect.update([{ type: 'block', at: 'next', target: block, current: paragraph }])],
+                effect.caret(paragraph.id, newInline.id, 0, 'start'),
+                effect.dom('structure')
+            )
+        }
+
+        const newText = text.slice(0, absoluteCaret) + '\n' + text.slice(absoluteCaret)
+        return this.applyHtmlBlockText(block, newText, absoluteCaret + 1)
+    }
+
+    private tryContinueHtmlBlock(
+        prev: HTMLBlock,
+        current: Block,
+        newText: string,
+        caretInCurrent: number
+    ): AstApplyEffect | null {
+        const { ast, parser, effect, query } = this.context
+
+        const htmlType =
+            prev.htmlType ??
+            matchHtmlBlockStart((String(prev.text ?? '').split('\n')[0] ?? '')) ??
+            null
+        if (!htmlType) return null
+
+        if ((htmlType === 6 || htmlType === 7) && matchHtmlBlockEnd(htmlType, newText)) {
+            return null
+        }
+
+        if (isHtmlBlockClosed(String(prev.text ?? ''), htmlType)) {
+            return null
+        }
+
+        const prevIndex = ast.blocks.findIndex(b => b.id === prev.id)
+        const currentIndex = ast.blocks.findIndex(b => b.id === current.id)
+        if (prevIndex === -1 || currentIndex !== prevIndex + 1) return null
+
+        const combined = `${String(prev.text ?? '')}\n${newText}`
+        const newBlocks = parser.reparseTextFragment(combined, prev.position.start)
+        if (newBlocks.length === 0 || newBlocks[0].type !== 'htmlBlock') return null
+
+        ast.blocks.splice(prevIndex, 2, ...newBlocks)
+
+        const html = newBlocks[0] as HTMLBlock
+        const caretAbs = String(prev.text ?? '').length + 1 + caretInCurrent
+        const hit = query.getInlineAtPosition(html.inlines, caretAbs)
+        const caretInline = hit?.inline ?? html.inlines[0]
+        const caretPos = hit?.position ?? 0
+        if (!caretInline) return null
+
+        const inserts = newBlocks.map((b, idx) => ({
+            type: 'block' as const,
+            at: (idx === 0 ? 'current' : 'next') as 'current' | 'next',
+            target: idx === 0 ? prev : newBlocks[idx - 1],
+            current: b,
+        }))
+
+        return effect.compose(
+            [effect.update(inserts, [prev, current])],
+            effect.caret(html.id, caretInline.id, caretPos, 'start'),
+            effect.dom('structure')
+        )
     }
 
     public mergeIntoTable(headerBlock: Block, dividerBlock: Block, dividerText: string): AstApplyEffect | null {
