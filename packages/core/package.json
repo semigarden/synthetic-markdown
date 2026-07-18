@@ -40,12 +40,14 @@
     "scripts": {
         "build:css": "sass src/styles/element.scss src/styles/element.css --no-source-map",
         "build:css-ts": "node src/scripts/generate-css-ts.js",
+        "build:dts": "tsc -p tsconfig.json --emitDeclarationOnly",
         "build:distcss": "node -e \"require('fs').copyFileSync('src/styles/element.css','dist/index.css')\"",
-        "build": "npm run build:css && npm run build:css-ts && tsup && npm run build:distcss",
+        "build": "npm run build:css && npm run build:css-ts && tsup && npm run build:dts && npm run build:distcss",
         "watch:css": "sass src/styles/element.scss src/styles/element.css --no-source-map --watch",
         "watch:css-ts": "node -e \"const fs=require('fs'); const {spawn}=require('child_process'); const src='src/styles/element.css'; const copy=()=>{spawn('npm',['run','build:css-ts'],{stdio:'inherit'});}; copy(); fs.watchFile(src,{interval:200},copy);\"",
+        "watch:dts": "tsc -p tsconfig.json --emitDeclarationOnly --watch --preserveWatchOutput",
         "watch:distcss": "node -e \"const fs=require('fs'); const src='src/styles/element.css'; const dst='dist/index.css'; const copy=()=>{fs.mkdirSync('dist',{recursive:true}); fs.copyFileSync(src,dst); console.log('[css] copied ->',dst)}; copy(); fs.watchFile(src,{interval:200},copy);\"",
-        "dev": "concurrently -n TSUP,CSS,CSS-TS,COPY \"tsup src/index.ts --watch --clean=false\" \"npm:watch:css\" \"npm:watch:css-ts\" \"npm:watch:distcss\"",
+        "dev": "concurrently -n TSUP,DTS,CSS,CSS-TS,COPY \"tsup src/index.ts --watch --clean=false\" \"npm:watch:dts\" \"npm:watch:css\" \"npm:watch:css-ts\" \"npm:watch:distcss\"",
         "lint": "eslint .",
         "test": "vitest",
         "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -56,7 +58,11 @@
         "eslint": "^9.0.0",
         "sass": "^1.97.3",
         "tsup": "^8.0.0",
-        "typescript": "^5.3.0",
+        "typescript": "^7.0.2",
         "vitest": "^4.0.18"
+    },
+    "allowScripts": {
+        "@parcel/watcher@2.5.6": true,
+        "esbuild@0.27.7": true
     }
 }
