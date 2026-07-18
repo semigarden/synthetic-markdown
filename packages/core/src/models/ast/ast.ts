@@ -65,6 +65,16 @@ class Ast {
         this.text = this.normalizer.text
     }
 
+    public logText(label = 'ast.text') {
+        console.log(label, JSON.stringify(this.text, null, 2))
+        return this.text
+    }
+
+    public logBlocks(label = 'ast.blocks') {
+        console.log(label, JSON.stringify(this.blocks, null, 2))
+        return this.blocks
+    }
+
     public input(...args: Parameters<Edit['input']>) { return this.edit.input(...args) }
     public split(...args: Parameters<Edit['split']>) { return this.edit.split(...args) }
     public splitListItem(...args: Parameters<Edit['splitListItem']>) { return this.edit.splitListItem(...args) }
@@ -72,6 +82,7 @@ class Ast {
     public splitBlockQuote(...args: Parameters<Edit['splitBlockQuote']>) { return this.edit.splitBlockQuote(...args) }
     public splitCodeBlockFromMarker(...args: Parameters<Edit['splitCodeBlockFromMarker']>) { return this.edit.splitCodeBlockFromMarker(...args) }
     public mergeInline(...args: Parameters<Edit['mergeInline']>) { return this.edit.mergeInline(...args) }
+    public mergePreviousBlock(...args: Parameters<Edit['mergePreviousBlock']>) { return this.edit.mergePreviousBlock(...args) }
     public indentListItem(...args: Parameters<Edit['indentListItem']>) { return this.edit.indentListItem(...args) }
     public indentTaskListItem(...args: Parameters<Edit['indentTaskListItem']>) { return this.edit.indentTaskListItem(...args) }
     public indentBlockQuote(...args: Parameters<Edit['indentBlockQuote']>) { return this.edit.indentBlockQuote(...args) }

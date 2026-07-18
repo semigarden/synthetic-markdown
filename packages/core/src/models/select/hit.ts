@@ -1,4 +1,5 @@
 import type { Block, Inline } from '../../types'
+import { snapLeftOfEmptyChar } from '../../utils/utils'
 
 type InlineHit = { inline: Inline; position: number }
 
@@ -104,13 +105,16 @@ function findClosestInlineAndPosition(
             }
 
             if (targetInlineEl.contains(range.startContainer) || targetInlineEl === range.startContainer) {
+                const symbolicEl = (targetInlineEl.querySelector('.symbolic') as HTMLElement | null) ?? targetInlineEl
                 const tempRange = document.createRange()
-                tempRange.selectNodeContents(targetInlineEl)
-                tempRange.setEnd(range.startContainer, range.startOffset)
-                const rangePosition = tempRange.toString().length
-                if (rangePosition >= 0 && rangePosition <= inline.text.symbolic.length) {
-                    position = rangePosition
-                }
+                tempRange.selectNodeContents(symbolicEl)
+                try {
+                    tempRange.setEnd(range.startContainer, range.startOffset)
+                    const rangePosition = tempRange.toString().length
+                    if (rangePosition >= 0 && rangePosition <= inline.text.symbolic.length) {
+                        position = rangePosition
+                    }
+                } catch {}
             }
         }
     } else if (docAny.caretPositionFromPoint) {
@@ -121,18 +125,21 @@ function findClosestInlineAndPosition(
             range.collapse(true)
 
             if (closestInline.contains(range.startContainer) || closestInline === range.startContainer) {
+                const symbolicEl = (closestInline.querySelector('.symbolic') as HTMLElement | null) ?? closestInline
                 const tempRange = document.createRange()
-                tempRange.selectNodeContents(closestInline)
-                tempRange.setEnd(range.startContainer, range.startOffset)
-                const rangePosition = tempRange.toString().length
-                if (rangePosition >= 0 && rangePosition <= inline.text.symbolic.length) {
-                    position = rangePosition
-                }
+                tempRange.selectNodeContents(symbolicEl)
+                try {
+                    tempRange.setEnd(range.startContainer, range.startOffset)
+                    const rangePosition = tempRange.toString().length
+                    if (rangePosition >= 0 && rangePosition <= inline.text.symbolic.length) {
+                        position = rangePosition
+                    }
+                } catch {}
             }
         }
     }
 
-    position = Math.max(0, Math.min(position, inline.text.symbolic.length))
+    position = snapLeftOfEmptyChar(inline.text.symbolic, position)
     return { inline, position }
 }
 

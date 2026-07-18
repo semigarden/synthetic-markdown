@@ -18,6 +18,15 @@ const isEmptyText = (string: string): boolean => string
     .trim()
     .length === 0
 
+const snapLeftOfEmptyChar = (text: string, position: number): number => {
+    let pos = Math.max(0, Math.min(position, text.length))
+    if (/^[\u200B\u00A0]+$/.test(text)) return 0
+    while (pos > 0 && (text[pos - 1] === '\u200B' || text[pos - 1] === '\u00A0')) {
+        pos--
+    }
+    return pos
+}
+
 const namedEntities: Record<string, string> = {
     // Basic HTML entities
     "&amp;": "&",
@@ -335,4 +344,4 @@ function encodeHTMLEntities(text: string): string {
         .replace(/'/g, "&#39;");
 }
 
-export { uuid, decodeHTMLEntity, containsHTMLEntity, encodeHTMLEntities, strip, isEmptyText };
+export { uuid, decodeHTMLEntity, containsHTMLEntity, encodeHTMLEntities, strip, isEmptyText, snapLeftOfEmptyChar };

@@ -119,20 +119,20 @@ class AstParser {
 
     public reparseTextFragment(text: string, offset: number): Block[] {
         this.block.reset()
-    
-        text = text.replace(/[\u200B\u200C\u200D\uFEFF]/g, '').replace(/\r$/, '')
-    
+
+        text = text.replace(/\r$/, '')
+
         const blocks: Block[] = []
-    
+
         for (const line of text.split('\n')) {
             const produced = this.block.line(line, offset)
             if (produced) blocks.push(...produced)
             offset += line.length + 1
         }
-    
+
         const flushed = this.block.flush(offset)
         if (flushed) blocks.push(...flushed)
-    
+
         for (const block of blocks) {
             this.inline.applyRecursive(block)
         }

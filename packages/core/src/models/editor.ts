@@ -14,6 +14,7 @@ class Editor {
         splitBlockQuote: (effect) => this.ast.splitBlockQuote(effect.blockQuoteId, effect.blockId, effect.inlineId, effect.caretPosition),
         splitCodeBlockFromMarker: (effect) => this.ast.splitCodeBlockFromMarker(effect.blockId, effect.inlineId, effect.caretPosition),
         mergeInline: (effect) => this.ast.mergeInline(effect.leftInlineId, effect.rightInlineId),
+        mergePreviousBlock: (effect) => this.ast.mergePreviousBlock(effect.blockId),
         indentListItem: (effect) => this.ast.indentListItem(effect.listItemId),
         indentTaskListItem: (effect) => this.ast.indentTaskListItem(effect.taskListItemId),
         indentBlockQuote: (effect) => this.ast.indentBlockQuote(effect.blockQuoteId, effect.blockId, effect.inlineId),
@@ -33,10 +34,10 @@ class Editor {
         pasteMultiBlock: (effect) => this.ast.pasteMultiBlock(effect.blockId, effect.inlineId, effect.text, effect.startPosition, effect.endPosition),
         deleteMultiBlock: (effect) => this.ast.deleteMultiBlock(effect.startBlockId, effect.startInlineId, effect.startPosition, effect.endBlockId, effect.endInlineId, effect.endPosition),
         toggleTask: (effect) => this.ast.toggleTask(effect.blockId, effect.inlineId, effect.caretPosition),
-        inputCodeBlock: (effect) => this.ast.inputCodeBlock(effect.text, effect.blockId, effect.inlineId, effect.caretPosition),
+        inputCodeBlock: (effect) => this.ast.inputCodeBlock(effect.text, effect.blockId, effect.inlineId, effect.caretPosition, effect.caretInlineId),
         splitCodeBlock: (effect) => this.ast.splitCodeBlock(effect.blockId, effect.inlineId, effect.caretPosition),
         mergeCodeBlockContent: (effect) => this.ast.mergeCodeBlockContent(effect.blockId, effect.inlineId, effect.caretPosition),
-        exitCodeBlock: (effect) => this.ast.exitCodeBlock(effect.blockId),
+        exitCodeBlock: (effect) => this.ast.exitCodeBlock(effect.blockId, effect.direction),
         unwrapCodeBlock: (effect) => this.ast.unwrapCodeBlock(effect.blockId),
         setCodeBlockLanguage: (effect) => this.ast.setCodeBlockLanguage(effect.blockId, effect.language),
     }
@@ -95,6 +96,8 @@ class Editor {
             this.caret.beginSelectionSuppress(this.caretToken)
 
             this.ast.normalize()
+            this.ast.logText()
+            // this.ast.logBlocks()
             this.render.apply(renderEffect)
 
             const mode = domEffect === 'text' ? 'microtask' : 'raf2'

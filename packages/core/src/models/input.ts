@@ -306,34 +306,10 @@ class Input {
         const position = this.caret.position ?? positionInline
         const currentText = inline.text.symbolic
 
-        const cleanedText = currentText
-            .replace(/[\u200B\u200C\u200D\uFEFF]/g, '')
-            .replace(/\r$/, '')
-
         if (direction === 'backward') {
-            // if (inline.type === 'marker') {
-            //     if (inline === block.inlines[0] && inline.text.symbolic.replace('\n', '').length === 3) {
-            //         return {
-            //             preventDefault: true,
-            //             ast: [{
-            //                 type: 'exitCodeBlock',
-            //                 blockId: block.id,
-            //                 direction: 'current',
-            //             }],
-            //         }
-            //     }
-
-            //     return {
-            //         preventDefault: true,
-            //         ast: [{
-            //             type: 'inputCodeBlock',
-            //             blockId: block.id,
-            //             inlineId: inline.id,
-            //             text: cleanedText,
-            //             caretPosition: position,
-            //         }],
-            //     }
-            // }
+            if (position <= 0) {
+                return { preventDefault: true }
+            }
 
             const newText = currentText.slice(0, position - 1) + currentText.slice(position)
             const newCaretPosition = position - 1
@@ -348,22 +324,22 @@ class Input {
                     caretPosition: newCaretPosition,
                 }],
             }
-        } else {
-            if (position >= cleanedText.length) {
-                return { preventDefault: true }
-            }
+        }
 
-            const newText = cleanedText.slice(0, position) + cleanedText.slice(position + 1)
-            return {
-                preventDefault: true,
-                ast: [{
-                    type: 'inputCodeBlock',
-                    blockId: block.id,
-                    inlineId: inline.id,
-                    text: newText,
-                    caretPosition: position,
-                }],
-            }
+        if (position >= currentText.length) {
+            return { preventDefault: true }
+        }
+
+        const newText = currentText.slice(0, position) + currentText.slice(position + 1)
+        return {
+            preventDefault: true,
+            ast: [{
+                type: 'inputCodeBlock',
+                blockId: block.id,
+                inlineId: inline.id,
+                text: newText,
+                caretPosition: position,
+            }],
         }
     }
 }

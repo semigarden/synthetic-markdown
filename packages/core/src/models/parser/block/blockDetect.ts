@@ -1,9 +1,13 @@
 import type { DetectedBlock } from '../../../types'
 
-function detectBlockType(line: string): DetectedBlock {
-    line = line
+function normalizeDetectLine(line: string): string {
+    return line
         .replace(/[\u200B\u200C\u200D\uFEFF]/g, '')
         .replace(/\r$/, '')
+}
+
+function detectBlockType(line: string): DetectedBlock {
+    line = normalizeDetectLine(line)
 
     const trimmed = line.trim()
 
@@ -63,4 +67,4 @@ function detectBlockType(line: string): DetectedBlock {
     return { type: 'paragraph' }
 }
 
-export { detectBlockType }
+export { detectBlockType, normalizeDetectLine }

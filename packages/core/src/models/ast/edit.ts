@@ -66,8 +66,11 @@ class Edit {
             (blockTypeChanged && !ignoreTypes.includes(detectedBlock.type)) ||
             (block.type === 'paragraph' && inListItem && taskPrefix)
         ) {
-            if (detectedBlock.type === 'listItem' || detectedBlock.type === 'taskListItem' || detectedBlock.type === 'blockQuote') caretPosition = 0
-            return transform.transformBlock(newText, block, detectedBlock, caretPosition)
+            const transformCaret =
+                detectedBlock.type === 'listItem' || detectedBlock.type === 'taskListItem' || detectedBlock.type === 'blockQuote'
+                    ? 0
+                    : absoluteCaretPosition
+            return transform.transformBlock(newText, block, detectedBlock, transformCaret)
         }
     
         // disabled
@@ -162,18 +165,43 @@ class Edit {
 
         const { left, right } = result
 
-        const newLeft = parser.reparseTextFragment(left.text, left.position.start)
-        const newRight = parser.reparseTextFragment(right.text, right.position.start)
-
         const index = ast.blocks.findIndex(b => b.id === block.id)
-        ast.blocks.splice(index, 1, ...newLeft, ...newRight)
+        if (index === -1) return null
+
+        const newLeft = parser.reparseTextFragment(left.text, left.position.start)
+        if (newLeft.length === 0) return null
+
+        let rightPlain = right.text
+        const absorbed: Block[] = []
+        const rightFirstLine = rightPlain.split('\n')[0] ?? rightPlain
+        if (detectBlockType(rightFirstLine).type === 'codeBlock') {
+            for (let i = index + 1; i < ast.blocks.length; i++) {
+                const next = ast.blocks[i]
+                if (next.type === 'codeBlock') break
+                absorbed.push(next)
+                rightPlain += '\n' + String(next.text ?? '').replace(/^\u200B$/, '')
+            }
+        }
+
+        const newRight = parser.reparseTextFragment(rightPlain, right.position.start)
+        if (newRight.length === 0) return null
+
+        const allNew = [...newLeft, ...newRight]
+        ast.blocks.splice(index, 1 + absorbed.length, ...allNew)
+
+        const caretInline = query.getFirstInline(newRight) ?? newRight[0].inlines[0]
+        if (!caretInline) return null
+
+        const inserts = allNew.map((b, idx) => ({
+            type: 'block' as const,
+            at: (idx === 0 ? 'current' : 'next') as 'current' | 'next',
+            target: idx === 0 ? block : allNew[idx - 1],
+            current: b,
+        }))
 
         return effect.compose(
-            [effect.update([
-                { type: 'block', at: 'current', target: left, current: newLeft[0] },
-                { type: 'block', at: 'next', target: newLeft[0], current: newRight[0] },
-            ])],
-            effect.caret(newRight[0].id, newRight[0].inlines[0].id, 0, 'start'),
+            [effect.update(inserts, [block, ...absorbed])],
+            effect.caret(caretInline.blockId, caretInline.id, 0, 'start'),
             effect.dom('structure')
         )
     }
@@ -340,11 +368,6 @@ class Edit {
             }
         }
 
-        const pureLeftInlineText = strip(leftInline.text.symbolic)
-        const caretPosition = removedBlock
-            ? pureLeftInlineText.length
-            : pureLeftInlineText.length - 1
-
         const newText = leftBlock.inlines.map(i => i.text.symbolic).join('')
         const detectedBlock = detectBlockType(newText)
 
@@ -354,12 +377,111 @@ class Edit {
 
         const ignoreTypes = ['blankLine', 'table']
         if (blockTypeChanged && !ignoreTypes.includes(detectedBlock.type)) {
-            return transform.transformBlock(newText, leftBlock, detectedBlock, 0, removedBlocks)
+            const joinCaret = strip(leftInline.text.symbolic).length
+            return transform.transformBlock(newText, leftBlock, detectedBlock, joinCaret, removedBlocks)
         }
+
+        if (leftBlock.type === 'codeBlock' && removedBlock) {
+            const marker = leftBlock.inlines.find(i => i.type === 'marker') ?? leftBlock.inlines[0]
+            if (!marker) return null
+            return effect.compose(
+                [effect.update([{ type: 'block', at: 'current', target: leftBlock, current: leftBlock }], removedBlocks)],
+                effect.caret(leftBlock.id, marker.id, 0, 'start'),
+                effect.dom('structure')
+            )
+        }
+
+        const pureLeftInlineText = strip(leftInline.text.symbolic)
+        const caretPosition = removedBlock
+            ? pureLeftInlineText.length
+            : pureLeftInlineText.length - 1
 
         return effect.compose(
             [effect.update([{ type: 'block', at: 'current', target: leftBlock, current: leftBlock }], removedBlocks)],
             effect.caret(leftBlock.id, mergedInline.id, caretPosition, 'start'),
+            effect.dom('structure')
+        )
+    }
+
+    public mergePreviousBlock(blockId: string): AstApplyEffect | null {
+        const { ast, query, parser, effect } = this.context
+
+        const entryIndex = ast.blocks.findIndex(b => b.id === blockId)
+        if (entryIndex <= 0) return null
+
+        const prev = ast.blocks[entryIndex - 1]
+        const curr = ast.blocks[entryIndex]
+
+        const left = ast.text.slice(prev.position.start, prev.position.end)
+        const right = ast.text.slice(curr.position.start, curr.position.end)
+
+        if (isEmptyText(left) || isEmptyText(String(prev.text ?? ''))) {
+            ast.blocks.splice(entryIndex - 1, 1)
+
+            const caretInline =
+                (curr.type === 'codeBlock'
+                    ? curr.inlines.find(i => i.type === 'marker') ?? curr.inlines.find(i => i.type === 'text')
+                    : null)
+                ?? curr.inlines[0]
+                ?? query.getFirstInline([curr])
+            if (!caretInline) return null
+
+            return effect.compose(
+                [effect.update([], [prev])],
+                effect.caret(curr.id, caretInline.id, 0, 'start'),
+                effect.dom('structure')
+            )
+        }
+
+        const plain = left + right
+        const joinCaret = left.length
+
+        const newBlocks = parser.reparseTextFragment(plain.length > 0 ? plain : '\u200B', prev.position.start)
+        if (newBlocks.length === 0) return null
+
+        ast.blocks.splice(entryIndex - 1, 2, ...newBlocks)
+
+        let caretInline: Inline | undefined
+        let caretPos = joinCaret
+        let offset = 0
+        for (const b of newBlocks) {
+            for (const i of b.inlines) {
+                const len = i.text.symbolic.length
+                if (joinCaret <= offset + len) {
+                    caretInline = i
+                    caretPos = Math.max(0, joinCaret - offset)
+                    break
+                }
+                offset += len
+            }
+            if (caretInline) break
+            offset += 1
+        }
+        if (!caretInline) {
+            caretInline = query.getFirstInline(newBlocks) ?? newBlocks[0].inlines[0]
+            caretPos = 0
+        }
+        if (!caretInline) return null
+
+        if (caretInline.type === 'marker' && newBlocks[0]?.type === 'codeBlock') {
+            const body = newBlocks[0].inlines.find(i => i.type === 'text')
+            const opener = newBlocks[0].inlines.find(i => i.type === 'marker')
+            if (body && caretInline === opener) {
+                caretInline = opener
+                caretPos = 0
+            }
+        }
+
+        const inserts = newBlocks.map((b, idx) => ({
+            type: 'block' as const,
+            at: (idx === 0 ? 'current' : 'next') as 'current' | 'next',
+            target: idx === 0 ? prev : newBlocks[idx - 1],
+            current: b,
+        }))
+
+        return effect.compose(
+            [effect.update(inserts, [prev, curr])],
+            effect.caret(caretInline.blockId, caretInline.id, caretPos, 'start'),
             effect.dom('structure')
         )
     }
@@ -2121,7 +2243,7 @@ class Edit {
         return effect.compose([effect.update([{ type: 'block', at: 'current', target: block, current: block }])], effect.caret(blockId, inlineId, caretPosition, 'start'), effect.dom('structure'))
     }
 
-    public inputCodeBlock(text: string, blockId: string, inlineId: string, caretPosition: number): AstApplyEffect | null {
+    public inputCodeBlock(text: string, blockId: string, inlineId: string, caretPosition: number, caretInlineId?: string): AstApplyEffect | null {
         const { ast, query, parser, effect } = this.context
        
         const block = query.getBlockById(blockId) as CodeBlock
@@ -2129,6 +2251,8 @@ class Edit {
 
         const inline = query.getInlineById(inlineId)
         if (!inline) return null
+
+        const caretInline = caretInlineId ? (query.getInlineById(caretInlineId) ?? inline) : inline
 
         if (inline.type === 'text') {
             inline.text.symbolic = text
@@ -2168,104 +2292,94 @@ class Edit {
 
             return effect.compose(
                 [effect.input([{ type: 'text', symbolic: text, semantic: text, blockId: block.id, inlineId: inline.id }])],
-                effect.caret(block.id, inline.id, caretPosition, 'start'),
+                effect.caret(block.id, caretInline.id, caretPosition, 'start'),
                 effect.dom('text')
             )
         }
 
         if (inline.type === 'marker') {
             if (inline === block.inlines[0]) {
-                const newText = text.replace(block.fenceChar?.repeat(block.fenceLength ?? 3) ?? '', '').trim()
-                
-                const markerText = text.slice(0, caretPosition)
-                const isMarkerOnly = new RegExp(`^${block.fenceChar}+$`).test(markerText)
+                let raw = text
+                const hadTrailingNewline = raw.endsWith('\n')
+                if (hadTrailingNewline) raw = raw.slice(0, -1)
 
-                if (isMarkerOnly) {
-                    if (markerText.length >= 3) {
-                        inline.text.symbolic = markerText
-                        inline.position.end = inline.position.start + markerText.length
+                const fenceMatch = raw.match(/^(\s{0,3})(`+|~+)(.*)$/)
+                const fence = fenceMatch?.[2] ?? ''
+                const info = (fenceMatch?.[3] ?? '').trim()
+                const indent = fenceMatch?.[1] ?? ''
 
-                        block.language = ''
-                        block.fenceLength = markerText.length
-                        block.text = block.inlines.map(i => i.text.symbolic).join('')
-                        block.position.end = block.position.start + block.text.length
+                if (fenceMatch && fence.length >= 3) {
+                    const open = `${indent}${fence}${info}`
+                    inline.text.symbolic = open + '\n'
+                    inline.text.semantic = ''
+                    inline.position.end = inline.position.start + inline.text.symbolic.length
 
-                        return effect.compose(
-                            [effect.input([
-                                { type: 'codeBlockMarker', text: markerText, language: '', blockId: block.id, inlineId: inline.id },
-                                { type: 'text', symbolic: text, semantic: text, blockId: block.id, inlineId: inline.id }
-                            ])],
-                            effect.caret(block.id, inline.id, caretPosition, 'start'),
-                            effect.dom('text')
-                        )
-                    } else {
-                        inline.text.symbolic = newText + '\n'
-                        block.text = block.inlines.map(i => i.text.symbolic).join('')
-
-                        const newBlocks = parser.reparseTextFragment(block.text, block.position.start)
-                        if (newBlocks.length === 0) return null
-
-                        const entry = query.flattenBlocks(ast.blocks).find(e => e.block.id === block.id)
-                        if (!entry) return null
-
-                        ast.blocks.splice(entry.index, 1, ...newBlocks)
-
-                        const inlineIndex = block.inlines.findIndex(i => i.id === inline.id)
-                        const absoluteCaretPosition =
-                            block.inlines
-                                .slice(0, inlineIndex)
-                                .reduce((sum, i) => sum + i.text.symbolic.length, 0)
-                            + caretPosition
-
-                        let newInline: Inline | undefined
-                        for (const b of newBlocks) {
-                            for (const i of b.inlines) {
-                                if (i.position.start <= absoluteCaretPosition && i.position.end >= absoluteCaretPosition) {
-                                    newInline = i
-                                    break
-                                }
-                            }
-                            if (newInline) break
-                        }
-                        if (!newInline) return null
-
-                        return effect.compose(
-                            [effect.update(newBlocks.map((b, idx) => ({ type: 'block', at: idx === 0 ? 'current' as const : 'next' as const, target: idx === 0 ? block : newBlocks[idx - 1], current: b })), [block])],
-                            effect.caret(newInline.blockId, newInline.id, newInline.position.end, 'start'),
-                            effect.dom('structure')
-                        )
-                    }
-                } else {
-                    inline.text.symbolic = text
-                    inline.text.semantic = newText
-                    inline.position.end = inline.position.start + newText.length
-
-                    block.language = newText
+                    block.fenceChar = fence.charAt(0) as '`' | '~'
+                    block.fenceLength = fence.length
+                    block.openIndent = indent.length
+                    block.language = info.length > 0 ? info : undefined
+                    block.infoString = info.length > 0 ? info : undefined
                     block.text = block.inlines.map(i => i.text.symbolic).join('')
                     block.position.end = block.position.start + block.text.length
 
                     return effect.compose(
                         [effect.input([
-                            { type: 'codeBlockMarker', text: text, language: newText, blockId: block.id, inlineId: inline.id },
+                            { type: 'codeBlockMarker', text: inline.text.symbolic, language: block.language ?? '', blockId: block.id, inlineId: inline.id },
                         ])],
-                        effect.caret(block.id, inline.id, caretPosition, 'start'),
+                        effect.caret(block.id, caretInline.id, caretPosition, 'start'),
                         effect.dom('text')
                     )
                 }
+
+                const bodyInline = block.inlines.find(i => i.type === 'text')
+                const closerInline =
+                    block.inlines.length > 1 && block.inlines[block.inlines.length - 1].type === 'marker'
+                        ? block.inlines[block.inlines.length - 1]
+                        : null
+
+                const bodyText = bodyInline
+                    ? (bodyInline.text.semantic || bodyInline.text.symbolic).replace(/^\u200B$/, '')
+                    : ''
+                const closerText = closerInline ? closerInline.text.symbolic : ''
+
+                let plain = raw
+                if (bodyText.length > 0) plain += (plain.length > 0 ? '\n' : '') + bodyText
+                if (closerText.length > 0) plain += '\n' + closerText
+
+                const newBlocks = parser.reparseTextFragment(plain.length > 0 ? plain : '\u200B', block.position.start)
+                if (newBlocks.length === 0) return null
+
+                const entry = query.flattenBlocks(ast.blocks).find(e => e.block.id === block.id)
+                if (!entry) return null
+
+                const oldBlock = block
+                ast.blocks.splice(entry.index, 1, ...newBlocks)
+
+                const newInline = query.getFirstInline(newBlocks) ?? newBlocks[0].inlines[0]
+                if (!newInline) return null
+
+                return effect.compose(
+                    [effect.update(newBlocks.map((b, idx) => ({
+                        type: 'block' as const,
+                        at: (idx === 0 ? 'current' : 'next') as 'current' | 'next',
+                        target: idx === 0 ? oldBlock : newBlocks[idx - 1],
+                        current: b,
+                    })), [oldBlock])],
+                    effect.caret(newInline.blockId, newInline.id, Math.min(caretPosition, newInline.text.symbolic.length), 'start'),
+                    effect.dom('structure')
+                )
             }
 
             if (inline === block.inlines[block.inlines.length - 1]) {
-                const markerText = text.slice(0, caretPosition)
+                if (text.length >= 3) {
+                    inline.text.symbolic = text
+                    inline.position.end = inline.position.start + text.length
 
-                if (markerText.length >= 3) {
-                    inline.text.symbolic = markerText
-                    inline.position.end = inline.position.start + markerText.length
-
-                    block.fenceLength = markerText.length
+                    block.fenceLength = text.length
                     block.text = block.inlines.map(i => i.text.symbolic).join('')
                     block.position.end = block.position.start + block.text.length
 
-                    block.close = markerText
+                    block.close = text
 
                     return effect.compose(
                         [effect.input([{ type: 'text', symbolic: text, semantic: text, blockId: block.id, inlineId: inline.id }])],
@@ -2276,8 +2390,8 @@ class Edit {
                     const inlineText = block.inlines.find(i => i.type === 'text')
                     if (!inlineText) return null
 
-                    inlineText.text.symbolic += markerText
-                    inlineText.text.semantic += markerText
+                    inlineText.text.symbolic += text
+                    inlineText.text.semantic += text
                     inlineText.position.end = inlineText.position.start + inlineText.text.symbolic.length
 
                     delete block.close
@@ -2285,12 +2399,14 @@ class Edit {
                     block.text = block.inlines.map(i => i.text.symbolic).join('')
                     block.position.end = block.position.start + block.text.length
 
+                    const caretPos = inlineText.text.symbolic.length - text.length + caretPosition
+
                     return effect.compose(
                         [
                             effect.input([{ type: 'text', symbolic: inlineText.text.symbolic, semantic: inlineText.text.semantic, blockId: block.id, inlineId: inlineText.id }]),
                             effect.deleteInline([{ type: 'inline', blockId: block.id, inlineId: inline.id }]),
                         ],
-                        effect.caret(block.id, inlineText.id, inlineText.position.end, 'start'),
+                        effect.caret(block.id, inlineText.id, Math.max(0, caretPos), 'start'),
                         effect.dom('text')
                     )
                 }
@@ -2376,30 +2492,40 @@ class Edit {
 
                 if (caretPosition >= 3 && caretPosition <= inline.text.symbolic.replace(/\n/g, '').length) {
                     const newMarkerText = inline.text.symbolic.slice(0, caretPosition)
-                    const newLanguage = newMarkerText.replace(block.fenceChar?.repeat(block.fenceLength ?? 3) ?? '', '')
-                    const newInlineText = inline.text.symbolic.slice(caretPosition, inline.text.symbolic.length)
+                    const fence = block.fenceChar?.repeat(block.fenceLength ?? 3) ?? '```'
+                    const newLanguage = newMarkerText.replace(fence, '').replace(/^\s+/, '')
+                    let newInlineText = inline.text.symbolic.slice(caretPosition)
+                    if (newInlineText.startsWith('\n')) newInlineText = newInlineText.slice(1)
 
-                    inline.text.symbolic = newMarkerText + '\n'
+                    inline.text.symbolic = newMarkerText.endsWith('\n') ? newMarkerText : newMarkerText + '\n'
+                    inline.text.semantic = ''
                     inline.position.end = inline.position.start + inline.text.symbolic.length
 
                     const inlineText = block.inlines.find(i => i.type === 'text')
                     if (!inlineText) return null
 
-                    inlineText.text.symbolic = newInlineText + inlineText.text.symbolic
-                    inlineText.text.semantic = strip(newInlineText) + strip(inlineText.text.semantic)
+                    const prevBody = inlineText.text.symbolic === '\u200B' ? '' : inlineText.text.symbolic
+                    const nextBody = newInlineText + prevBody
+                    inlineText.text.symbolic = nextBody.length === 0 ? '\u200B' : nextBody
+                    inlineText.text.semantic = nextBody
+                    inlineText.position.start = inline.position.end
                     inlineText.position.end = inlineText.position.start + inlineText.text.symbolic.length
 
-                    block.text = strip(block.inlines.map(i => i.text.symbolic).join(''))
-                    block.language = newLanguage
-                    block.position.end = block.position.start + block.text.length
+                    if (newLanguage.length > 0) {
+                        block.infoString = newLanguage
+                        block.language = newLanguage
+                    } else {
+                        block.infoString = undefined
+                        block.language = undefined
+                    }
+
+                    block.text = nextBody
+                    block.position.end = block.position.start + this.calculateCodeBlockLength(block)
 
                     return effect.compose(
-                        [effect.input([
-                            { type: 'codeBlockMarker', text: inline.text.symbolic, language: block.language, blockId: block.id, inlineId: inline.id },
-                            { type: 'text', symbolic: inlineText.text.symbolic, semantic: inlineText.text.semantic, blockId: block.id, inlineId: inlineText.id },
-                        ])],
+                        [effect.update([{ type: 'block', at: 'current', target: block, current: block }])],
                         effect.caret(block.id, inlineText.id, 0, 'start'),
-                        effect.dom('text')
+                        effect.dom('structure')
                     )
                 }
             }
@@ -2487,19 +2613,26 @@ class Edit {
         }
 
         if (inline.type === 'text') {
-            const newText = inline.text.symbolic.slice(0, caretPosition) + '\n' + inline.text.symbolic.slice(caretPosition)
+            const before = inline.text.symbolic.slice(0, caretPosition).replace(/\u200B$/, '')
+            let after = inline.text.symbolic.slice(caretPosition)
+            if (after === '\u200B') after = ''
 
-            inline.text.symbolic = newText
-            inline.text.semantic = strip(newText)
-            inline.position.end = inline.position.start + newText.length
+            const symbolicAfter = after.length === 0 ? '\u200B' : after
+            const newSymbolic = before + '\n' + symbolicAfter
+            const newSemantic = before + '\n' + after
+            const newCaret = before.length + 1
 
-            block.text = strip(block.inlines.map(i => i.text.symbolic).join(''))
-            block.position.end = block.position.start + block.text.length
+            inline.text.symbolic = newSymbolic
+            inline.text.semantic = newSemantic
+            inline.position.end = inline.position.start + newSymbolic.length
+
+            block.text = newSemantic
+            block.position.end = block.position.start + this.calculateCodeBlockLength(block)
 
             return effect.compose(
-                [effect.input([{ type: 'text', symbolic: newText, semantic: newText, blockId: block.id, inlineId: inline.id }])],
-                effect.caret(block.id, inline.id, caretPosition + 1, 'start'),
-                effect.dom('text')
+                [effect.update([{ type: 'block', at: 'current', target: block, current: block }])],
+                effect.caret(block.id, inline.id, newCaret, 'start'),
+                effect.dom('structure')
             )
         }
 
@@ -2601,6 +2734,53 @@ class Edit {
         }
 
         if (inline.type === 'text') {
+            if (caretPosition <= 0) {
+                const marker = block.inlines.find(i => i.type === 'marker')
+                if (!marker || marker !== block.inlines[0]) return null
+
+                let body = inline.text.symbolic === '\u200B' ? '' : inline.text.symbolic
+                if (body.length === 0) {
+                    let open = marker.text.symbolic
+                    if (open.endsWith('\n')) open = open.slice(0, -1)
+                    return effect.compose(
+                        [effect.update([{ type: 'block', at: 'current', target: block, current: block }])],
+                        effect.caret(block.id, marker.id, open.length, 'start'),
+                        effect.dom('text')
+                    )
+                }
+
+                const nl = body.indexOf('\n')
+                const firstLine = nl === -1 ? body : body.slice(0, nl)
+                const rest = nl === -1 ? '' : body.slice(nl + 1)
+
+                let open = marker.text.symbolic
+                if (open.endsWith('\n')) open = open.slice(0, -1)
+                const caretOnMarker = open.length
+                open = open + firstLine + '\n'
+
+                marker.text.symbolic = open
+                marker.text.semantic = ''
+                marker.position.end = marker.position.start + open.length
+
+                if (block.isFenced) {
+                    this.syncFencedCodeBlockFromOpenMarker(block)
+                }
+
+                inline.text.symbolic = rest.length === 0 ? '\u200B' : rest
+                inline.text.semantic = rest
+                inline.position.start = marker.position.end
+                inline.position.end = inline.position.start + inline.text.symbolic.length
+
+                block.text = rest
+                block.position.end = block.position.start + this.calculateCodeBlockLength(block)
+
+                return effect.compose(
+                    [effect.update([{ type: 'block', at: 'current', target: block, current: block }])],
+                    effect.caret(block.id, marker.id, caretOnMarker, 'start'),
+                    effect.dom('structure')
+                )
+            }
+
             const symbolicText = inline.text.symbolic
 
             const beforeCaret = symbolicText.slice(0, caretPosition - 1)
@@ -2704,30 +2884,45 @@ class Edit {
         )
     }
 
-    public exitCodeBlock(blockId: string): AstApplyEffect | null {
+    public exitCodeBlock(blockId: string, direction: 'above' | 'below' | 'current' = 'below'): AstApplyEffect | null {
         const { ast, query, parser, effect } = this.context
 
         const block = query.getBlockById(blockId) as CodeBlock
         if (!block || block.type !== 'codeBlock') return null
 
+        if (direction === 'current') {
+            return this.unwrapCodeBlock(blockId)
+        }
+
         const blockIndex = ast.blocks.findIndex(b => b.id === blockId)
         if (blockIndex === -1) return null
 
-        const markerLeftover = (block.fenceChar?.repeat(2) ?? '') + '\n'
-        const newBlocks = parser.reparseTextFragment(markerLeftover + block.text, block.position.start)
-        if (newBlocks.length === 0) return null
+        const paragraph: Block = {
+            id: uuid(),
+            type: 'paragraph',
+            text: '',
+            position: { start: 0, end: 0 },
+            inlines: [],
+        }
+        paragraph.inlines = parser.inline.parseInline('', paragraph.id, 'paragraph', 0)
+        paragraph.inlines.forEach((i: Inline) => i.blockId = paragraph.id)
 
-        const oldBlock = block
-        ast.blocks.splice(blockIndex, 1, ...newBlocks)
+        const focusInline = paragraph.inlines[0]
+        if (!focusInline) return null
 
-        const effects: RenderInsert[] = []
-        newBlocks.forEach((b, idx) => {
-            effects.push({ type: 'block', at: idx === 0 ? 'current' as const : 'next' as const, target: idx === 0 ? oldBlock : newBlocks[idx - 1], current: b })
-        })
+        if (direction === 'above') {
+            ast.blocks.splice(blockIndex, 0, paragraph)
+            return effect.compose(
+                [effect.update([{ type: 'block', at: 'previous', target: block, current: paragraph }])],
+                effect.caret(paragraph.id, focusInline.id, 0, 'start'),
+                effect.dom('structure')
+            )
+        }
 
+        ast.blocks.splice(blockIndex + 1, 0, paragraph)
         return effect.compose(
-            [effect.update(effects, [oldBlock])],
-            effect.caret(newBlocks[0].id, newBlocks[0].inlines[newBlocks[0].inlines.length - 1].id, newBlocks[0].inlines[newBlocks[0].inlines.length - 1].position.end, 'start'),
+            [effect.update([{ type: 'block', at: 'next', target: block, current: paragraph }])],
+            effect.caret(paragraph.id, focusInline.id, 0, 'start'),
             effect.dom('structure')
         )
     }

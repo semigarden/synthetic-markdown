@@ -201,18 +201,69 @@ class Intent {
         const previousInline = list && list.blocks.length > 1 ? this.ast.query.getPreviousInlineInList(context.inline) ?? this.ast.query.getPreviousInline(context.inline.id) : this.ast.query.getPreviousInline(context.inline.id)
 
         if (previousInline && strip(previousInline.text.symbolic).length > 0 && this.caret.position === 0) {
-            // if (previousInline.type === 'marker' && context.block.type === 'codeBlock') {
-            //     return {
-            //         preventDefault: true,
-            //         ast: [{
-            //             type: 'mergeCodeBlockContent',
-            //             blockId: context.block.id,
-            //             inlineId: previousInline.id,
-            //             caretPosition: this.caret.getPositionInInline(context.inlineElement),
-            //         }],
-            //     }
-            // }
-            
+            if (context.block.type === 'codeBlock') {
+                const codeBlock = context.block as CodeBlock
+                const inlines = codeBlock.inlines
+                const isOpener =
+                    context.inline.type === 'marker' &&
+                    inlines.length > 0 &&
+                    context.inline === inlines[0]
+                const isCloser =
+                    context.inline.type === 'marker' &&
+                    inlines.length > 1 &&
+                    context.inline === inlines[inlines.length - 1]
+
+                if (isOpener && previousInline.blockId !== codeBlock.id) {
+                    return {
+                        preventDefault: true,
+                        ast: [{ type: 'mergePreviousBlock', blockId: codeBlock.id }],
+                    }
+                }
+
+                if (previousInline.type === 'marker' && context.inline.type === 'text') {
+                    return {
+                        preventDefault: true,
+                        ast: [{
+                            type: 'mergeCodeBlockContent',
+                            blockId: codeBlock.id,
+                            inlineId: context.inline.id,
+                            caretPosition: 0,
+                        }],
+                    }
+                }
+
+                if (isCloser && previousInline.type === 'text') {
+                    const symbolic = previousInline.text.symbolic
+                    const bodyEmpty = symbolic.replace(/[\u200B\u200C\u200D\uFEFF]/g, '').length === 0
+
+                    if (bodyEmpty) {
+                        return {
+                            preventDefault: true,
+                            ast: [{
+                                type: 'inputCodeBlock',
+                                blockId: codeBlock.id,
+                                inlineId: context.inline.id,
+                                text: '',
+                                caretPosition: 0,
+                            }],
+                        }
+                    }
+
+                    const newText = symbolic.slice(0, -1)
+                    return {
+                        preventDefault: true,
+                        ast: [{
+                            type: 'inputCodeBlock',
+                            blockId: codeBlock.id,
+                            inlineId: previousInline.id,
+                            text: newText.length === 0 ? '\u200B' : newText,
+                            caretPosition: 0,
+                            caretInlineId: context.inline.id,
+                        }],
+                    }
+                }
+            }
+
             console.log('merge inline', JSON.stringify(previousInline.text.symbolic, null, 2), '.', strip(previousInline.text.symbolic).length, affinity)
 
             return {

@@ -1,4 +1,5 @@
 import { CaretEffect } from '../types'
+import { snapLeftOfEmptyChar } from '../utils/utils'
 
 class Caret {
     public blockId: string | null = null
@@ -77,7 +78,11 @@ class Caret {
         }
 
         const text = target.textContent ?? ''
-        const affinity: 'start' | 'end' = position >= text.length ? 'end' : 'start'
+        position = snapLeftOfEmptyChar(text, position)
+        const affinity: 'start' | 'end' =
+            /^[\u200B\u00A0]+$/.test(text) || (position < text.length && (text[position] === '\u200B' || text[position] === '\u00A0'))
+                ? 'start'
+                : position >= text.length ? 'end' : 'start'
 
         return { position, affinity }
     }
@@ -115,16 +120,15 @@ class Caret {
 
         const range = target.ownerDocument.createRange()
         const max = textNode.data.length
-        let clamped = Math.min(position, max)
-
-        if (textNode.data === '\u00A0' && max === 1) {
-            clamped = affinity === 'end' ? 1 : 0
-        }
+        const clamped = snapLeftOfEmptyChar(textNode.data, Math.min(position, max))
 
         selection.removeAllRanges()
         range.setStart(textNode, clamped)
         range.collapse(true)
         selection.addRange(range)
+
+        this.position = clamped
+        this.affinity = 'start'
     }
 
     public apply(effect: CaretEffect, caretToken: number, mode: 'microtask' | 'raf' | 'raf2') {

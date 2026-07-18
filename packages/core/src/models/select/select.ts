@@ -4,6 +4,7 @@ import Focus from './focus'
 import { getSelectedElements, resolveRange, resolveInlineContext } from './map'
 import { findClosestInlineAndPosition } from './hit'
 import type { EditContext, SelectionRange, EditEffect, Block, Inline } from '../../types'
+import { snapLeftOfEmptyChar } from '../../utils/utils'
 
 class Select {
     private rafId: number | null = null
@@ -66,7 +67,8 @@ class Select {
         this.caret.blockId = block.id
         this.caret.inlineId = hit.inline.id
         this.caret.position = hit.position
-        this.caret.restoreCaret(hit.inline.id, hit.position)
+        this.caret.affinity = 'start'
+        this.caret.restoreCaret(hit.inline.id, hit.position, 'start')
         this.focus.focusBlock(block.id)
         this.focus.focusInline(hit.inline.id)
     }
@@ -96,8 +98,15 @@ class Select {
         if (collapsed) {
             this.caret.blockId = range.start.blockId
             this.caret.inlineId = range.start.inlineId
-            this.caret.position = range.start.position
-            this.caret.affinity = 'end'
+            const inline = this.ast.query.getInlineById(range.start.inlineId)
+            const snapped = inline
+                ? snapLeftOfEmptyChar(inline.text.symbolic, range.start.position)
+                : range.start.position
+            this.caret.position = snapped
+            this.caret.affinity = 'start'
+            if (snapped !== range.start.position || (inline && (inline.text.symbolic[snapped] === '\u200B' || inline.text.symbolic[snapped] === '\u00A0' || /^[\u200B\u00A0]+$/.test(inline.text.symbolic)))) {
+                this.caret.restoreCaret(range.start.inlineId, snapped, 'start')
+            }
         }
     }
       
@@ -163,6 +172,43 @@ class Select {
 
             const range = resolveRange(this.ast, this.caret, this.rootElement, selection)
             this.range = range
+
+            if (
+                range &&
+                range.start.blockId === range.end.blockId &&
+                range.start.inlineId === range.end.inlineId &&
+                range.start.position === range.end.position
+            ) {
+                const inline = this.ast.query.getInlineById(range.start.inlineId)
+                if (inline) {
+                    const inlineEl = this.rootElement.querySelector(
+                        `[data-inline-id="${range.start.inlineId}"]`
+                    ) as HTMLElement | null
+                    const symbolic = (inlineEl?.querySelector('.symbolic') as HTMLElement | null) ?? inlineEl
+                    let domPos = range.start.position
+                    if (symbolic && selection.rangeCount > 0) {
+                        try {
+                            const sel = selection.getRangeAt(0)
+                            const pre = symbolic.ownerDocument.createRange()
+                            pre.selectNodeContents(symbolic)
+                            pre.setEnd(sel.startContainer, sel.startOffset)
+                            domPos = pre.toString().length
+                        } catch {
+                            domPos = range.start.position
+                        }
+                    }
+                    const snapped = snapLeftOfEmptyChar(inline.text.symbolic, domPos)
+                    if (snapped !== domPos) {
+                        this.suppressSelectionChange = true
+                        this.caret.position = snapped
+                        this.caret.affinity = 'start'
+                        this.caret.restoreCaret(range.start.inlineId, snapped, 'start')
+                        requestAnimationFrame(() => {
+                            this.suppressSelectionChange = false
+                        })
+                    }
+                }
+            }
         })
     }
 
@@ -222,6 +268,22 @@ class Select {
 
         const range = resolveRange(this.ast, this.caret, this.rootElement, selection)
         this.range = range
+
+        if (
+            range &&
+            range.start.blockId === range.end.blockId &&
+            range.start.inlineId === range.end.inlineId
+        ) {
+            const inline = this.ast.query.getInlineById(range.start.inlineId)
+            if (inline) {
+                const snapped = snapLeftOfEmptyChar(inline.text.symbolic, range.start.position)
+                this.caret.position = snapped
+                this.caret.affinity = 'start'
+                if (snapped !== range.start.position || inline.text.symbolic[snapped] === '\u200B' || inline.text.symbolic[snapped] === '\u00A0' || /^[\u200B\u00A0]+$/.test(inline.text.symbolic)) {
+                    this.caret.restoreCaret(range.start.inlineId, snapped, 'start')
+                }
+            }
+        }
     }
 
     private onRootFocusOut = (e: FocusEvent) => {

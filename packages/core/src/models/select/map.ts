@@ -1,6 +1,7 @@
 import type Ast from '../ast/ast'
 import type Caret from '../caret'
 import type { EditContext, SelectionPoint, SelectionRange } from '../../types'
+import { snapLeftOfEmptyChar } from '../../utils/utils'
 
 function mapSemanticOffsetToSymbolic(
     semanticLength: number,
@@ -109,7 +110,7 @@ function resolvePoint(ast: Ast, node: Node, offset: number): SelectionPoint | nu
         localOffset = 0
     }
 
-    localOffset = Math.max(0, Math.min(localOffset, inline.text.symbolic.length))
+    localOffset = snapLeftOfEmptyChar(inline.text.symbolic, localOffset)
 
     return { blockId: inline.blockId, inlineId, position: localOffset }
 }
@@ -145,7 +146,13 @@ function resolveRange(ast: Ast, caret: Caret, root: HTMLElement, selection: Sele
         caret.blockId = orderedStart.blockId
         caret.inlineId = orderedStart.inlineId
         caret.position = orderedStart.position
-        caret.affinity = direction === 'forward' ? 'end' : 'start'
+        const inline = ast.query.getInlineById(orderedStart.inlineId)
+        const atEmpty = inline
+            && orderedStart.position < inline.text.symbolic.length
+            && (inline.text.symbolic[orderedStart.position] === '\u200B'
+                || inline.text.symbolic[orderedStart.position] === '\u00A0'
+                || /^[\u200B\u00A0]+$/.test(inline.text.symbolic))
+        caret.affinity = atEmpty ? 'start' : direction === 'forward' ? 'end' : 'start'
     } else {
         caret.clear()
     }

@@ -119,27 +119,55 @@ class AstNormalizer {
                     }
 
                     if (!codeBlock.isFenced) {
-                        const raw = String(codeBlock.text ?? '')
-                        const lines = raw.split('\n')
-                        const serialized = lines.map(line => '    ' + line).join('\n')
-
                         const markerInline = block.inlines.find(i => i.type === 'marker')
                         const textInline = block.inlines.find(i => i.type === 'text')
-                        
+
+                        let raw = ''
+                        if (textInline) {
+                            const sem = textInline.text.semantic ?? ''
+                            const sym = textInline.text.symbolic ?? ''
+                            if (sym === '\u200B' && sem === '') {
+                                raw = ''
+                            } else if (sem.length > 0) {
+                                raw = sem
+                            } else if (sym.startsWith('    ')) {
+                                raw = sym.split('\n').map(l => l.startsWith('    ') ? l.slice(4) : l).join('\n')
+                            } else {
+                                raw = sym === '\u200B' ? '' : sym
+                            }
+                        } else {
+                            raw = String(codeBlock.text ?? '')
+                            if (raw.startsWith('    ')) {
+                                raw = raw.split('\n').map(l => l.startsWith('    ') ? l.slice(4) : l).join('\n')
+                            }
+                        }
+
+                        const lines = raw.length === 0 ? [''] : raw.split('\n')
+                        const serialized = lines.map(line => '    ' + line).join('\n')
+
                         if (markerInline) {
                             markerInline.text.symbolic = '    '
+                            markerInline.text.semantic = ''
                             markerInline.position = { start, end: start + 4 }
                         }
-                        
+
                         if (textInline) {
-                            textInline.text.symbolic = raw.length === 0 ? '\u200B' : raw
+                            const sym =
+                                raw.length === 0 ? '\u200B'
+                                : raw.endsWith('\n') ? raw + '\u200B'
+                                : raw
+                            textInline.text.symbolic = sym
                             textInline.text.semantic = raw
-                            textInline.position = { start: start + 4, end: start + 4 + (raw.length === 0 ? 1 : raw.length) }
+                            textInline.position = {
+                                start: start + 4,
+                                end: start + 4 + sym.length,
+                            }
                         }
-                        
+
+                        codeBlock.text = raw
                         block.position = { start, end: start + serialized.length }
                         globalPos += serialized.length
-                        
+
                         return serialized
                     }
                 }

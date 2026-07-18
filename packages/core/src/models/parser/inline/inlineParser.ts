@@ -103,6 +103,7 @@ class InlineParser {
             const openStart = base
             const openEnd = openStart + open.length
             const codeStart = openEnd
+            const body = text.length === 0 ? '\u200B' : text
 
             const inlines: Inline[] = [
                 {
@@ -116,11 +117,11 @@ class InlineParser {
                     id: uuid(),
                     type: 'text',
                     blockId: block.id,
-                    text: { symbolic: text.length === 0 ? '\u200B' : text, semantic: text },
-                    position: { start: codeStart, end: codeStart + text.length },
+                    text: { symbolic: body, semantic: text },
+                    position: { start: codeStart, end: codeStart + body.length },
                 },
             ]
-            block.text = inlines.map((i) => i.text.symbolic).join('')
+            block.text = text
             return inlines
         }
 
