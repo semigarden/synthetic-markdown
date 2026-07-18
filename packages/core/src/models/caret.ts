@@ -94,8 +94,8 @@ class Caret {
         if (!inlineEl) return
 
         if (position === 0 && affinity === 'end') {
-            const prev = inlineEl.previousElementSibling as HTMLElement | null
-            if (prev && prev.dataset.inlineId) {
+            const prev = this.findPreviousCaretInline(inlineEl)
+            if (prev?.dataset.inlineId) {
                 this.restoreCaret(prev.dataset.inlineId, Number.MAX_SAFE_INTEGER, 'start')
                 return
             }
@@ -129,6 +129,46 @@ class Caret {
 
         this.position = clamped
         this.affinity = 'start'
+    }
+
+    private findPreviousCaretInline(inlineEl: HTMLElement): HTMLElement | null {
+        const usable = (el: Element | null): HTMLElement | null => {
+            if (!(el instanceof HTMLElement) || !el.dataset.inlineId) return null
+            if (
+                el.classList.contains('setext-break') ||
+                el.classList.contains('softBreak') ||
+                el.classList.contains('hardBreak')
+            ) {
+                return null
+            }
+            return el
+        }
+
+        let prev = inlineEl.previousElementSibling
+        while (prev) {
+            if (prev instanceof HTMLElement && prev.classList.contains('setext-content')) {
+                const nested = prev.querySelectorAll('[data-inline-id]')
+                for (let i = nested.length - 1; i >= 0; i--) {
+                    const hit = usable(nested[i])
+                    if (hit) return hit
+                }
+            }
+            const hit = usable(prev)
+            if (hit) return hit
+            prev = prev.previousElementSibling
+        }
+
+        const parent = inlineEl.parentElement
+        if (parent?.classList.contains('setext-content')) {
+            let p = inlineEl.previousElementSibling
+            while (p) {
+                const hit = usable(p)
+                if (hit) return hit
+                p = p.previousElementSibling
+            }
+        }
+
+        return null
     }
 
     public apply(effect: CaretEffect, caretToken: number, mode: 'microtask' | 'raf' | 'raf2') {

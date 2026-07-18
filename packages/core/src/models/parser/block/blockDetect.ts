@@ -6,6 +6,35 @@ function normalizeDetectLine(line: string): string {
         .replace(/\r$/, '')
 }
 
+function matchSetextUnderline(line: string): { level: 1 | 2; underline: string } | null {
+    const normalized = normalizeDetectLine(line)
+    const m = normalized.match(/^\s{0,3}(=+|-+)[ \t]*$/)
+    if (!m) return null
+    const underline = m[1]
+    if (/^=+$/.test(underline)) return { level: 1, underline }
+    if (/^-+$/.test(underline)) return { level: 2, underline }
+    return null
+}
+
+function matchSetextHeading(text: string): { level: 1 | 2; underline: string; content: string } | null {
+    const lines = text.replace(/\r$/, '').split('\n')
+    if (lines.length < 2) return null
+
+    const last = lines[lines.length - 1]
+    const match = matchSetextUnderline(last)
+    if (!match) return null
+
+    const contentLines = lines.slice(0, -1)
+    if (contentLines.length === 0) return null
+    if (contentLines.some(l => normalizeDetectLine(l).trim() === '')) return null
+
+    return {
+        level: match.level,
+        underline: match.underline,
+        content: contentLines.join('\n'),
+    }
+}
+
 function detectBlockType(line: string): DetectedBlock {
     line = normalizeDetectLine(line)
 
@@ -67,4 +96,4 @@ function detectBlockType(line: string): DetectedBlock {
     return { type: 'paragraph' }
 }
 
-export { detectBlockType, normalizeDetectLine }
+export { detectBlockType, normalizeDetectLine, matchSetextUnderline, matchSetextHeading }

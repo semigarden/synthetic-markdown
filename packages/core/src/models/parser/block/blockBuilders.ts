@@ -1,11 +1,20 @@
 import { uuid } from '../../../utils/utils'
 import type { Block, CodeBlock, DetectedBlock, List, ListItem, TaskListItem } from '../../../types'
 
-function buildHeading(line: string, start: number, end: number, level: number): Block {
+function buildHeading(
+    line: string,
+    start: number,
+    end: number,
+    level: number,
+    style: 'atx' | 'setext' = 'atx',
+    underline?: string
+): Block {
     return {
         id: uuid(),
         type: 'heading',
         level,
+        style,
+        underline,
         text: line,
         position: { start, end },
         inlines: [],

@@ -34,6 +34,8 @@ export type ThematicBreak = BlockType<'thematicBreak'>
 export type HTMLBlock = BlockType<'htmlBlock'>
 export interface Heading extends BlockType<'heading'> {
     level: number
+    style?: 'atx' | 'setext'
+    underline?: string
 }
 export interface BlockQuote extends BlockType<'blockQuote'> {
     blocks: Block[]

@@ -10,8 +10,9 @@ import EmphasisResolver from './resolve/emphasisResolver'
 import DelimiterResolver from './resolve/delimiterResolver'
 import StrikethroughResolver from './resolve/strikethroughResolver'
 import LinkReferenceState from '../ast/linkReferenceState'
-import { Block, Inline, CodeBlock, Delimiter } from '../../../types'
+import { Block, Inline, CodeBlock, Heading, Delimiter } from '../../../types'
 import { uuid, decodeHTMLEntity } from '../../../utils/utils'
+import { matchSetextUnderline } from '../block/blockDetect'
 
 class InlineParser {
     private markerResolver = new MarkerResolver()
@@ -29,6 +30,10 @@ class InlineParser {
 
     public apply(block: Block): Inline[] {
         const text = block.text ?? ''
+
+        if (block.type === 'heading' && (block as Heading).style === 'setext') {
+            return this.applySetextHeading(block as Heading)
+        }
 
         if (block.type === 'codeBlock') {
             const codeBlock = block as CodeBlock
@@ -128,6 +133,51 @@ class InlineParser {
         const inlines = this.parseInline(text, block.id, block.type, 0)
 
         return inlines.map(i => ({ ...i, id: uuid(), blockId: block.id }))
+    }
+
+    private applySetextHeading(block: Heading): Inline[] {
+        const raw = String(block.text ?? '').replace(/\r$/, '')
+        const lines = raw.split('\n')
+        const last = lines[lines.length - 1] ?? ''
+        const match = matchSetextUnderline(last)
+        const underline = match?.underline ?? block.underline ?? '==='
+        if (match) {
+            block.level = match.level
+            block.underline = match.underline
+        }
+
+        const content = match ? lines.slice(0, -1).join('\n') : raw
+        const base = block.position?.start ?? 0
+        const contentInlines = this.parseInline(content.length === 0 ? '\u200B' : content, block.id, 'paragraph', base)
+            .map(i => ({ ...i, id: uuid(), blockId: block.id }))
+
+        let end = base
+        for (const inline of contentInlines) {
+            const len = inline.text.symbolic.length
+            inline.position = { start: end, end: end + len }
+            end += len
+        }
+
+        const breakInline: Inline = {
+            id: uuid(),
+            type: 'softBreak',
+            blockId: block.id,
+            text: { symbolic: '\n', semantic: '' },
+            position: { start: end, end: end + 1 },
+        }
+        end += 1
+
+        const marker: Inline = {
+            id: uuid(),
+            type: 'marker',
+            blockId: block.id,
+            text: { symbolic: underline, semantic: '' },
+            position: { start: end, end: end + underline.length },
+        }
+
+        const inlines = [...contentInlines, breakInline, marker]
+        block.text = inlines.map(i => i.text.symbolic).join('')
+        return inlines
     }
 
     public applyRecursive(block: Block) {

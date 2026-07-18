@@ -1,6 +1,6 @@
 import type { Block, Inline, RenderPosition } from '../../types'
 import { createBlockElement } from './blockElement'
-import { renderInlines } from './inlineRender'
+import { renderInlines, renderInline } from './inlineRender'
 
 type Deps = {
     createBlockElement: (block: Block) => HTMLElement
@@ -64,7 +64,7 @@ class BlockRender {
             element = this.deps.createBlockElement(block)
             element.dataset.blockId = block.id
             element.id = block.id
-            element.classList.add('block')
+            element.classList.add('block', block.type)
         }
 
         return { element, isNew }
@@ -155,7 +155,36 @@ class BlockRender {
             }
 
             case 'heading': {
-                element.classList.add(`h${block.level ?? 1}`)
+                element.classList.add('heading', `h${block.level ?? 1}`)
+                element.classList.toggle('setext', block.style === 'setext')
+                element.classList.toggle('atx', block.style !== 'setext')
+
+                if (block.style === 'setext') {
+                    const contentWrap = document.createElement('span')
+                    contentWrap.classList.add('setext-content')
+
+                    const contentInlines = block.inlines.filter(
+                        i => i.type !== 'marker' && i.type !== 'softBreak'
+                    )
+                    const breakInline = block.inlines.find(i => i.type === 'softBreak')
+                    const markerInline = block.inlines.find(i => i.type === 'marker')
+
+                    this.deps.renderInlines(contentInlines, contentWrap)
+                    element.appendChild(contentWrap)
+
+                    if (breakInline) {
+                        const breakEl = renderInline(breakInline)
+                        breakEl.classList.add('setext-break')
+                        element.appendChild(breakEl)
+                    }
+                    if (markerInline) {
+                        element.appendChild(renderInline(markerInline))
+                    }
+                    break
+                }
+
+                this.deps.renderInlines(block.inlines, element)
+                break
             }
 
             default:

@@ -3,13 +3,35 @@ import InlineParser from '../inline/inlineParser'
 import LinkReferenceState from './linkReferenceState'
 import { parseLinkReferenceDefinitions } from './linkReferences'
 import { nestLists } from '../block/list/listNest'
-import type { OpenBlock, Block, List, BlockQuote, CodeBlock } from '../../../types'
+import { matchSetextUnderline } from '../block/blockDetect'
+import { isEmptyText } from '../../../utils/utils'
+import type { OpenBlock, Block, List, BlockQuote, CodeBlock, Heading } from '../../../types'
 
 function sanitize(text: string) {
     return text
     //   .replace(/\u200B/g, '')
       .replace(/[\u200C\u200D\uFEFF]/g, '')
       .replace(/\r$/, '')
+}
+
+function tryAbsorbSetext(blocks: Block[], candidate: Block, line: string): boolean {
+    const match = matchSetextUnderline(line)
+    if (!match) return false
+
+    const prev = blocks[blocks.length - 1]
+    if (!prev || prev.type !== 'paragraph') return false
+    if (isEmptyText(String(prev.text ?? ''))) return false
+
+    const content = String(prev.text ?? '').replace(/\r$/, '')
+    Object.assign(prev, {
+        type: 'heading',
+        level: match.level,
+        style: 'setext',
+        underline: match.underline,
+        text: `${content}\n${match.underline}`,
+        position: { start: prev.position.start, end: candidate.position.end },
+    } satisfies Partial<Heading>)
+    return true
 }
 
 class AstParser {
@@ -61,6 +83,10 @@ class AstParser {
                         }
                     }
 
+                    if (tryAbsorbSetext(blocks, b, line)) {
+                        continue
+                    }
+
                     blocks.push(b)
                 }
             }
@@ -79,9 +105,6 @@ class AstParser {
         }
 
         this.blocks = blocks
-
-        // console.log('blocks', JSON.stringify(this.blocks, null, 2))
-        // console.log('text', JSON.stringify(text, null, 2))
 
         return this.blocks
     }
@@ -126,7 +149,15 @@ class AstParser {
 
         for (const line of text.split('\n')) {
             const produced = this.block.line(line, offset)
-            if (produced) blocks.push(...produced)
+            if (produced) {
+                for (const b of produced) {
+                    if (tryAbsorbSetext(blocks, b, line)) {
+                        offset += line.length + 1
+                        continue
+                    }
+                    blocks.push(b)
+                }
+            }
             offset += line.length + 1
         }
 
@@ -136,8 +167,6 @@ class AstParser {
         for (const block of blocks) {
             this.inline.applyRecursive(block)
         }
-
-        // console.log('reparseTextFragment blocks', JSON.stringify(blocks, null, 2))
 
         return blocks
     }    

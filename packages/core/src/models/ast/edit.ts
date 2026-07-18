@@ -1,7 +1,7 @@
-import { detectBlockType } from '../parser/block/blockDetect'
+import { detectBlockType, matchSetextUnderline, matchSetextHeading } from '../parser/block/blockDetect'
 import { uuid, strip, isEmptyText } from '../../utils/utils'
 import type { AstContext } from './astContext'
-import type { AstApplyEffect, Block, Inline, List, ListItem, Table, TableRow, TableHeader, TableCell, TaskListItem, BlockQuote, Paragraph, CodeBlock, RenderInsert, RenderInput } from '../../types'
+import type { AstApplyEffect, Block, Inline, List, ListItem, Table, TableRow, TableHeader, TableCell, TaskListItem, BlockQuote, Paragraph, CodeBlock, Heading, RenderInsert, RenderInput } from '../../types'
 
 class Edit {
     constructor(private context: AstContext) {}
@@ -30,6 +30,44 @@ class Edit {
             block.inlines.slice(inlineIndex + 1).map(i => i.text.symbolic).join('')
 
         // newText = strip(newText)
+
+        const setextUnderline = matchSetextUnderline(newText)
+        if (setextUnderline) {
+            const prev = this.getPreviousBlock(block)
+            if (prev?.type === 'paragraph' && !isEmptyText(String(prev.text ?? ''))) {
+                return transform.toSetextHeading(prev, block, newText, absoluteCaretPosition)
+            }
+        }
+
+        const setextForm = matchSetextHeading(newText)
+        if (setextForm) {
+            if (block.type === 'heading' && (block as Heading).style === 'setext') {
+                ;(block as Heading).level = setextForm.level
+                ;(block as Heading).underline = setextForm.underline
+                block.text = newText
+                const newInlines = parser.inline.apply(block)
+                block.inlines = newInlines
+                block.position = { start: block.position.start, end: block.position.start + block.text.length }
+
+                const hit = query.getInlineAtPosition(newInlines, absoluteCaretPosition)
+                const newInline = hit?.inline
+                const position = hit?.position ?? 0
+                if (!newInline) return null
+
+                return effect.compose(
+                    [effect.update([{ type: 'block', at: 'current', target: block, current: block }])],
+                    effect.caret(block.id, newInline.id, position, 'start'),
+                    effect.dom('structure')
+                )
+            }
+
+            return transform.transformBlock(
+                newText,
+                block,
+                { type: 'heading', level: setextForm.level },
+                absoluteCaretPosition
+            )
+        }
     
         const detectedBlock = detectBlockType(newText)
         const blockTypeChanged =

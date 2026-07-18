@@ -45,9 +45,16 @@ class Focus {
             markerElement.classList.add('focused')
         }
 
-        if (blockElement.classList.contains('codeBlock')) {
+        if (blockElement.classList.contains('codeBlock') || blockElement.classList.contains('setext')) {
             const inlineElements = blockElement.querySelectorAll('.inline') as NodeListOf<HTMLElement>
             for (const inlineElement of Array.from(inlineElements)) {
+                if (
+                    inlineElement.classList.contains('setext-break') ||
+                    inlineElement.classList.contains('softBreak') ||
+                    inlineElement.classList.contains('hardBreak')
+                ) {
+                    continue
+                }
                 inlineElement.classList.add('focused')
             }
         }
@@ -71,7 +78,7 @@ class Focus {
             markerElement.classList.remove('focused')
         }
 
-        if (blockElement.classList.contains('codeBlock')) {
+        if (blockElement.classList.contains('codeBlock') || blockElement.classList.contains('setext')) {
             const inlineElements = blockElement.querySelectorAll('.inline') as NodeListOf<HTMLElement>
             for (const inlineElement of Array.from(inlineElements)) {
                 inlineElement.classList.remove('focused')

@@ -282,6 +282,70 @@ class AstTransform {
             effect.dom('structure')
         )
     }
+
+    toSetextHeading(
+        prev: Block,
+        current: Block,
+        underlineText: string,
+        caretPosition: number | null = null
+    ): AstApplyEffect | null {
+        const { ast, parser, effect, query } = this.ctx
+
+        const prevIndex = ast.blocks.findIndex(b => b.id === prev.id)
+        const currentIndex = ast.blocks.findIndex(b => b.id === current.id)
+        if (prevIndex === -1 || currentIndex === -1 || currentIndex !== prevIndex + 1) return null
+
+        const content = String(prev.text ?? '').replace(/\r$/, '').replace(/[\u200B\u200C\u200D\uFEFF]/g, '')
+        const underline = underlineText.replace(/[\u200B\u200C\u200D\uFEFF]/g, '').replace(/\r$/, '')
+        const combined = `${content}\n${underline}`
+
+        const newBlocks = parser.reparseTextFragment(combined, prev.position.start)
+        if (newBlocks.length === 0) return null
+
+        const heading = newBlocks[0]
+        if (heading.type !== 'heading') return null
+
+        ast.blocks.splice(prevIndex, 2, ...newBlocks)
+
+        const preferred = caretPosition != null ? content.length + 1 + caretPosition : null
+        let caretTarget = heading.inlines[heading.inlines.length - 1] ?? heading.inlines[0]
+        let caretPos = caretTarget ? caretTarget.text.symbolic.length : 0
+
+        if (preferred != null) {
+            let offset = 0
+            for (const inline of heading.inlines) {
+                const len = inline.text.symbolic.length
+                if (preferred <= offset + len) {
+                    caretTarget = inline
+                    caretPos = Math.max(0, preferred - offset)
+                    break
+                }
+                offset += len
+                caretTarget = inline
+                caretPos = len
+            }
+        }
+
+        if (!caretTarget) {
+            const first = query.getFirstInline(newBlocks)
+            if (!first) return null
+            caretTarget = first
+            caretPos = 0
+        }
+
+        const inserts = newBlocks.map((b, idx) => ({
+            type: 'block' as const,
+            at: (idx === 0 ? 'current' : 'next') as 'current' | 'next',
+            target: idx === 0 ? prev : newBlocks[idx - 1],
+            current: b,
+        }))
+
+        return effect.compose(
+            [effect.update(inserts, [prev, current])],
+            effect.caret(caretTarget.blockId, caretTarget.id, caretPos, 'start'),
+            effect.dom('structure')
+        )
+    }
 }
 
 export default AstTransform

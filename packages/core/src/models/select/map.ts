@@ -80,6 +80,28 @@ function resolvePoint(ast: Ast, node: Node, offset: number): SelectionPoint | nu
   
     const inlineWrap = element.closest('[data-inline-id]') as HTMLElement | null
     if (!inlineWrap) return null
+
+    if (
+        inlineWrap.classList.contains('setext-break') ||
+        inlineWrap.classList.contains('softBreak') ||
+        inlineWrap.classList.contains('hardBreak')
+    ) {
+        const blockEl = inlineWrap.closest('[data-block-id]') as HTMLElement | null
+        if (!blockEl) return null
+        const block = ast.query.getBlockById(blockEl.dataset.blockId!)
+        if (!block) return null
+
+        const content = [...block.inlines]
+            .reverse()
+            .find(i => i.type !== 'marker' && i.type !== 'softBreak' && i.type !== 'hardBreak')
+        if (!content) return null
+
+        return {
+            blockId: content.blockId,
+            inlineId: content.id,
+            position: content.text.symbolic.length,
+        }
+    }
   
     const inlineId = inlineWrap.dataset.inlineId!
     const inline = ast.query.getInlineById(inlineId)

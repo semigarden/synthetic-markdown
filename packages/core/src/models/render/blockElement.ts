@@ -10,7 +10,8 @@ function createBlockElement(block: Block): HTMLElement {
 
         case 'heading': {
             const element = document.createElement(`h${block.level ?? 1}`)
-            element.classList.add(`h${block.level ?? 1}`)
+            element.classList.add('heading', `h${block.level ?? 1}`)
+            element.classList.add(block.style === 'setext' ? 'setext' : 'atx')
             return element
         }
 
