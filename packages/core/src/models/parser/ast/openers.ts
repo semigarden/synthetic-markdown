@@ -1,5 +1,5 @@
 import type BlockParser from '../block/blockParser'
-import { detectBlockType } from '../block/blockDetect'
+import { detectBlockType, matchLinkReferenceDefinition } from '../block/blockDetect'
 import type { OpenBlock, Block, List, ListItem, TaskListItem } from '../../../types'
 import { uuid } from '../../../utils/utils'
 
@@ -37,6 +37,21 @@ function tryOpenLeafBlock(
             attach({
                 id: uuid(),
                 type: 'thematicBreak',
+                text: line,
+                position: { start: offset, end: offset + line.length },
+                inlines: [],
+            })
+            return true
+        }
+
+        case 'linkReferenceDefinition': {
+            const matched = matchLinkReferenceDefinition(line)
+            attach({
+                id: uuid(),
+                type: 'linkReferenceDefinition',
+                label: matched?.label ?? detected.label ?? '',
+                url: matched?.url ?? '',
+                title: matched?.title,
                 text: line,
                 position: { start: offset, end: offset + line.length },
                 inlines: [],

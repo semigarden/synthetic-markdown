@@ -1,7 +1,7 @@
 import BlockParser from '../block/blockParser'
 import InlineParser from '../inline/inlineParser'
 import LinkReferenceState from './linkReferenceState'
-import { parseLinkReferenceDefinitions } from './linkReferences'
+import { syncLinkReferencesFromBlocks } from './linkReferences'
 import { nestLists } from '../block/list/listNest'
 import { matchSetextUnderline } from '../block/blockDetect'
 import { isEmptyText } from '../../../utils/utils'
@@ -48,7 +48,6 @@ class AstParser {
 
     public parse(text: string): Block[] {
         this.reset()
-        parseLinkReferenceDefinitions(text, this.linkReferences)
 
         this.block.reset()
 
@@ -99,6 +98,8 @@ class AstParser {
         this.mergeAdjacent(blocks)
 
         nestLists(blocks)
+
+        syncLinkReferencesFromBlocks(blocks, this.linkReferences)
 
         for (const block of blocks) {
             this.inline.applyRecursive(block)
@@ -174,6 +175,7 @@ class AstParser {
     private reset() {
         this.openBlocks = []
         this.blocks = []
+        this.linkReferences.reset()
     }
 }
 

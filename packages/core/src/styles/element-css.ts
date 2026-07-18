@@ -284,6 +284,29 @@ const cssText = `@charset "UTF-8";
   display: none;
 }
 
+.linkReferenceDefinition {
+  margin: 0.25em 0;
+  font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+  font-size: 0.85em;
+  color: var(--color-muted);
+  min-height: 1.2em;
+}
+.linkReferenceDefinition .inline.marker:not(.focused) {
+  opacity: 1;
+}
+.linkReferenceDefinition .inline.marker:not(.focused) .symbolic {
+  position: absolute;
+  inset: 0;
+  color: transparent;
+  opacity: 0;
+  pointer-events: none;
+}
+.linkReferenceDefinition .inline.marker:not(.focused) .semantic {
+  position: relative;
+  color: var(--color-muted);
+  opacity: 1;
+}
+
 .table {
   width: 100%;
   table-layout: fixed;

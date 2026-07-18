@@ -19,6 +19,7 @@ export type Block =
     | List
     | ListItem
     | ThematicBreak
+    | LinkReferenceDefinition
     | Table
     | TableRow
     | TableCell
@@ -36,6 +37,11 @@ export interface Heading extends BlockType<'heading'> {
     level: number
     style?: 'atx' | 'setext'
     underline?: string
+}
+export interface LinkReferenceDefinition extends BlockType<'linkReferenceDefinition'> {
+    label: string
+    url: string
+    title?: string
 }
 export interface BlockQuote extends BlockType<'blockQuote'> {
     blocks: Block[]

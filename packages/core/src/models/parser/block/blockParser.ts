@@ -1,14 +1,15 @@
 import TableParser from './table/tableParser'
-import { detectBlockType, normalizeDetectLine } from './blockDetect'
 import {
     buildHeading,
     buildThematicBreak,
+    buildLinkReferenceDefinition,
     buildParagraph,
     buildBlockQuote,
     buildFencedCodeBlock,
     buildIndentedCodeBlock,
     buildListFromItem,
 } from './blockBuilders'
+import { detectBlockType, normalizeDetectLine, matchLinkReferenceDefinition } from './blockDetect'
 import type { ParseBlockContext, Block, DetectedBlock, CodeBlock } from '../../../types'
 
 class BlockParser {
@@ -204,6 +205,25 @@ class BlockParser {
             case 'thematicBreak':
                 blocks.push(buildThematicBreak(line, start, end))
                 break
+
+            case 'linkReferenceDefinition': {
+                const matched = matchLinkReferenceDefinition(line)
+                if (matched) {
+                    blocks.push(
+                        buildLinkReferenceDefinition(
+                            line,
+                            start,
+                            end,
+                            matched.label,
+                            matched.url,
+                            matched.title
+                        )
+                    )
+                } else {
+                    blocks.push(buildParagraph(line, start, end))
+                }
+                break
+            }
 
             case 'blankLine':
                 blocks.push(buildParagraph(line, start, end))

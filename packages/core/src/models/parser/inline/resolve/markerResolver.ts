@@ -55,6 +55,22 @@ class MarkerResolver {
             }
         }
 
+        if (blockType === 'linkReferenceDefinition') {
+            const symbolic = text
+            stream.advance(symbolic.length)
+
+            return {
+                id: uuid(),
+                type: 'marker',
+                blockId,
+                text: { symbolic, semantic: symbolic },
+                position: {
+                    start: position,
+                    end: position + symbolic.length,
+                },
+            }
+        }
+
         if (blockType === 'blockQuote') {
             text = text.trim()
             const match = text.match(/^(\s{0,3}>\s?)/)

@@ -16,9 +16,9 @@ import { matchSetextUnderline } from '../block/blockDetect'
 
 class InlineParser {
     private markerResolver = new MarkerResolver()
-    private linkResolver = new LinkResolver()
+    private linkResolver: LinkResolver
     private autoLinkResolver = new AutoLinkResolver()
-    private imageResolver = new ImageResolver()
+    private imageResolver: ImageResolver
     private codeSpanResolver = new CodeSpanResolver()
     private entityResolver = new EntityResolver()
     private backslashEscapeResolver = new BackslashEscapeResolver()
@@ -26,7 +26,10 @@ class InlineParser {
     private strikethroughResolver = new StrikethroughResolver()
     private delimiterResolver = new DelimiterResolver()
 
-    constructor(private linkReferences: LinkReferenceState) {}
+    constructor(private linkReferences: LinkReferenceState) {
+        this.linkResolver = new LinkResolver(linkReferences)
+        this.imageResolver = new ImageResolver(linkReferences)
+    }
 
     public apply(block: Block): Inline[] {
         const text = block.text ?? ''
@@ -186,7 +189,7 @@ class InlineParser {
         }
         if ('blocks' in block && Array.isArray(block.blocks)) {
             block.blocks.forEach(b => this.applyRecursive(b))
-        } else if (['paragraph', 'heading', 'codeBlock', 'thematicBreak'].includes(block.type)) {
+        } else if (['paragraph', 'heading', 'codeBlock', 'thematicBreak', 'linkReferenceDefinition'].includes(block.type)) {
             block.inlines = this.apply(block)
         }
     }

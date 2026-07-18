@@ -38,14 +38,10 @@ export type Strikethrough = InlineType<'strikethrough'>
 export type SoftBreak = InlineType<'softBreak'>
 export type HardBreak = InlineType<'hardBreak'>
 export type RawHTML = InlineType<'rawHTML'>
-export interface Image extends InlineType<'image'> {
-    url: string
-    alt: string
-    title?: string
-}
 export interface Link extends InlineType<'link'> {
     url: string
     title?: string
+    reference?: string
 }
 export interface Autolink extends InlineType<'autolink'> {
     url: string
@@ -58,4 +54,10 @@ export interface Emoji extends InlineType<'emoji'> {
 }
 export interface Entity extends InlineType<'entity'> {
     decoded: string
+}
+export interface Image extends InlineType<'image'> {
+    url: string
+    alt: string
+    title?: string
+    reference?: string
 }

@@ -35,6 +35,30 @@ function matchSetextHeading(text: string): { level: 1 | 2; underline: string; co
     }
 }
 
+/** CommonMark link reference definition: `[label]: url "title"` (single-line). */
+function matchLinkReferenceDefinition(line: string): {
+    label: string
+    url: string
+    title?: string
+    rawLabel: string
+} | null {
+    const normalized = normalizeDetectLine(line)
+    if (/^\s{0,3}\[\^/.test(normalized)) return null
+
+    const m = normalized.match(
+        /^\s{0,3}\[([^\]]+)\]:\s*<?([^\s>]+)>?(?:\s+(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|\(((?:\\.|[^)\\])*)\)))?\s*$/
+    )
+    if (!m) return null
+
+    const rawLabel = m[1]
+    const label = rawLabel.toLowerCase().trim()
+    if (!label) return null
+
+    const url = m[2]
+    const title = m[3] ?? m[4] ?? m[5]
+    return title !== undefined ? { label, url, title, rawLabel } : { label, url, rawLabel }
+}
+
 function detectBlockType(line: string): DetectedBlock {
     line = normalizeDetectLine(line)
 
@@ -90,10 +114,18 @@ function detectBlockType(line: string): DetectedBlock {
         return { type: 'htmlBlock' }
     }
 
-    // link reference definitions are handled elsewhere, treat as paragraph
-    if (/^\s{0,3}\[([^\]]+)\]:\s*/.test(line)) return { type: 'paragraph' }
+    const linkRef = matchLinkReferenceDefinition(line)
+    if (linkRef) {
+        return { type: 'linkReferenceDefinition', label: linkRef.label }
+    }
 
     return { type: 'paragraph' }
 }
 
-export { detectBlockType, normalizeDetectLine, matchSetextUnderline, matchSetextHeading }
+export {
+    detectBlockType,
+    normalizeDetectLine,
+    matchSetextUnderline,
+    matchSetextHeading,
+    matchLinkReferenceDefinition,
+}

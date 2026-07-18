@@ -31,6 +31,26 @@ function buildThematicBreak(line: string, start: number, end: number): Block {
     }
 }
 
+function buildLinkReferenceDefinition(
+    line: string,
+    start: number,
+    end: number,
+    label: string,
+    url: string,
+    title?: string
+): Block {
+    return {
+        id: uuid(),
+        type: 'linkReferenceDefinition',
+        label,
+        url,
+        title,
+        text: line,
+        position: { start, end },
+        inlines: [],
+    }
+}
+
 function buildParagraph(line: string, start: number, end: number): Block {
     return {
         id: uuid(),
@@ -156,4 +176,4 @@ function buildListFromItem(
     } as List
 }
 
-export { buildHeading, buildThematicBreak, buildParagraph, buildBlockQuote, buildFencedCodeBlock, buildIndentedCodeBlock, buildListFromItem }
+export { buildHeading, buildThematicBreak, buildLinkReferenceDefinition, buildParagraph, buildBlockQuote, buildFencedCodeBlock, buildIndentedCodeBlock, buildListFromItem }

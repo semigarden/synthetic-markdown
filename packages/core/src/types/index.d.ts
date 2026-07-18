@@ -8,6 +8,7 @@ export type {
     List,
     ListItem,
     ThematicBreak,
+    LinkReferenceDefinition,
     Table,
     TableRow,
     TableCell,

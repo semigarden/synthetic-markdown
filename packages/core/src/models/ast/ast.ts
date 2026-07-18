@@ -5,6 +5,7 @@ import AstParser from '../parser/ast/astParser'
 import AstTransform from './transform/astTransform'
 import Effect from './effect/effect'
 import Edit from './edit'
+import { syncLinkReferencesFromBlocks } from '../parser/ast/linkReferences'
 import type { AstContext } from './astContext'
 import type { Block } from '../../types'
 
@@ -63,6 +64,7 @@ class Ast {
     public normalize() {
         this.normalizer.apply(this.blocks)
         this.text = this.normalizer.text
+        syncLinkReferencesFromBlocks(this.blocks, this.parser.linkReferences)
     }
 
     public logText(label = 'ast.text') {
