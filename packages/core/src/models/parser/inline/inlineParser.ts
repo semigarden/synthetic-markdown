@@ -189,7 +189,7 @@ class InlineParser {
         }
         if ('blocks' in block && Array.isArray(block.blocks)) {
             block.blocks.forEach(b => this.applyRecursive(b))
-        } else if (['paragraph', 'heading', 'codeBlock', 'thematicBreak', 'linkReferenceDefinition'].includes(block.type)) {
+        } else if (['paragraph', 'heading', 'codeBlock', 'thematicBreak', 'linkReferenceDefinition', 'htmlBlock'].includes(block.type)) {
             block.inlines = this.apply(block)
         }
     }

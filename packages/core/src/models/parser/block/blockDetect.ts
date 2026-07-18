@@ -35,7 +35,52 @@ function matchSetextHeading(text: string): { level: 1 | 2; underline: string; co
     }
 }
 
-/** CommonMark link reference definition: `[label]: url "title"` (single-line). */
+const HTML_BLOCK_TAGS =
+    'address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h1|h2|h3|h4|h5|h6|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul'
+
+function matchHtmlBlockStart(line: string): 1 | 2 | 3 | 4 | 5 | 6 | 7 | null {
+    const normalized = normalizeDetectLine(line)
+
+    if (/^\s{0,3}<(?:script|pre|style|textarea)(?:\s|>|$)/i.test(normalized)) return 1
+    if (/^\s{0,3}<!--/.test(normalized)) return 2
+    if (/^\s{0,3}<\?/.test(normalized)) return 3
+    if (/^\s{0,3}<![A-Z]/.test(normalized)) return 4
+    if (/^\s{0,3}<!\[CDATA\[/.test(normalized)) return 5
+    if (new RegExp(`^\\s{0,3}</?(?:${HTML_BLOCK_TAGS})(?:\\s|/?>|$)`, 'i').test(normalized)) return 6
+
+    if (
+        /^\s{0,3}<\/[a-zA-Z][a-zA-Z0-9-]*\s*>\s*$/.test(normalized) ||
+        /^\s{0,3}<[a-zA-Z][a-zA-Z0-9-]*(?:\s+[a-zA-Z_:][a-zA-Z0-9_.:-]*(?:\s*=\s*(?:[^\s"'=<>`]+|'[^']*'|"[^"]*"))?)*\s*\/?>\s*$/.test(
+            normalized
+        )
+    ) {
+        return 7
+    }
+
+    return null
+}
+
+function matchHtmlBlockEnd(htmlType: number, line: string): boolean {
+    const normalized = normalizeDetectLine(line)
+    switch (htmlType) {
+        case 1:
+            return /<\/(?:script|pre|style|textarea)>/i.test(normalized)
+        case 2:
+            return /-->/.test(normalized)
+        case 3:
+            return /\?>/.test(normalized)
+        case 4:
+            return />/.test(normalized)
+        case 5:
+            return /\]\]>/.test(normalized)
+        case 6:
+        case 7:
+            return normalized.trim() === ''
+        default:
+            return false
+    }
+}
+
 function matchLinkReferenceDefinition(line: string): {
     label: string
     url: string
@@ -101,17 +146,9 @@ function detectBlockType(line: string): DetectedBlock {
 
     if (/^\[\^[^\]]+\]:/.test(trimmed)) return { type: 'footnote' }
 
-    if (
-        /^\s{0,3}<(?:script|pre|style|textarea)[\s>]/i.test(line) ||
-        /^\s{0,3}<!--/.test(line) ||
-        /^\s{0,3}<\?/.test(line) ||
-        /^\s{0,3}<![A-Z]/.test(line) ||
-        /^\s{0,3}<!\[CDATA\[/.test(line) ||
-        /^\s{0,3}<\/?(?:address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h1|h2|h3|h4|h5|h6|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)(?:\s|\/?>|$)/i.test(
-            line
-        )
-    ) {
-        return { type: 'htmlBlock' }
+    const htmlType = matchHtmlBlockStart(line)
+    if (htmlType) {
+        return { type: 'htmlBlock', htmlType }
     }
 
     const linkRef = matchLinkReferenceDefinition(line)
@@ -128,4 +165,6 @@ export {
     matchSetextUnderline,
     matchSetextHeading,
     matchLinkReferenceDefinition,
+    matchHtmlBlockStart,
+    matchHtmlBlockEnd,
 }

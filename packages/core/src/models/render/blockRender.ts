@@ -7,6 +7,20 @@ type Deps = {
     renderInlines: (inlines: Inline[], parent: HTMLElement) => void
 }
 
+function setHtmlPreview(container: HTMLElement, html: string) {
+    container.innerHTML = html
+
+    const scripts = Array.from(container.querySelectorAll('script'))
+    for (const oldScript of scripts) {
+        const next = container.ownerDocument.createElement('script')
+        for (const attr of Array.from(oldScript.attributes)) {
+            next.setAttribute(attr.name, attr.value)
+        }
+        next.textContent = oldScript.textContent
+        oldScript.replaceWith(next)
+    }
+}
+
 class BlockRender {
     private deps: Deps
 
@@ -151,6 +165,20 @@ class BlockRender {
                 } else {
                     element.removeAttribute('data-language')
                 }
+                break
+            }
+
+            case 'htmlBlock': {
+                this.deps.renderInlines(block.inlines, element)
+
+                const preview = document.createElement('div')
+                preview.classList.add('html-preview')
+                preview.setAttribute('contenteditable', 'false')
+                setHtmlPreview(
+                    preview,
+                    String(block.text ?? '').replace(/[\u200B\u200C\u200D\uFEFF]/g, '')
+                )
+                element.prepend(preview)
                 break
             }
 

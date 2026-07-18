@@ -1,6 +1,7 @@
-import type { AstApplyEffect, Block, DetectedBlock, Inline, TableCell, TableHeader, List, ListItem, TaskListItem, BlockQuote, CodeBlock } from '../../../types'
+import type { AstApplyEffect, Block, DetectedBlock, Inline, TableCell, TableHeader, List, ListItem, TaskListItem, BlockQuote, CodeBlock, HTMLBlock } from '../../../types'
 import type { AstContext } from '../astContext'
-import { strip } from '../../../utils/utils'
+import { strip, isEmptyText } from '../../../utils/utils'
+import { matchHtmlBlockStart, matchHtmlBlockEnd } from '../../parser/block/blockDetect'
 
 class AstTransform {
     constructor(private ctx: AstContext) {}
@@ -21,6 +22,7 @@ class AstTransform {
         text = text.replace(/[\u200B\u200C\u200D\uFEFF]/g, '').replace(/\r$/, '')
 
         if (detected.type === 'codeBlock') return this.toCodeBlock(text, block, caretPosition, removedBlocks)
+        if (detected.type === 'htmlBlock') return this.toHtmlBlock(text, block, caretPosition, removedBlocks)
 
         const flat = query.flattenBlocks(ast.blocks)
         const entry = flat.find(b => b.block.id === block.id)
@@ -342,6 +344,78 @@ class AstTransform {
 
         return effect.compose(
             [effect.update(inserts, [prev, current])],
+            effect.caret(caretTarget.blockId, caretTarget.id, caretPos, 'start'),
+            effect.dom('structure')
+        )
+    }
+
+    toHtmlBlock(
+        text: string,
+        block: Block,
+        caretPosition: number | null = null,
+        preRemoved: Block[] = []
+    ): AstApplyEffect | null {
+        const { ast, parser, effect, query } = this.ctx
+
+        const entryIndex = ast.blocks.findIndex(b => b.id === block.id)
+        if (entryIndex === -1) return null
+
+        const firstLine = text.split('\n')[0] ?? text
+        const htmlType = matchHtmlBlockStart(firstLine)
+        if (!htmlType) return null
+
+        const absorbed: Block[] = []
+        let newText = text
+
+        if (!text.includes('\n')) {
+            for (let i = entryIndex + 1; i < ast.blocks.length; i++) {
+                const next = ast.blocks[i]
+                const piece = String(next.text ?? '').replace(/^\u200B$/, '')
+
+                if (htmlType === 6 || htmlType === 7) {
+                    if (isEmptyText(piece)) break
+                    newText += '\n' + piece
+                    absorbed.push(next)
+                    continue
+                }
+
+                newText += '\n' + piece
+                absorbed.push(next)
+                if (matchHtmlBlockEnd(htmlType, piece)) break
+            }
+        }
+
+        const newBlocks = parser.reparseTextFragment(newText, block.position.start)
+        if (newBlocks.length === 0) return null
+
+        const oldBlock = block
+        const removeCount = 1 + absorbed.length
+        ast.blocks.splice(entryIndex, removeCount, ...newBlocks)
+
+        const first = newBlocks[0]
+        const caretTarget =
+            first.inlines.find(i => i.type === 'marker') ??
+            first.inlines[0] ??
+            query.getFirstInline(newBlocks)
+        if (!caretTarget) return null
+
+        let caretPos = 0
+        if (caretPosition != null) {
+            caretPos = Math.min(Math.max(0, caretPosition), caretTarget.text.symbolic.length)
+        } else {
+            caretPos = caretTarget.text.symbolic.length
+        }
+
+        const renderRemove = [...preRemoved, ...absorbed]
+        const inserts = newBlocks.map((b, idx) => ({
+            type: 'block' as const,
+            at: (idx === 0 ? 'current' : 'next') as 'current' | 'next',
+            target: idx === 0 ? oldBlock : newBlocks[idx - 1],
+            current: b,
+        }))
+
+        return effect.compose(
+            [effect.update(inserts, renderRemove.length > 0 ? [...renderRemove, oldBlock] : [oldBlock])],
             effect.caret(caretTarget.blockId, caretTarget.id, caretPos, 'start'),
             effect.dom('structure')
         )

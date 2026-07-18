@@ -75,6 +75,12 @@ function createBlockElement(block: Block): HTMLElement {
             return element
         }
 
+        case 'htmlBlock': {
+            const element = document.createElement('div')
+            element.classList.add('htmlBlock')
+            return element
+        }
+
         case 'linkReferenceDefinition': {
             const element = document.createElement('div')
             element.classList.add('linkReferenceDefinition')

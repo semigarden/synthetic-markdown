@@ -15,6 +15,10 @@ export type ParseBlockContext = {
     currentCodeBlock: Block | null
     codeBlockLineCount: number
 
+    isHtmlBlock: boolean
+    htmlBlockType: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7
+    currentHtmlBlock: Block | null
+
     table?: {
         start: number
         headerLine: string

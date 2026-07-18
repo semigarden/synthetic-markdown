@@ -2,6 +2,7 @@ import TableParser from './table/tableParser'
 import {
     buildHeading,
     buildThematicBreak,
+    buildHtmlBlock,
     buildLinkReferenceDefinition,
     buildParagraph,
     buildBlockQuote,
@@ -9,33 +10,39 @@ import {
     buildIndentedCodeBlock,
     buildListFromItem,
 } from './blockBuilders'
-import { detectBlockType, normalizeDetectLine, matchLinkReferenceDefinition } from './blockDetect'
-import type { ParseBlockContext, Block, DetectedBlock, CodeBlock } from '../../../types'
+import {
+    detectBlockType,
+    normalizeDetectLine,
+    matchLinkReferenceDefinition,
+    matchHtmlBlockStart,
+    matchHtmlBlockEnd,
+} from './blockDetect'
+import type { ParseBlockContext, Block, DetectedBlock, CodeBlock, HTMLBlock } from '../../../types'
 
 class BlockParser {
     private context: ParseBlockContext
     private tableParser = new TableParser()
 
     constructor() {
-        this.context = {
+        this.context = this.emptyContext()
+    }
+
+    private emptyContext(): ParseBlockContext {
+        return {
             isFencedCodeBlock: false,
             codeBlockFence: '',
             codeBlockIndent: 0,
             currentCodeBlock: null,
             codeBlockLineCount: 0,
+            isHtmlBlock: false,
+            htmlBlockType: 0,
+            currentHtmlBlock: null,
             table: undefined,
         }
     }
 
     public reset() {
-        this.context = {
-            isFencedCodeBlock: false,
-            codeBlockFence: '',
-            codeBlockIndent: 0,
-            currentCodeBlock: null,
-            codeBlockLineCount: 0,
-            table: undefined,
-        }
+        this.context = this.emptyContext()
         this.tableParser.reset()
     }
 
@@ -44,7 +51,7 @@ class BlockParser {
     }
 
     public flush(offset: number): Block[] | null {
-        const { isFencedCodeBlock, currentCodeBlock } = this.context
+        const { isFencedCodeBlock, currentCodeBlock, isHtmlBlock, currentHtmlBlock } = this.context
 
         if (isFencedCodeBlock && currentCodeBlock) {
             ;(currentCodeBlock as CodeBlock).position.end = offset
@@ -53,6 +60,13 @@ class BlockParser {
             this.context.codeBlockIndent = 0
             this.context.currentCodeBlock = null
             this.context.codeBlockLineCount = 0
+        }
+
+        if (isHtmlBlock && currentHtmlBlock) {
+            currentHtmlBlock.position.end = offset
+            this.context.isHtmlBlock = false
+            this.context.htmlBlockType = 0
+            this.context.currentHtmlBlock = null
         }
 
         return this.tableParser.flush()
@@ -111,17 +125,36 @@ class BlockParser {
             return null
         }
 
-        // disabled
-        // if (this.tableParser.hasPendingTable) {
-        //     return this.tableParser.feedLine(line, offset, () => this.parseLine(line, offset))
-        // }
-
-        // disabled
-        // if (this.tableParser.tryStartTable(line, start)) {
-        //     return null
-        // }
+        if (this.context.isHtmlBlock && this.context.currentHtmlBlock) {
+            return this.continueHtmlBlock(line, offset)
+        }
 
         return this.parseLine(line, offset)
+    }
+
+    private continueHtmlBlock(line: string, offset: number): Block[] | null {
+        const htmlBlock = this.context.currentHtmlBlock as HTMLBlock
+        const htmlType = this.context.htmlBlockType
+        const end = offset + line.length
+
+        if ((htmlType === 6 || htmlType === 7) && matchHtmlBlockEnd(htmlType, line)) {
+            htmlBlock.position.end = offset
+            this.context.isHtmlBlock = false
+            this.context.htmlBlockType = 0
+            this.context.currentHtmlBlock = null
+            return this.parseLine(line, offset)
+        }
+
+        htmlBlock.text = htmlBlock.text + '\n' + line
+        htmlBlock.position.end = end
+
+        if (matchHtmlBlockEnd(htmlType, line)) {
+            this.context.isHtmlBlock = false
+            this.context.htmlBlockType = 0
+            this.context.currentHtmlBlock = null
+        }
+
+        return null
     }
     
     private escapeRegex(str: string): string {
@@ -148,19 +181,6 @@ class BlockParser {
                 blocks.push(buildBlockQuote(line, start, end, innerBlocks))
                 break
             }
-
-            // disabled
-            // case 'taskListItem': {
-            //     const list = buildListFromItem(line, start, end, detected)
-            //     const last = blocks[blocks.length - 1]
-            //     if (last && last.type === 'list' && (last as any).ordered === !!(detected as any).ordered) {
-            //         ;(last as any).blocks.push(...(list as any).blocks)
-            //         last.position.end = end
-            //     } else {
-            //         blocks.push(list)
-            //     }
-            //     break
-            // }
 
             case 'listItem': {
                 const list = buildListFromItem(line, start, end, detected)
@@ -205,6 +225,26 @@ class BlockParser {
             case 'thematicBreak':
                 blocks.push(buildThematicBreak(line, start, end))
                 break
+
+            case 'htmlBlock': {
+                const htmlType = detected.htmlType ?? matchHtmlBlockStart(line)
+                if (!htmlType) {
+                    blocks.push(buildParagraph(line, start, end))
+                    break
+                }
+
+                const block = buildHtmlBlock(line, start, end, htmlType) as HTMLBlock
+                blocks.push(block)
+
+                if (htmlType <= 5 && matchHtmlBlockEnd(htmlType, line)) {
+                    break
+                }
+
+                this.context.isHtmlBlock = true
+                this.context.htmlBlockType = htmlType
+                this.context.currentHtmlBlock = block
+                break
+            }
 
             case 'linkReferenceDefinition': {
                 const matched = matchLinkReferenceDefinition(line)

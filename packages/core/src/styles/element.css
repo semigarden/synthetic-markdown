@@ -320,7 +320,50 @@
 }
 
 .htmlBlock {
-  margin: 0.5em 0;
+  position: relative;
+  margin: 0.25em 0;
+  min-height: 1.2em;
+}
+.htmlBlock .html-preview {
+  display: block;
+  max-width: 100%;
+}
+.htmlBlock:not(.focused) > .inline.marker {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+.htmlBlock:not(.focused) > .inline.marker .symbolic, .htmlBlock:not(.focused) > .inline.marker .semantic {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.htmlBlock.focused > .html-preview {
+  display: none;
+}
+.htmlBlock.focused > .inline.marker {
+  position: relative;
+  opacity: 1;
+  width: auto;
+  height: auto;
+  font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+  font-size: 0.85em;
+  color: var(--color-muted);
+  white-space: pre-wrap;
+}
+.htmlBlock.focused > .inline.marker .symbolic {
+  position: relative;
+  color: inherit;
+  opacity: 1;
+  white-space: pre-wrap;
+}
+.htmlBlock.focused > .inline.marker .semantic {
+  display: none;
 }
 
 .footnote {

@@ -1,5 +1,5 @@
 import type BlockParser from '../block/blockParser'
-import { detectBlockType, matchLinkReferenceDefinition } from '../block/blockDetect'
+import { detectBlockType, matchLinkReferenceDefinition, matchHtmlBlockStart } from '../block/blockDetect'
 import type { OpenBlock, Block, List, ListItem, TaskListItem } from '../../../types'
 import { uuid } from '../../../utils/utils'
 
@@ -66,9 +66,11 @@ function tryOpenLeafBlock(
         }
 
         case 'htmlBlock': {
+            const htmlType = detected.htmlType ?? matchHtmlBlockStart(line) ?? 6
             attach({
                 id: uuid(),
                 type: 'htmlBlock',
+                htmlType,
                 text: line,
                 position: { start: offset, end: offset + line.length },
                 inlines: [],

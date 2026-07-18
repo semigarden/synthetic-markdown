@@ -31,6 +31,22 @@ function buildThematicBreak(line: string, start: number, end: number): Block {
     }
 }
 
+function buildHtmlBlock(
+    line: string,
+    start: number,
+    end: number,
+    htmlType: 1 | 2 | 3 | 4 | 5 | 6 | 7
+): Block {
+    return {
+        id: uuid(),
+        type: 'htmlBlock',
+        htmlType,
+        text: line,
+        position: { start, end },
+        inlines: [],
+    }
+}
+
 function buildLinkReferenceDefinition(
     line: string,
     start: number,
@@ -176,4 +192,4 @@ function buildListFromItem(
     } as List
 }
 
-export { buildHeading, buildThematicBreak, buildLinkReferenceDefinition, buildParagraph, buildBlockQuote, buildFencedCodeBlock, buildIndentedCodeBlock, buildListFromItem }
+export { buildHeading, buildThematicBreak, buildHtmlBlock, buildLinkReferenceDefinition, buildParagraph, buildBlockQuote, buildFencedCodeBlock, buildIndentedCodeBlock, buildListFromItem }

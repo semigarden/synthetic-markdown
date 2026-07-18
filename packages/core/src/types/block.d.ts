@@ -32,7 +32,9 @@ export type Block =
 export type Paragraph = BlockType<'paragraph'>
 export type BlankLine = BlockType<'blankLine'>
 export type ThematicBreak = BlockType<'thematicBreak'>
-export type HTMLBlock = BlockType<'htmlBlock'>
+export interface HTMLBlock extends BlockType<'htmlBlock'> {
+    htmlType?: 1 | 2 | 3 | 4 | 5 | 6 | 7
+}
 export interface Heading extends BlockType<'heading'> {
     level: number
     style?: 'atx' | 'setext'
